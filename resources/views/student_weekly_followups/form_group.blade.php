@@ -808,7 +808,7 @@ $activityTypes = ['معرفي' => 'معرفي/علمي', 'اجتماعي' => 'ا
         return {
             applyToAll(fieldName, value) {
                 if (!value) {
-                    alert('يرجى اختيار قيمة أولاًّ');
+                    showError('يرجى اختيار قيمة أولاًّ');
                     return;
                 }
                 const selects = document.querySelectorAll('.student-' + fieldName);

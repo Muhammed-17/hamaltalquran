@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\FavoriteController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified', 'permission:view students'])->group(function () {
@@ -10,7 +11,13 @@ Route::middleware(['auth', 'verified', 'permission:view students'])->group(funct
     Route::get('/students/excluded-review', [StudentController::class, 'excludedReview'])
         ->name('students.excluded-review');
 
-    // ✅ create قبل {student}
+    Route::post('/students/{student}/favorite', [FavoriteController::class, 'store'])
+        ->name('students.favorite.store');
+    Route::delete('/students/{student}/favorite', [FavoriteController::class, 'destroy'])
+        ->name('students.favorite.destroy');
+    Route::get('/favorites', [FavoriteController::class, 'index'])
+        ->name('favorites.index');
+
     Route::middleware('permission:create students')->group(function () {
         Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
         Route::post('/students', [StudentController::class, 'store'])->name('students.store');

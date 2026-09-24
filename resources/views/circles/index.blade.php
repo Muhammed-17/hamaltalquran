@@ -14,7 +14,7 @@ $sortIcon = fn($field) => request('sort') === $field
         <div class="text-right w-full md:w-auto z-10">
             <h1 class="text-3xl font-black mb-2">إدارة الحلقات</h1>
             <p class="text-emerald-100/80 text-sm font-medium">
-                @if(request()->anyFilled(['q', 'branch_id', 'type', 'level']))
+                @if(request()->anyFilled(['q', 'branch_id', 'center_id', 'type', 'level']))
                 {{ $circles->total() }} نتيجة
                 @else
                 {{ $circles->total() }} حلقة مسجلة في النظام
@@ -39,7 +39,23 @@ $sortIcon = fn($field) => request('sort') === $field
 
     {{-- ─── فلاتر التصفية ─── --}}
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6">
-        <form method="GET" action="{{ route('circles.index') }}" class="flex flex-col lg:flex-row gap-4 items-end" dir="rtl">
+        <form method="GET" action="{{ route('circles.index') }}" class="flex flex-col lg:flex-row gap-4 items-end" dir="rtl"
+            x-data="{
+        allBranches: {{ $branches->map(fn($b) => ['value' => (string)$b->id, 'label' => $b->name, 'center_id' => (string)$b->center_id])->values()->toJson() }},
+        onCenterChange(e) {
+            if (e.detail.name !== 'center_id') return;
+
+            const centerId = e.detail.value;
+            const filtered = centerId
+                ? this.allBranches.filter(b => b.center_id === centerId)
+                : this.allBranches;
+
+            window.dispatchEvent(new CustomEvent('update-options', {
+                detail: { name: 'branch_id', options: filtered, preserveSelection: false }
+            }));
+        }
+    }"
+            @searchable-change.window="onCenterChange($event)">
             {{-- البحث --}}
             <div class="w-full lg:flex-1">
                 <label for="filter_q" class="block text-xs font-bold text-gray-400 mb-1.5">البحث بالاسم</label>
@@ -48,15 +64,26 @@ $sortIcon = fn($field) => request('sort') === $field
                     class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-[#0a5c36] focus:border-[#0a5c36] transition-all bg-white text-right">
             </div>
 
-            {{-- فلتر الفرع --}}
+            {{-- فلتر المركز --}}
             <div class="w-full lg:w-48">
-                <label for="filter_branch_id" class="block text-xs font-bold text-gray-400 mb-1.5">الفرع</label>
+                <label for="filter_center_id" class="block text-xs font-bold text-gray-400 mb-1.5">المركز</label>
+                <x-searchable-select
+                    name="center_id"
+                    placeholder="كل المراكز"
+                    search-placeholder="بحث باسم المركز..."
+                    :default-value="request('center_id', '')"
+                    :options="$centers->map(fn($c) => ['value' => (string)$c->id, 'label' => $c->name])->values()" />
+            </div>
+
+            {{-- فلتر المقر --}}
+            <div class="w-full lg:w-48">
+                <label for="filter_branch_id" class="block text-xs font-bold text-gray-400 mb-1.5">المقر</label>
                 <x-searchable-select
                     name="branch_id"
-                    placeholder="كل الفروع"
-                    search-placeholder="بحث باسم الفرع..."
+                    placeholder="كل المقرات"
+                    search-placeholder="بحث باسم المقر..."
                     :default-value="request('branch_id', '')"
-                    :options="json_encode($branches->map(fn($b) => ['value' => (string)$b->id, 'label' => $b->name])->toArray())" />
+                    :options="$branches->map(fn($b) => ['value' => (string)$b->id, 'label' => $b->name])->values()" />
             </div>
 
             {{-- فلتر النوع --}}
@@ -89,7 +116,7 @@ $sortIcon = fn($field) => request('sort') === $field
             </button>
 
             {{-- زر مسح الفلاتر --}}
-            @if(request()->anyFilled(['q', 'branch_id', 'type', 'level']))
+            @if(request()->anyFilled(['q', 'branch_id', 'center_id', 'type', 'level']))
             <a href="{{ route('circles.index') }}"
                 class="w-full lg:w-auto px-5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-gray-700 font-bold border border-gray-200 rounded-xl text-sm transition-all text-center">
                 مسح الفلاتر
@@ -103,6 +130,12 @@ $sortIcon = fn($field) => request('sort') === $field
             <table class="w-full text-right">
                 <thead class="bg-gray-50 border-b border-gray-100">
                     <tr>
+                        <th class="px-6 py-4 text-sm font-bold text-gray-600 select-none">
+                            <a href="{{ $sortLink('id') }}" class="flex items-center gap-1 hover:text-gray-800">
+                                <span>#</span>
+                                <span class="text-xs text-gray-400">{{ $sortIcon('id') }}</span>
+                            </a>
+                        </th>
                         <th class="px-6 py-4 text-sm font-bold text-gray-600 select-none">
                             <a href="{{ $sortLink('name') }}" class="flex items-center gap-1 hover:text-gray-800">
                                 <span>الاسم</span>
@@ -121,7 +154,18 @@ $sortIcon = fn($field) => request('sort') === $field
                                 <span class="text-xs text-gray-400">{{ $sortIcon('level') }}</span>
                             </a>
                         </th>
-                        <th class="px-6 py-4 text-sm font-bold text-gray-600">الفرع</th>
+                        <th class="px-6 py-4 text-sm font-bold text-gray-600 select-none">
+                            <a href="{{ $sortLink('center') }}" class="flex items-center gap-1 hover:text-gray-800">
+                                <span>المركز</span>
+                                <span class="text-xs text-gray-400">{{ $sortIcon('center') }}</span>
+                            </a>
+                        </th>
+                        <th class="px-6 py-4 text-sm font-bold text-gray-600 select-none">
+                            <a href="{{ $sortLink('branch') }}" class="flex items-center gap-1 hover:text-gray-800">
+                                <span>المقر</span>
+                                <span class="text-xs text-gray-400">{{ $sortIcon('branch') }}</span>
+                            </a>
+                        </th>
                         <th class="px-6 py-4 text-sm font-bold text-gray-600 select-none">
                             <a href="{{ $sortLink('students_count') }}" class="flex items-center gap-1 hover:text-gray-800 justify-center">
                                 <span>الفعلي عدد</span>
@@ -137,6 +181,9 @@ $sortIcon = fn($field) => request('sort') === $field
                 <tbody class="divide-y divide-gray-100">
                     @forelse($circles as $circle)
                     <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 text-gray-400 text-sm font-medium">
+                            {{ $circles->firstItem() + $loop->index }}
+                        </td>
                         <td class="px-6 py-4 font-bold text-gray-800">
                             {{ $circle->name }}
                         </td>
@@ -147,7 +194,7 @@ $sortIcon = fn($field) => request('sort') === $field
                                 جماعي
                             </span>
                             @elseif ($circle->type == 'individual')
-                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-600">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-600">
                                 فردي
                             </span>
                             @endif
@@ -173,8 +220,15 @@ $sortIcon = fn($field) => request('sort') === $field
                             </span>
                         </td>
 
-                        <td class="px-6 py-4 text-gray-600">
-                            {{ $circle->branch?->name ?? '—' }}
+                        <td class="px-6 py-4">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-orange-50 text-orange-600">
+                                {{ $circle->branch?->center?->name ?? '—' }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-3 py-1 rounded-full text-xs font-bold bg-green-50 text-green-600">
+                                {{ $circle->branch?->name ?? '—' }}
+                            </span>
                         </td>
 
                         <td class="px-6 py-4 text-gray-600 text-center">
@@ -235,7 +289,7 @@ $sortIcon = fn($field) => request('sort') === $field
                     @empty
                     <tr>
                         <td colspan="9" class="px-6 py-12 text-center text-gray-500">
-                            @if(request()->anyFilled(['q', 'branch_id', 'type', 'level']))
+                            @if(request()->anyFilled(['q', 'branch_id', 'center_id', 'type', 'level']))
                             لا توجد حلقات تطابق الفلاتر المحددة.
                             @else
                             لا توجد حلقات مسجلة حالياً.

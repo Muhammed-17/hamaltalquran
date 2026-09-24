@@ -16,6 +16,7 @@ class Circle extends Model
 
     protected $fillable = [
         'name',
+        'url',
         'type',
         'level',
         'branch_id',

@@ -77,7 +77,7 @@ class StoreStudentRequest extends FormRequest
             'center_entry_level' => 'required|in:construction,mastery,creativity',
 
             // Step 6 - Construction
-            'placement_evaluation'  => 'required_if:center_entry_level,construction|nullable|string',
+            'placement_evaluation'  => 'nullable|string',
             'current_surah_id'      => 'nullable|integer|exists:surahs,id',
             'new_memorization_plan' => 'required_if:study_system,individual|nullable|string',
             'revision_plan'         => 'required_if:study_system,individual|nullable|string|max:100',
@@ -93,8 +93,9 @@ class StoreStudentRequest extends FormRequest
             'self_evaluation'            => 'required_if:center_entry_level,mastery|nullable|integer|min:1|max:10',
             'tajweed_matn'                => 'required_if:center_entry_level,mastery|nullable|string|max:100',
             'desired_path'                => 'required_if:center_entry_level,mastery|nullable|string|max:255',
-            // ✅ FIX: مطلوب في الفورم لكل من الإتقان والإبداع
-            'preferred_time'              => 'required_if:center_entry_level,mastery,creativity|nullable|string|max:100',
+            // ✅ FIX: تم فصلها لحقلين مستقلين لتفادي تعارض الاسم preferred_time بين مستوى الإتقان والإبداع
+            'preferred_time_mastery'      => 'required_if:center_entry_level,mastery|nullable|string|max:100',
+            'preferred_time_creativity'   => 'required_if:center_entry_level,creativity|nullable|string|max:100',
             'teacher_name'                => 'nullable|string|max:255',
             'itqan_details'               => 'nullable|string',
 
@@ -111,6 +112,10 @@ class StoreStudentRequest extends FormRequest
             'decision'           => 'required|string|max:50',
             'subscription_fees'  => 'required|string|max:50',
             'received_tools'     => 'required|string|max:100',
+
+            // ✅ حقول Modal تأكيد إرسال رسالة الواتساب (مش أعمدة في جدول students، بتتقرأ في الكنترولر فقط)
+            'send_whatsapp_message' => 'nullable|in:0,1',
+            'whatsapp_message_text' => 'nullable|string|max:1000',
         ];
     }
 
@@ -153,7 +158,8 @@ class StoreStudentRequest extends FormRequest
             'self_evaluation.required_if'            => 'تقييم مستوى الحفظ مطلوب لمستوى الإتقان',
             'tajweed_matn.required_if'               => 'متن التجويد مطلوب لمستوى الإتقان',
             'desired_path.required_if'               => 'المسار المرغوب مطلوب لمستوى الإتقان',
-            'preferred_time.required_if'             => 'الوقت المناسب للمجلس مطلوب',
+            'preferred_time_mastery.required_if'     => 'الوقت المناسب للمجلس مطلوب',
+            'preferred_time_creativity.required_if'  => 'الوقت المناسب للمجلس مطلوب',
             'previous_licenses_and_chains.required_if' => 'الإجازات والأسانيد مطلوبة لمستوى الإبداع',
             'desired_narration_and_path.required_if'   => 'الرواية المراد دراستها مطلوبة لمستوى الإبداع',
             'status.required'            => 'حالة الطالب مطلوبة',

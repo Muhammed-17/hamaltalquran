@@ -20,15 +20,21 @@ return new class extends Migration
      * Reverse the migrations.
      */
     public function down(): void
-    {
-        Schema::table('circles', function (Blueprint $table) {
-            
-            // حذف العمود الجديد
-            $table->dropForeign(['supervisor_id']);
-            $table->dropColumn('supervisor_id');
+{
+    Schema::table('circles', function (Blueprint $table) {
+        $foreignKeys = collect(Schema::getForeignKeys('circles'))->pluck('name');
 
-            // إعادة العمود القديم لو رجعت بالـ rollback
+        if ($foreignKeys->contains('circles_supervisor_id_foreign')) {
+            $table->dropForeign(['supervisor_id']);
+        }
+
+        if (Schema::hasColumn('circles', 'supervisor_id')) {
+            $table->dropColumn('supervisor_id');
+        }
+
+        if (!Schema::hasColumn('circles', 'is_active')) {
             $table->boolean('is_active')->default(true);
-        });
-    }
+        }
+    });
+}
 };

@@ -91,7 +91,7 @@ class AttendanceController extends Controller
     }
     // ─────────────────────────────────────────
     // Create attendance form
-    // ─────────────────────────────────────────
+    // ─────────────────────────────────────────   
     public function create(Request $request)
     {
         $this->authorize('create', Attendance::class);
@@ -100,10 +100,16 @@ class AttendanceController extends Controller
         $date   = $request->get('date', Carbon::today()->format('Y-m-d'));
         $selectedTeacherId = $request->get('teacher_id');
 
+        // ✅ لو اللي متختار هو المستخدم الحالي نفسه وهو مشرف/مدير فرع/مدير عام،
+        // معناها عايز يشوف كل الحلقات اللي هو مسؤول عنها (مش بس اللي معلم فيها فعليًا)
+        $isSelfSupervisorSelection = $selectedTeacherId
+            && (int) $selectedTeacherId === $user->id
+            && $user->hasRole(['supervisor', 'manager', 'general_manager']);
+
         $circlesQuery = $this->access->accessibleCircles($user);
 
         // ✅ فلترة الحلقات حسب المعلم (user_id → teacher.user_id)
-        if ($selectedTeacherId) {
+        if ($selectedTeacherId && !$isSelfSupervisorSelection) {
             $circlesQuery->whereHas('teachers.user', function ($q) use ($selectedTeacherId) {
                 $q->where('id', $selectedTeacherId);
             });
@@ -111,7 +117,15 @@ class AttendanceController extends Controller
 
         $circles = $circlesQuery->get();
 
-        $selectedCircleId = $request->get('circle_id', $circles->first()?->id);
+        $selectedCircleId = $request->get('circle_id');
+
+        if (!$selectedCircleId && $circles->isNotEmpty()) {
+            return redirect()->route('attendance.create', array_filter([
+                'date'       => $date,
+                'teacher_id' => $selectedTeacherId,
+                'circle_id'  => $circles->first()->id,
+            ]));
+        }
         $students         = collect();
         $attendanceData   = collect();
 
@@ -127,18 +141,35 @@ class AttendanceController extends Controller
         }
 
         // جلب المعلمين (users with teacher role)
-        $teachersQuery = User::whereHas('roles', function ($q) {
-            $q->where('name', 'teacher');
-        })->orderBy('name');
+        // ✅ لو المستخدم نفسه معلم: يشوف اسمه بس في الفلتر (مفيش داعي يشوف باقي المعلمين)
+        if ($user->hasRole('teacher')) {
+            $teachers = collect([(object) ['id' => $user->id, 'name' => $user->name]]);
+        } else {
+            $teachersQuery = User::whereHas('roles', function ($q) {
+                $q->where('name', 'teacher');
+            })->orderBy('name');
 
-        if (!$user->hasRole(['admin', 'general_manager'])) {
-            $accessibleCircleIds = $this->access->accessibleCircles($user)->pluck('id');
-            $teachersQuery->whereHas('teacher.circles', function ($q) use ($accessibleCircleIds) {
-                $q->whereIn('circles.id', $accessibleCircleIds);
-            });
+            if (!$user->hasRole(['admin', 'general_manager'])) {
+                // ✅ لمدير الفرع: accessibleCircles() ترجع كل حلقات مركزه تلقائيًا
+                // ✅ للمشرف: ترجع فقط حلقاته المُشرف عليها
+                $accessibleCircleIds = $this->access->accessibleCircles($user)->pluck('id');
+                $teachersQuery->whereHas('teacher.circles', function ($q) use ($accessibleCircleIds) {
+                    $q->whereIn('circles.id', $accessibleCircleIds);
+                });
+            }
+
+            $teachers = $teachersQuery->get(['id', 'name']);
+
+            // ✅ إضافة المستخدم الحالي نفسه للقائمة لو مشرف/مدير فرع/مدير عام
+            // عشان يقدر يسجل الحضور باسمه على الحلقات اللي هو مسؤول عنها
+            if (
+                $user->hasRole(['supervisor', 'manager', 'general_manager'])
+                && !$teachers->contains('id', $user->id)
+            ) {
+                $teachers->push((object) ['id' => $user->id, 'name' => $user->name . ' (أنت)']);
+                $teachers = $teachers->sortBy('name')->values();
+            }
         }
-
-        $teachers = $teachersQuery->get(['id', 'name']);
 
         return view('attendance.create', compact(
             'circles',

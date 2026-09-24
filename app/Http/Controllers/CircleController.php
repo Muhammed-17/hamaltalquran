@@ -39,22 +39,42 @@ class CircleController extends Controller
         $query->when($request->type, fn($q, $v) => $q->where('type', $v));
         $query->when($request->level, fn($q, $v) => $q->where('level', $v));
 
-        $allowedSorts = ['name', 'type', 'level', 'students_count'];
+        $allowedSorts = ['id', 'name', 'type', 'level', 'students_count', 'center', 'branch'];
         $sortField    = in_array($request->sort, $allowedSorts) ? $request->sort : 'name';
         $sortDir      = $request->dir === 'desc' ? 'desc' : 'asc';
 
-        if ($sortField === 'students_count') {
-            $query->reorder()->orderBy('students_count', $sortDir);
-        } else {
-            $query->reorder()->orderBy($sortField, $sortDir);
+        switch ($sortField) {
+            case 'students_count':
+                $query->reorder()->orderBy('students_count', $sortDir);
+                break;
+
+            case 'branch':
+                $query->reorder()
+                    ->leftJoin('branches', 'circles.branch_id', '=', 'branches.id')
+                    ->orderBy('branches.name', $sortDir)
+                    ->select('circles.*');
+                break;
+
+            case 'center':
+                $query->reorder()
+                    ->leftJoin('branches', 'circles.branch_id', '=', 'branches.id')
+                    ->leftJoin('centers', 'branches.center_id', '=', 'centers.id')
+                    ->orderBy('centers.name', $sortDir)
+                    ->select('circles.*');
+                break;
+
+            default:
+                $query->reorder()->orderBy('circles.' . $sortField, $sortDir);
+                break;
         }
 
         $circles = $query->paginate(20)->withQueryString();
 
-        $centerIds = $this->access->accessibleCenters($user)->pluck('id');
+        $centers   = $this->access->accessibleCenters($user)->get();
+        $centerIds = $centers->pluck('id');
         $branches  = Branch::with('center')->whereIn('center_id', $centerIds)->orderBy('name')->get();
 
-        return view('circles.index', compact('circles', 'branches'));
+        return view('circles.index', compact('circles', 'branches', 'centers'));
     }
 
     // ─────────────────────────────────────────
@@ -343,7 +363,7 @@ class CircleController extends Controller
             $accessibleTeacherIds = Teacher::pluck('id')->toArray();
         } else {
             $accessibleTeacherIds = $this->access->accessibleTeachers($user)
-                ->where('center_id', $centerId)
+                ->whereHas('user', fn($q) => $q->where('center_id', $centerId))
                 ->pluck('id')
                 ->toArray();
         }

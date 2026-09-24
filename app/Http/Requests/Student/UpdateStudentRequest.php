@@ -88,8 +88,7 @@ class UpdateStudentRequest extends FormRequest
             'study_system'           => 'required_if:center_entry_level,construction|nullable|in:group,individual',
             'new_memorization_plan'  => 'required_if:study_system,individual|nullable|string',
             'revision_plan'          => 'required_if:study_system,individual|nullable|string|max:100',
-            // ✅ FIX: بقت مطلوبة (فقط لمستوى البناء) بناءً على طلبك
-            'placement_evaluation'   => 'required_if:center_entry_level,construction|nullable|string',
+            'placement_evaluation'  => 'nullable|string',
             'old_memorization_plan'  => 'required_if:study_system,individual|nullable|string',
 
             // Step 7 - Mastery
@@ -101,7 +100,8 @@ class UpdateStudentRequest extends FormRequest
             'tajweed_matn'                => 'required_if:center_entry_level,mastery|nullable|string|max:100',
             'memorized_texts'            => 'nullable|string',
             'desired_path'                => 'required_if:center_entry_level,mastery|nullable|string|max:255',
-            'preferred_time'              => 'required_if:center_entry_level,mastery,creativity|nullable|string|max:100',
+            'preferred_time_mastery'      => 'required_if:center_entry_level,mastery|nullable|string|max:100',
+            'preferred_time_creativity'   => 'required_if:center_entry_level,creativity|nullable|string|max:100',
             'teacher_name'                => 'nullable|string|max:255',
             'itqan_details'               => 'nullable|string',
 
@@ -118,6 +118,10 @@ class UpdateStudentRequest extends FormRequest
             'decision'           => 'required|string|max:50',
             'subscription_fees'  => 'required|string|max:50',
             'received_tools'     => 'required|string|max:100',
+
+            // ✅ حقول Modal تأكيد إرسال رسالة الواتساب عند تغيير الحلقة (مش أعمدة في جدول students)
+            'send_whatsapp_message' => 'nullable|in:0,1',
+            'whatsapp_message_text' => 'nullable|string|max:1000',
         ];
     }
 
@@ -147,13 +151,16 @@ class UpdateStudentRequest extends FormRequest
             'self_evaluation.required_if'            => 'تقييم مستوى الحفظ مطلوب لمستوى الإتقان',
             'tajweed_matn.required_if'               => 'متن التجويد مطلوب لمستوى الإتقان',
             'desired_path.required_if'               => 'المسار المرغوب مطلوب لمستوى الإتقان',
-            'preferred_time.required_if'             => 'الوقت المناسب للمجلس مطلوب',
+            'preferred_time_mastery.required_if'     => 'الوقت المناسب للمجلس مطلوب',
+            'preferred_time_creativity.required_if'  => 'الوقت المناسب للمجلس مطلوب',
             'previous_licenses_and_chains.required_if' => 'الإجازات والأسانيد مطلوبة لمستوى الإبداع',
             'desired_narration_and_path.required_if'   => 'الرواية المراد دراستها مطلوبة لمستوى الإبداع',
             'status.required'            => 'حالة الطالب مطلوبة',
             'decision.required'          => 'قرار الإدارة مطلوب',
             'subscription_fees.required' => 'رسوم حجز المقعد مطلوبة',
             'received_tools.required'    => 'يجب تحديد الأدوات والكتب المستلمة',
+            'send_whatsapp_message.in'   => 'قيمة إرسال رسالة الواتساب غير صحيحة',
+            'whatsapp_message_text.max'  => 'نص رسالة الواتساب طويل جدًا (الحد الأقصى 1000 حرف)',
         ];
     }
 }

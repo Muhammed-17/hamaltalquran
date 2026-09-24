@@ -31,7 +31,7 @@ class UpdateTeacherRequest extends FormRequest
             // ✅ اختيارية في التعديل — تُترك فارغة لعدم تغيير كلمة المرور
             'password'         => 'nullable|string|min:6',
             'current_password' => 'nullable|string',
-            'center_id'        => 'required|integer|exists:centers,id',
+            'branch_id'        => 'required|integer|exists:branches,id',
             'roles'            => 'required|array|min:1',
             'roles.*'          => 'required|string|exists:roles,name',
         ];
@@ -45,8 +45,8 @@ class UpdateTeacherRequest extends FormRequest
             'email.email'        => 'صيغة البريد الإلكتروني غير صحيحة',
             'email.unique'       => 'البريد الإلكتروني مستخدم مسبقاً',
             'password.min'       => 'كلمة المرور يجب ألا تقل عن 6 أحرف',
-            'center_id.required' => 'الفرع / المركز مطلوب',
-            'center_id.exists'   => 'الفرع المختار غير موجود',
+            'branch_id.required' => 'المقر مطلوب',
+            'branch_id.exists'   => 'المقر المختار غير موجود',
             'roles.required'     => 'نوع المستخدم مطلوب',
             'roles.min'          => 'يجب اختيار نوع مستخدم واحد على الأقل',
             'roles.*.exists'     => 'الدور المختار غير موجود',

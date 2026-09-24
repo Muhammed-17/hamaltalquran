@@ -43,13 +43,13 @@ $selectedAssistantId = old('assistant_teacher_id', $circle->assistantTeachers->f
         </div>
 
         <div class="space-y-2">
-            <label class="block text-sm font-bold text-gray-700">الفرع <span class="text-red-500">*</span></label>
+            <label class="block text-sm font-bold text-gray-700">المقر <span class="text-red-500">*</span></label>
             <x-searchable-select
                 name="branch_id"
                 :options="$branchOptions"
                 :default-value="old('branch_id', $circle->branch_id ?? '')"
-                placeholder="-- اختر الفرع --"
-                search-placeholder="ابحث عن فرع..." />
+                placeholder="-- اختر المقر --"
+                search-placeholder="ابحث عن مقر..." />
             @error('branch_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
@@ -57,7 +57,7 @@ $selectedAssistantId = old('assistant_teacher_id', $circle->assistantTeachers->f
             <label for="circle_url" class="block text-sm font-bold text-gray-700">رابط الحلقة</label>
             <input id="circle_url" type="url" name="url" autocomplete="off" value="{{ old('url', $circle->url ?? '') }}"
                 class="w-full px-4 py-3 bg-gray-50 border border-gray-200 focus:bg-white focus:ring-2 focus:ring-emerald-100 focus:border-[#0a5c36] rounded-2xl outline-none transition-all"
-                placeholder="https://meet.google.com/xxx-xxxx-xxx" dir="ltr">
+                placeholder="https://chat.whatsapp.com/..." dir="ltr">
             @error('url') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 
@@ -84,7 +84,7 @@ $selectedAssistantId = old('assistant_teacher_id', $circle->assistantTeachers->f
 
         @else
         {{-- ═══════════════════════════════════════════════
-                مدير فرع / مشرف / معلم — الفرع مقيد تلقائياً
+                مدير مقر / مشرف / معلم — المقر مقيد تلقائياً
             ════════════════════════════════════════════════ --}}
 
         {{-- ✅ FIX: branch_id دائماً موجود وصالح --}}
@@ -94,33 +94,33 @@ $selectedAssistantId = old('assistant_teacher_id', $circle->assistantTeachers->f
 
         @if(!$defaultBranchId)
         <div class="md:col-span-2 bg-red-50 border border-red-200 p-4 rounded-2xl text-red-700 font-bold">
-            لا يوجد فرع مرتبط بحسابك.
+            لا يوجد مقر مرتبط بحسابك.
         </div>
         @else
         <input type="hidden" name="branch_id" value="{{ $defaultBranchId }}">
         @endif
 
         @if($isEdit)
-        {{-- تعديل: الاسم/النوع/المستوى مقفولة، الفرع ثابت --}}
+        {{-- تعديل: الاسم/النوع/المستوى مقفولة، المقر ثابت --}}
         <input type="hidden" name="name" value="{{ $circle->name }}">
         <input type="hidden" name="type" value="{{ $circle->type }}">
         <input type="hidden" name="level" value="{{ $circle->level }}">
 
         <div class="md:col-span-2 bg-emerald-50 p-4 rounded-2xl text-emerald-800 font-bold border border-emerald-100">
-            تعديل الحلقة: {{ $circle->name }} — الفرع: {{ $circle->branch?->name ?? '—' }}
+            تعديل الحلقة: {{ $circle->name }} — المقر: {{ $circle->branch?->name ?? '—' }}
         </div>
 
         <div class="space-y-2 md:col-span-2">
             <label for="circle_url_edit" class="block text-sm font-bold text-gray-700">رابط الحلقة</label>
             <input id="circle_url_edit" type="url" name="url" autocomplete="off" value="{{ old('url', $circle->url ?? '') }}"
                 class="w-full px-4 py-3 bg-gray-50 border border-gray-200 focus:bg-white focus:ring-2 focus:ring-emerald-100 focus:border-[#0a5c36] rounded-2xl outline-none transition-all"
-                placeholder="https://meet.google.com/xxx-xxxx-xxx" dir="ltr">
+                placeholder="https://chat.whatsapp.com/..." dir="ltr">
             @error('url') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
         @else
-        {{-- إنشاء: اسم/نوع/مستوى/رابط قابلة للتعبئة، الفرع تلقائي --}}
+        {{-- إنشاء: اسم/نوع/مستوى/رابط قابلة للتعبئة، المقر تلقائي --}}
         <div class="md:col-span-2 bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 text-sm text-blue-700 font-medium">
-            الفرع: {{ $branches->first()?->name ?? '—' }}
+            المقر: {{ $branches->first()?->name ?? '—' }}
         </div>
 
         <div class="space-y-2">
@@ -134,7 +134,7 @@ $selectedAssistantId = old('assistant_teacher_id', $circle->assistantTeachers->f
             <label for="circle_url_mgr" class="block text-sm font-bold text-gray-700">رابط الحلقة</label>
             <input id="circle_url_mgr" type="url" name="url" autocomplete="off" value="{{ old('url') }}"
                 class="w-full px-4 py-3 bg-gray-50 border border-gray-200 focus:bg-white focus:ring-2 focus:ring-emerald-100 focus:border-[#0a5c36] rounded-2xl outline-none transition-all"
-                placeholder="https://meet.google.com/xxx-xxxx-xxx" dir="ltr">
+                placeholder="https://chat.whatsapp.com/..." dir="ltr">
             @error('url') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 

@@ -78,23 +78,44 @@
         </div>
 
         <!-- Filters -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-            <form method="GET" action="{{ route('student-weekly-followups.index-individual') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5"
+            x-data="weeklyFollowupFilters({
+        initialCenter: '{{ request('center_id', '') }}',
+        initialBranch: '{{ request('branch_id', '') }}',
+        initialCircle: '{{ request('circle_id', '') }}',
+        allBranches: {{ Js::from($filters['branches']) }},
+        allCircles: {{ Js::from($filters['circles']) }},
+    })">
+            <form method="GET" action="{{ route('student-weekly-followups.index-individual') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3">
                 @if (auth()->user()->hasAnyRole(['admin', 'general_manager']))
                 <x-searchable-select
                     name="center_id"
                     :options="$filters['centers']->map(fn($c) => ['value' => $c->id, 'label' => $c->name])->values()"
                     placeholder="كل المراكز"
                     searchPlaceholder="ابحث عن مركز..."
-                    :defaultValue="request('center_id', '')" />
+                    :defaultValue="request('center_id', '')"
+                    x-model="selectedCenter" />
                 @endif
 
-                <x-searchable-select
-                    name="circle_id"
-                    :options="$filters['circles']->map(fn($c) => ['value' => $c->id, 'label' => $c->name])->values()"
-                    placeholder="كل الحلقات"
-                    searchPlaceholder="ابحث عن حلقة..."
-                    :defaultValue="request('circle_id', '')" />
+                <div x-effect="updateOptions('branch_id', branchOptions)">
+                    <x-searchable-select
+                        name="branch_id"
+                        :options="$filters['branches']->map(fn($b) => ['value' => $b->id, 'label' => $b->name])->values()"
+                        placeholder="كل المقرات"
+                        searchPlaceholder="ابحث عن مقر..."
+                        :defaultValue="request('branch_id', '')"
+                        x-model="selectedBranch" />
+                </div>
+
+                <div x-effect="updateOptions('circle_id', circleOptions)">
+                    <x-searchable-select
+                        name="circle_id"
+                        :options="$filters['circles']->map(fn($c) => ['value' => $c->id, 'label' => $c->name])->values()"
+                        placeholder="كل الحلقات"
+                        searchPlaceholder="ابحث عن حلقة..."
+                        :defaultValue="request('circle_id', '')"
+                        x-model="selectedCircle" />
+                </div>
 
                 @if (auth()->user()->hasAnyRole(['admin', 'general_manager', 'manager', 'supervisor']))
                 <x-searchable-select
@@ -124,4 +145,91 @@
         'planType' => 'individual',
         ])
     </div>
+    <script>
+        function weeklyFollowupFilters(config) {
+            return {
+                selectedCenter: config.initialCenter,
+                selectedBranch: config.initialBranch,
+                selectedCircle: config.initialCircle,
+                allBranches: config.allBranches,
+                allCircles: config.allCircles,
+
+                get branchOptions() {
+                    let filtered = this.allBranches;
+                    if (this.selectedCenter) {
+                        filtered = filtered.filter(b => String(b.center_id) === String(this.selectedCenter));
+                    }
+                    return filtered.map(b => ({
+                        value: b.id,
+                        label: b.name
+                    }));
+                },
+
+                get circleOptions() {
+                    let filtered = this.allCircles;
+                    if (this.selectedCenter) {
+                        filtered = filtered.filter(c => String(c.center_id) === String(this.selectedCenter));
+                    }
+                    if (this.selectedBranch) {
+                        filtered = filtered.filter(c => String(c.branch_id) === String(this.selectedBranch));
+                    }
+                    return filtered.map(c => ({
+                        value: c.id,
+                        label: c.name
+                    }));
+                },
+
+                init() {
+                    window.addEventListener('searchable-change', (e) => {
+                        if (e.detail.name === 'center_id') {
+                            this.selectedCenter = e.detail.value;
+                            this.validateBranch();
+                            this.validateCircle();
+                        }
+                        if (e.detail.name === 'branch_id') {
+                            this.selectedBranch = e.detail.value;
+                            this.validateCircle();
+                        }
+                        if (e.detail.name === 'circle_id') {
+                            this.selectedCircle = e.detail.value;
+                        }
+                    });
+                },
+
+                validateBranch() {
+                    const valid = this.branchOptions.find(o => String(o.value) === String(this.selectedBranch));
+                    if (this.selectedBranch && !valid) {
+                        this.selectedBranch = '';
+                        window.dispatchEvent(new CustomEvent('clear-selection', {
+                            detail: {
+                                name: 'branch_id'
+                            }
+                        }));
+                    }
+                },
+
+                validateCircle() {
+                    const valid = this.circleOptions.find(o => String(o.value) === String(this.selectedCircle));
+                    if (this.selectedCircle && !valid) {
+                        this.selectedCircle = '';
+                        window.dispatchEvent(new CustomEvent('clear-selection', {
+                            detail: {
+                                name: 'circle_id'
+                            }
+                        }));
+                    }
+                },
+
+                updateOptions(name, options) {
+                    window.dispatchEvent(new CustomEvent('update-options', {
+                        detail: {
+                            name,
+                            options,
+                            preserveSelection: true
+                        },
+                    }));
+                },
+            };
+        }
+    </script>
 </x-layouts.markaz-layout>

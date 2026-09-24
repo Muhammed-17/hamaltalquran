@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Student\UpdateStudentRequest;
 use App\Http\Requests\Student\StoreStudentRequest;
+use App\Http\Requests\Student\UpdateStudentRequest;
 use App\Models\Student;
 use App\Models\Circle;
 use App\Models\User;
@@ -38,7 +38,7 @@ class StudentController extends Controller
         'self_evaluation',
         'tajweed_matn',
         'desired_path',
-        'preferred_time',
+        'preferred_time_mastery',
         'teacher_name',
         'itqan_details',
     ];
@@ -46,7 +46,7 @@ class StudentController extends Controller
     private array $ibdaFields = [
         'previous_licenses_and_chains',
         'desired_narration_and_path',
-        'preferred_time',
+        'preferred_time_creativity',
         'supervisor_name',
         'ibda_details',
     ];
@@ -160,7 +160,11 @@ class StudentController extends Controller
         $circles = $this->access->accessibleCircles($user)->get();
         $centers = $this->access->accessibleCenters($user)->get();
 
-        return view('students.index', compact('students', 'circles', 'centers'));
+        $teachers = auth()->user()->hasRole('admin')
+            ? \App\Models\Teacher::with('user')->get()
+            : collect();
+
+        return view('students.index', compact('students', 'circles', 'centers', 'teachers'));
     }
 
     // ─────────────────────────────────────────
@@ -239,7 +243,6 @@ class StudentController extends Controller
 
             $studentData = array_intersect_key($data, array_flip($this->studentColumns));
 
-
             if (($studentData['status'] ?? '') === 'متوقف') {
                 $studentData['suspended_at'] = now();
             }
@@ -256,9 +259,25 @@ class StudentController extends Controller
 
             $this->syncDetailRecord($student, $data, 'create');
 
-            // ✅ مزامنة حالة ولي الأمر
             $this->syncGuardianStatus($student->fresh()->guardian_id);
 
+            // ✅ بناء رابط واتساب الترحيبي لو الرقم موجود ولو الحلقة عندها رابط مجموعة
+            // ✅ بناء رابط واتساب الترحيبي فقط لو المستخدم وافق على الإرسال من الـ Modal
+            // ✅ وبشرط إن الحلقة المختارة فعليًا عندها رابط مجموعة (متثقش في قيمة نص الرسالة القادمة من الكلاينت لوحدها)
+            $whatsappLink = null;
+            $circleUrl    = optional($student->circle)->url;
+            if (
+                $request->input('send_whatsapp_message') === '1'
+                && $circleUrl
+                && !empty($studentData['whatsapp_number'])
+            ) {
+                $number = preg_replace('/[^0-9]/', '', $studentData['whatsapp_number']);
+                if (str_starts_with($number, '0')) {
+                    $number = '2' . $number;
+                }
+                $text = $request->input('whatsapp_message_text') ?: "تم إضمامكم إلى مركز حملة القرآن يرجى الضغط على الرابط للدخول إلى المجموعة\n" . $circleUrl;
+                $whatsappLink = 'https://wa.me/' . $number . '?text=' . urlencode($text);
+            }
             DB::commit();
 
             $message = $existingUser
@@ -266,15 +285,20 @@ class StudentController extends Controller
                 : 'تم تسجيل الطالب بنجاح ✓';
 
             if ($request->expectsJson() || $request->ajax()) {
+                session()->flash('success', $message);
+
                 return response()->json([
-                    'success'  => true,
-                    'message'  => $message,
-                    'redirect' => route('students.index'),
-                    'student'  => $student->load(['constructionDetail', 'itqanDetail', 'ibdaDetail']),
+                    'success'       => true,
+                    'message'       => $message,
+                    'redirect'      => route('students.index'),
+                    'whatsapp_link' => $whatsappLink,
+                    'student'       => $student->load(['constructionDetail', 'itqanDetail', 'ibdaDetail']),
                 ]);
             }
 
-            return redirect()->route('students.index')->with('success', $message);
+            return redirect()->route('students.index')
+                ->with('success', $message)
+                ->with('whatsapp_link', $whatsappLink);
         } catch (\Exception $e) {
             DB::rollBack();
             $errorMessage = 'حدث خطأ أثناء تسجيل الطالب: ' . $e->getMessage();
@@ -308,6 +332,9 @@ class StudentController extends Controller
             'weeklyFollowups.teacher.user',
             'weeklyFollowups.newMemorizations.toSurah',
             'weeklyFollowups.revisions.toSurah',
+            'competitionParticipants.competition',
+            'competitionParticipants.competitionLevel.level',
+            'competitionParticipants.competitionResult',
         ]);
 
         $totalAttendance = $student->attendances->count();
@@ -356,7 +383,6 @@ class StudentController extends Controller
             'excusedCount'      => $excusedCount,
             'unpaidMonthsCount' => $student->overdue_months_count,
             'paidMonthsCount'   => $student->subscriptions->where('status', 'مدفوع')->count(),
-            'totalPaidAmount'   => $student->subscriptions->where('status', 'مدفوع')->sum('amount'),
             'feeTimeline'       => $feeTimeline->sortByDesc('month'),
             'suspendedPastDebt' => $student->suspended_past_debt,
             'surahTestResults'  => $surahTestResults,
@@ -449,6 +475,18 @@ class StudentController extends Controller
 
             if (!$this->hasStudentChanges($student, $studentData, $data)) {
                 DB::rollBack();
+
+                if ($request->expectsJson() || $request->ajax()) {
+                    session()->flash('info', 'لم يتم إجراء أي تعديل.');
+
+                    return response()->json([
+                        'success'       => true,
+                        'message'       => 'لم يتم إجراء أي تعديل.',
+                        'redirect'      => route('students.index'),
+                        'whatsapp_link' => null,
+                    ]);
+                }
+
                 return redirect()->route('students.index')->with('info', 'لم يتم إجراء أي تعديل.');
             }
 
@@ -458,7 +496,8 @@ class StudentController extends Controller
             $student->update($studentData);
 
             // ✅ تسجيل انتقال الحلقة في جدول التاريخ إذا تغيّرت فعليًا
-            if (isset($studentData['circle_id']) && $studentData['circle_id'] != $oldCircleId) {
+            $circleChanged = isset($studentData['circle_id']) && $studentData['circle_id'] != $oldCircleId;
+            if ($circleChanged) {
                 \App\Models\CircleAssignmentHistory::openNewFor($student->id, $studentData['circle_id']);
             }
 
@@ -474,16 +513,56 @@ class StudentController extends Controller
             // ✅ مزامنة حالة ولي الأمر
             $this->syncGuardianStatus($student->fresh()->guardian_id);
 
+            // ✅ بناء رابط واتساب الترحيبي فقط لو: المستخدم وافق من الـ Modal + الحلقة اتغيرت فعليًا
+            // + الحلقة الجديدة عندها رابط مجموعة (تحقق من السيرفر، مش من الكلاينت فقط)
+            $whatsappLink = null;
+            $newCircleUrl = optional($student->fresh()->circle)->url;
+
+            if (
+                $request->input('send_whatsapp_message') === '1'
+                && $circleChanged
+                && $newCircleUrl
+                && !empty($studentData['whatsapp_number'] ?? $student->whatsapp_number)
+            ) {
+                $whatsappNumber = $studentData['whatsapp_number'] ?? $student->whatsapp_number;
+                $number = preg_replace('/[^0-9]/', '', $whatsappNumber);
+                if (str_starts_with($number, '0')) {
+                    $number = '2' . $number;
+                }
+                $text = $request->input('whatsapp_message_text')
+                    ?: "تم إضمامكم إلى مركز حملة القرآن يرجى الضغط على الرابط للدخول إلى المجموعة\n" . $newCircleUrl;
+                $whatsappLink = 'https://wa.me/' . $number . '?text=' . urlencode($text);
+            }
+
             DB::commit();
 
             $message = $existingUser
                 ? 'تم التحديث وربط ولي الأمر الموجود مسبقاً ✓'
                 : 'تم تحديث بيانات الطالب بنجاح ✓';
 
-            return redirect()->route('students.index')->with('success', $message);
+            if ($request->expectsJson() || $request->ajax()) {
+                session()->flash('success', $message);
+
+                return response()->json([
+                    'success'       => true,
+                    'message'       => $message,
+                    'redirect'      => route('students.index'),
+                    'whatsapp_link' => $whatsappLink,
+                ]);
+            }
+
+            return redirect()->route('students.index')
+                ->with('success', $message)
+                ->with('whatsapp_link', $whatsappLink);
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'حدث خطأ: ' . $e->getMessage())->withInput();
+            $errorMessage = 'حدث خطأ: ' . $e->getMessage();
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => $errorMessage], 500);
+            }
+
+            return redirect()->back()->with('error', $errorMessage)->withInput();
         }
     }
     // ─────────────────────────────────────────
@@ -613,6 +692,16 @@ class StudentController extends Controller
         $relation = $config['relation'];
         $fields   = array_intersect_key($data, array_flip($config['fields']));
 
+        // ✅ إعادة تسمية الحقل المخصص لكل مستوى إلى اسم العمود الفعلي preferred_time في الجدول
+        if ($entryLevel === 'mastery' && array_key_exists('preferred_time_mastery', $fields)) {
+            $fields['preferred_time'] = $fields['preferred_time_mastery'];
+            unset($fields['preferred_time_mastery']);
+        }
+        if ($entryLevel === 'creativity' && array_key_exists('preferred_time_creativity', $fields)) {
+            $fields['preferred_time'] = $fields['preferred_time_creativity'];
+            unset($fields['preferred_time_creativity']);
+        }
+
         if ($entryLevel === 'construction') {
             $studySystem = $fields['study_system'] ?? 'group';
             $circleId    = $fields['circle_id'] ?? null;
@@ -713,7 +802,12 @@ class StudentController extends Controller
             foreach ($fields as $field) {
                 if (!array_key_exists($field, $rawData)) continue;
 
-                $current  = $detail?->{$field};
+                // ✅ preferred_time_mastery/creativity يقابلان عمود preferred_time الفعلي في الجدول
+                $columnField = in_array($field, ['preferred_time_mastery', 'preferred_time_creativity'])
+                    ? 'preferred_time'
+                    : $field;
+
+                $current  = $detail?->{$columnField};
                 $incoming = $rawData[$field];
 
                 if ((string) ($current ?? '') !== (string) ($incoming ?? '')) {

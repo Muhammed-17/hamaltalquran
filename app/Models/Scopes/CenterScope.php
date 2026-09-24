@@ -50,7 +50,7 @@ class CenterScope implements Scope
                 match (true) {
                     $user->hasRole('manager')    => $this->applyManagerScope($q, $table, $teacher, $user, $access),
                     $user->hasRole('teacher')    => $this->applyTeacherScope($q, $table, $user, $teacher, $access),
-                    $user->hasRole('supervisor') => $this->applySupervisorTeachersScope($q, $table, $teacher),
+                    $user->hasRole('supervisor') => $this->applySupervisorTeachersScope($q, $table, $teacher, $access),   // ← أضف $access هنا
                     default                      => $q->whereRaw('1 = 0'),
                 };
             });
@@ -68,13 +68,15 @@ class CenterScope implements Scope
     // Refactored: تصحيح كامل — استقبال User وتمريره لـ managerCircleIds()، وتطبيق الفلترة فعليًا
     private function applyManagerScope(Builder $builder, string $table, Teacher $teacher, User $user, UserAccessService $access): void
     {
-        if (is_null($teacher->center_id)) {
+        $centerId = $access->teacherCenterId($teacher);   // ← جديد
+
+        if (is_null($centerId)) {
             $builder->whereRaw('1 = 0');
             return;
         }
 
         if ($table === 'teachers' || $table === 'educational_lessons') {
-            $builder->where("{$table}.center_id", $teacher->center_id);
+            $builder->whereHas('branch', fn($q) => $q->where('center_id', $centerId)); 
             return;
         }
 
@@ -88,15 +90,17 @@ class CenterScope implements Scope
         $access->applyScopeByCircleIds($builder, $table, $managerCircleIds);
     }
 
-    private function applySupervisorTeachersScope(Builder $builder, string $table, Teacher $teacher): void
+    private function applySupervisorTeachersScope(Builder $builder, string $table, Teacher $teacher, UserAccessService $access): void   // ← لاحظ إضافة $access كباراميتر
     {
-        if (is_null($teacher->center_id)) {
+        $centerId = $access->teacherCenterId($teacher);   // ← جديد
+
+        if (is_null($centerId)) {
             $builder->whereRaw('1 = 0');
             return;
         }
 
         if ($table === 'teachers' || $table === 'educational_lessons') {
-            $builder->where("{$table}.center_id", $teacher->center_id);
+            $builder->whereHas('branch', fn($q) => $q->where('center_id', $centerId));   
             return;
         }
 
@@ -106,15 +110,16 @@ class CenterScope implements Scope
     private function applyTeacherScope(Builder $builder, string $table, User $user, Teacher $teacher, UserAccessService $access): void
     {
         if ($table === 'teachers' || $table === 'educational_lessons') {
-            if (is_null($teacher->center_id)) {
+            $centerId = $access->teacherCenterId($teacher);
+
+            if (is_null($centerId)) {
                 $builder->whereRaw('1 = 0');
                 return;
             }
-            $builder->where("{$table}.center_id", $teacher->center_id);
+            $builder->whereHas('branch', fn($q) => $q->where('center_id', $centerId));   
             return;
         }
-
-        $circleIds = $access->teacherCircleIdsWithinCenter($user);
+        $circleIds = $access->teacherCircleIds($user);
 
         if ($circleIds->isEmpty()) {
             $builder->whereRaw('1 = 0');

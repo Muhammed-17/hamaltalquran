@@ -548,6 +548,10 @@ class StudentWeeklyFollowupController extends Controller
             ->selectRaw('COUNT(*) as students_count')
             ->with(['circle', 'teacher.user'])
             ->when($request->filled('center_id'), fn($q) => $q->where('center_id', $request->center_id))
+            ->when($request->filled('branch_id'), fn($q) => $q->whereHas(       // ← جديد
+                'circle',
+                fn($cq) => $cq->where('branch_id', $request->branch_id)
+            ))
             ->when($request->filled('circle_id'), fn($q) => $q->where('circle_id', $request->circle_id))
             ->when($request->filled('teacher_id'), fn($q) => $q->where('teacher_id', $request->teacher_id))
             ->when($request->filled('week_start'), fn($q) => $q->where('week_start', '>=', $request->week_start))
@@ -567,6 +571,10 @@ class StudentWeeklyFollowupController extends Controller
                 'newMemorizations.toSurah',
             ])
             ->when($request->filled('center_id'), fn($q) => $q->where('center_id', $request->center_id))
+            ->when($request->filled('branch_id'), fn($q) => $q->whereHas(       // ← جديد
+                'circle',
+                fn($cq) => $cq->where('branch_id', $request->branch_id)
+            ))
             ->when($request->filled('circle_id'), fn($q) => $q->where('circle_id', $request->circle_id))
             ->when($request->filled('student_id'), fn($q) => $q->where('student_id', $request->student_id))
             ->when($request->filled('teacher_id'), fn($q) => $q->where('teacher_id', $request->teacher_id))
@@ -591,13 +599,23 @@ class StudentWeeklyFollowupController extends Controller
 
     private function buildFilterData(): array
     {
-        $user = auth()->user();
+        $user   = auth()->user();
         $access = app(\App\Services\UserAccessService::class);
 
+        // ✅ الحلقات مع branch_id/center_id عشان الفلترة الفورية في المتصفح
+        $circles = $access->accessibleCircles($user)->with('branch')->get()
+            ->map(fn($c) => (object) [
+                'id'        => $c->id,
+                'name'      => $c->name,
+                'branch_id' => $c->branch_id,
+                'center_id' => $c->branch?->center_id,
+            ]);
+
         return [
-            'circles'  => $access->accessibleCircles($user)->get(),
+            'circles'  => $circles,
             'teachers' => $access->accessibleTeachers($user)->get(),
             'centers'  => $access->accessibleCenters($user)->get(),
+            'branches' => $access->accessibleBranches($user)->get(['id', 'name', 'center_id']),   // ← أضف center_id هنا
         ];
     }
 

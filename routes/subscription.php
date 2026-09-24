@@ -3,8 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SubscriptionPriceController;
+use App\Http\Controllers\SubscriptionTransferController;
 
-Route::middleware(['auth', 'verified','permission:view subscriptions'])->group(function () {
+Route::middleware(['auth', 'verified', 'permission:view subscriptions'])->group(function () {
 
     Route::get('subscriptions/filter-options', [SubscriptionController::class, 'getFilterOptions'])
         ->name('subscriptions.filter-options');
@@ -21,42 +22,50 @@ Route::middleware(['auth', 'verified','permission:view subscriptions'])->group(f
             ->name('subscriptions.details_unpaid');
     });
 
-    // ─── إرسال تنبيه اشتراك متأخر (بدون قيد صلاحية — مقصود) ────────
-    Route::post('/subscriptions/{student}/notify-unpaid', [SubscriptionController::class, 'notifyUnpaid'])
-        ->name('subscriptions.notify-unpaid');
-
-    // ─── إضافة اشتراك ─────────────────────────────────────────────
-    Route::middleware('permission:create subscriptions')->group(function () {
-        Route::get('/subscriptions/create', [SubscriptionController::class, 'create'])
-            ->name('subscriptions.create');
-        Route::post('/subscriptions', [SubscriptionController::class, 'store'])
-            ->name('subscriptions.store');
+        // ─── تحويل الأموال (نقل اشتراكات محصَّلة بين المعلمين) ──────────
+    Route::middleware('permission:transfer subscriptions')->prefix('subscription-transfers')->name('subscription-transfers.')->group(function () {
+        Route::get('/', [SubscriptionTransferController::class, 'index'])->name('index');
+        Route::get('/search', [SubscriptionTransferController::class, 'search'])->name('search');
+        Route::post('/transfer', [SubscriptionTransferController::class, 'transfer'])->name('transfer');
+        Route::get('/history', [SubscriptionTransferController::class, 'history'])->name('history');
     });
+});
 
-    // ─── تعديل اشتراك ─────────────────────────────────────────────
-    Route::middleware('permission:edit subscriptions')->group(function () {
-        Route::get('/subscriptions/{subscription}/edit', [SubscriptionController::class, 'edit'])
-            ->name('subscriptions.edit');
-        Route::put('/subscriptions/{subscription}', [SubscriptionController::class, 'update'])
-            ->name('subscriptions.update');
-    });
+// ─── إرسال تنبيه اشتراك متأخر (بدون قيد صلاحية — مقصود) ────────
+Route::post('/subscriptions/{student}/notify-unpaid', [SubscriptionController::class, 'notifyUnpaid'])
+    ->name('subscriptions.notify-unpaid');
 
-    // ─── حذف اشتراك ───────────────────────────────────────────────
-    Route::middleware('permission:delete subscriptions')->group(function () {
-        Route::delete('/subscriptions/{subscription}', [SubscriptionController::class, 'destroy'])
-            ->name('subscriptions.destroy');
-    });
+// ─── إضافة اشتراك ─────────────────────────────────────────────
+Route::middleware('permission:create subscriptions')->group(function () {
+    Route::get('/subscriptions/create', [SubscriptionController::class, 'create'])
+        ->name('subscriptions.create');
+    Route::post('/subscriptions', [SubscriptionController::class, 'store'])
+        ->name('subscriptions.store');
+});
 
-    // ─── أسعار الاشتراكات ─────────────────────────────────────────
-    Route::middleware('permission:view subscription prices')->group(function () {
-        Route::get('/subscription-prices', [SubscriptionPriceController::class, 'index'])
-            ->name('subscription-prices.index');
+// ─── تعديل اشتراك ─────────────────────────────────────────────
+Route::middleware('permission:edit subscriptions')->group(function () {
+    Route::get('/subscriptions/{subscription}/edit', [SubscriptionController::class, 'edit'])
+        ->name('subscriptions.edit');
+    Route::put('/subscriptions/{subscription}', [SubscriptionController::class, 'update'])
+        ->name('subscriptions.update');
+});
 
-        Route::middleware('permission:manage subscription prices')->group(function () {
-            Route::post('/subscription-prices', [SubscriptionPriceController::class, 'store'])
-                ->name('subscription-prices.store');
-            Route::delete('/subscription-prices/{subscriptionPrice}', [SubscriptionPriceController::class, 'destroy'])
-                ->name('subscription-prices.destroy');
-        });
+// ─── حذف اشتراك ───────────────────────────────────────────────
+Route::middleware('permission:delete subscriptions')->group(function () {
+    Route::delete('/subscriptions/{subscription}', [SubscriptionController::class, 'destroy'])
+        ->name('subscriptions.destroy');
+});
+
+// ─── أسعار الاشتراكات ─────────────────────────────────────────
+Route::middleware('permission:view subscription prices')->group(function () {
+    Route::get('/subscription-prices', [SubscriptionPriceController::class, 'index'])
+        ->name('subscription-prices.index');
+
+    Route::middleware('permission:manage subscription prices')->group(function () {
+        Route::post('/subscription-prices', [SubscriptionPriceController::class, 'store'])
+            ->name('subscription-prices.store');
+        Route::delete('/subscription-prices/{subscriptionPrice}', [SubscriptionPriceController::class, 'destroy'])
+            ->name('subscription-prices.destroy');
     });
 });

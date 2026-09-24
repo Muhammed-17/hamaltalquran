@@ -1,6 +1,6 @@
 @php
 $formattedMonth = \Carbon\Carbon::createFromFormat('Y-m', $statsMonth)->translatedFormat('F Y');
-$columnsCount = 11;
+$columnsCount = 12;
 @endphp
 <x-layouts.markaz-layout>
     <div class="space-y-6">
@@ -29,6 +29,17 @@ $columnsCount = 11;
                     </svg>
                     الطلاب المتعثرين
                 </a>
+
+                {{-- ✅ زر تحويل الأموال --}}
+                @can('transfer subscriptions')
+                <a href="{{ route('subscription-transfers.index') }}"
+                    class="w-full md:w-auto px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all border border-white/20 active:scale-95">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m4 6H4m0 0l4 4m-4-4l4-4" />
+                    </svg>
+                    تحويل الأموال
+                </a>
+                @endcan
             </div>
             @endcan
         </div>
@@ -88,19 +99,36 @@ $columnsCount = 11;
                             class="w-full rounded-xl border-gray-200 focus:border-[#0b3d2c] focus:ring-[#0b3d2c] text-sm h-11">
                     </div>
 
-                    {{-- فلتر الفرع --}}
+                    {{-- فلتر الفرع (المركز) --}}
                     @if(auth()->user()->hasAnyRole(['admin', 'general_manager']))
                     @if($centers->count() > 0)
                     <div class="w-full">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">الفرع</label>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">المركز</label>
                         <x-searchable-select
                             name="center_id"
-                            placeholder="جميع الفروع"
-                            search-placeholder="ابحث عن فرع..."
-                            default-option="جميع الفروع"
+                            placeholder="جميع المراكز"
+                            search-placeholder="ابحث عن مركز..."
+                            default-option="جميع المراكز"
                             default-value="{{ request('center_id', $selectedCenterId ?? '') }}"
-                            :options="$centers->map(fn($c) => ['value' => $c->id, 'label' => $c->name])->values()->toJson()"
+                            :options="$centers->map(fn($c) => ['value' => $c->id, 'label' => $c->name])->values()"
                             x-model="selectedCenter" />
+                    </div>
+                    @endif
+                    @endif
+
+                    {{-- ✅ فلتر المقر (المركز المركزي) --}}
+                    @if(auth()->user()->hasAnyRole(['admin', 'general_manager', 'manager']))
+                    @if($branches->count() > 0)
+                    <div class="w-full">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">المقر</label>
+                        <x-searchable-select
+                            name="branch_id"
+                            placeholder="جميع المقرات"
+                            search-placeholder="ابحث عن مقر..."
+                            default-option="جميع المقرات"
+                            default-value="{{ request('branch_id', $selectedBranchId ?? '') }}"
+                            :options="$branches->map(fn($b) => ['value' => $b->id, 'label' => $b->name])->values()"
+                            x-model="selectedBranch" />
                     </div>
                     @endif
                     @endif
@@ -114,7 +142,7 @@ $columnsCount = 11;
                             search-placeholder="ابحث عن حلقة..."
                             default-option="جميع الحلقات"
                             default-value="{{ request('circle_id', $selectedCircleId ?? '') }}"
-                            :options="$circles->map(fn($c) => ['value' => $c->id, 'label' => $c->name])->values()->toJson()" />
+                            :options="$circles->map(fn($c) => ['value' => $c->id, 'label' => $c->name])->values()" />
                     </div>
 
                     {{-- فلتر الحالة --}}
@@ -138,7 +166,7 @@ $columnsCount = 11;
                             search-placeholder="ابحث عن معلم..."
                             default-option="جميع المعلمين"
                             default-value="{{ request('teacher_id', $selectedTeacherId ?? '') }}"
-                            :options="$teachers->map(fn($t) => ['value' => $t->id, 'label' => $t->name])->values()->toJson()" />
+                            :options="$teachers->map(fn($t) => ['value' => $t->id, 'label' => $t->name])->values()" />
                     </div>
                     @endif
 
@@ -152,7 +180,7 @@ $columnsCount = 11;
                             search-placeholder="ابحث عن محصِّل..."
                             default-option="جميع المحصِّلين"
                             default-value="{{ request('collected_by_id', $selectedCollectedById ?? '') }}"
-                            :options="$collectedByUsers->map(fn($u) => ['value' => $u->id, 'label' => $u->name])->values()->toJson()" />
+                            :options="$collectedByUsers->map(fn($u) => ['value' => $u->id, 'label' => $u->name])->values()" />
                     </div>
                     @endif
 
@@ -445,6 +473,10 @@ $columnsCount = 11;
                                 onclick="window.location='{{ $sortLink('center') }}'">
                                 <div class="flex items-center justify-end gap-1">المركز {!! $sortIcon('center') !!}</div>
                             </th>
+                            <th class="{{ $thBase }} {{ $currentSort === 'branch' ? $thActive : $thMuted }}"
+                                onclick="window.location='{{ $sortLink('branch') }}'">
+                                <div class="flex items-center justify-end gap-1">المقر {!! $sortIcon('branch') !!}</div>
+                            </th>
                             <th class="{{ $thBase }} {{ $currentSort === 'month' ? $thActive : $thMuted }}"
                                 onclick="window.location='{{ $sortLink('month') }}'">
                                 <div class="flex items-center justify-end gap-1">الشهر {!! $sortIcon('month') !!}</div>
@@ -491,6 +523,7 @@ $columnsCount = 11;
                             <td class="px-6 py-4 text-gray-600">{{ $subscription->circle->name ?? '—' }}</td>
                             {{-- ✅ عمود المركز في صف البيانات - أضفه هنا --}}
                             <td class="px-6 py-4 text-gray-600">{{ $subscription->circle->center->name ?? '—' }}</td>
+                            <td class="px-6 py-4 text-gray-600">{{ $subscription->circle->branch->name ?? '—' }}</td>
                             <td class="px-6 py-4 text-gray-600">
                                 {{ \Carbon\Carbon::parse($subscription->month)->translatedFormat('F Y') }}
                             </td>
@@ -696,7 +729,7 @@ $columnsCount = 11;
             }, 500);
         }
 
-        @if(auth()->user()->can('view subscriptions chart'))
+        @can('view subscriptions chart')
         @if($monthlyRevenue->isNotEmpty())
             (function() {
                 const raw = @json($monthlyRevenue);
@@ -870,29 +903,38 @@ $columnsCount = 11;
                 });
             })();
         @endif
-        @endif
+        @endcan
 
         function subscriptionFilters() {
             return {
                 selectedCenter: '{{ request("center_id",       $selectedCenterId      ?? "") }}',
+                selectedBranch: '{{ request("branch_id",       $selectedBranchId      ?? "") }}', // ✅ جديد
                 selectedCircle: '{{ request("circle_id",       $selectedCircleId      ?? "") }}',
                 selectedTeacher: '{{ request("teacher_id",      $selectedTeacherId     ?? "") }}',
-                selectedCollectedBy: '{{ request("collected_by_id", $selectedCollectedById ?? "") }}', // ✅ جديد
+                selectedCollectedBy: '{{ request("collected_by_id", $selectedCollectedById ?? "") }}',
 
                 centers: @json($centers),
+                branches: @json($branches),
                 circles: @json($circles),
                 teachers: @json($teachers),
-                collectedByUsers: @json($collectedByUsers), // ✅ جديد
+                collectedByUsers: @json($collectedByUsers),
 
                 filterUrl: '{{ route("subscriptions.filter-options") }}',
 
                 init() {
-                    // ✅ جديد: راقب تغيّر الفرع القادم من x-model على searchable-select
                     this.$watch('selectedCenter', () => {
                         this.onCenterChange();
                     });
 
+                    // ✅ جديد: راقب تغيّر المقر
+                    this.$watch('selectedBranch', () => {
+                        this.onBranchChange();
+                    });
+
                     window.addEventListener('searchable-change', (e) => {
+                        if (e.detail.name === 'branch_id') {
+                            this.selectedBranch = e.detail.value;
+                        }
                         if (e.detail.name === 'circle_id') {
                             this.selectedCircle = e.detail.value;
                             this.onCircleChange();
@@ -906,7 +948,7 @@ $columnsCount = 11;
                         }
                     });
 
-                    if (this.selectedCenter || this.selectedCircle || this.selectedTeacher || this.selectedCollectedBy) {
+                    if (this.selectedCenter || this.selectedBranch || this.selectedCircle || this.selectedTeacher || this.selectedCollectedBy) {
                         this.fetchOptions();
                     }
                 },
@@ -914,6 +956,7 @@ $columnsCount = 11;
                 async fetchOptions() {
                     const params = new URLSearchParams();
                     if (this.selectedCenter) params.append('center_id', this.selectedCenter);
+                    if (this.selectedBranch) params.append('branch_id', this.selectedBranch); // ✅ جديد
                     if (this.selectedCircle) params.append('circle_id', this.selectedCircle);
                     if (this.selectedTeacher) params.append('teacher_id', this.selectedTeacher);
 
@@ -922,10 +965,21 @@ $columnsCount = 11;
                         const data = await res.json();
 
                         this.centers = data.centers;
+                        this.branches = data.branches; // ✅ جديد
                         this.circles = data.circles;
                         this.teachers = data.teachers;
-                        this.collectedByUsers = data.collected_by; // ✅ جديد
+                        this.collectedByUsers = data.collected_by;
 
+                        // ✅ جديد
+                        window.dispatchEvent(new CustomEvent('update-options', {
+                            detail: {
+                                name: 'branch_id',
+                                options: data.branches.map(b => ({
+                                    value: b.id,
+                                    label: b.name
+                                }))
+                            }
+                        }));
                         window.dispatchEvent(new CustomEvent('update-options', {
                             detail: {
                                 name: 'circle_id',
@@ -944,7 +998,6 @@ $columnsCount = 11;
                                 }))
                             }
                         }));
-                        // ✅ جديد
                         window.dispatchEvent(new CustomEvent('update-options', {
                             detail: {
                                 name: 'collected_by_id',
@@ -956,9 +1009,10 @@ $columnsCount = 11;
                         }));
 
                         if (!data.centers.find(c => c.id == this.selectedCenter)) this.selectedCenter = '';
+                        // ✅ جديد — لو المقر المختار مش في القائمة الجديدة يُصفَّر
+                        if (!data.branches.find(b => b.id == this.selectedBranch)) this.selectedBranch = '';
                         if (!data.circles.find(c => c.id == this.selectedCircle)) this.selectedCircle = '';
                         if (!data.teachers.find(t => t.id == this.selectedTeacher)) this.selectedTeacher = '';
-                        // ✅ جديد — لو المحصِّل المختار مش في القائمة الجديدة يُصفَّر
                         if (!data.collected_by.find(u => u.id == this.selectedCollectedBy)) this.selectedCollectedBy = '';
 
                     } catch (e) {
@@ -967,14 +1021,22 @@ $columnsCount = 11;
                 },
 
                 onCenterChange() {
+                    this.selectedBranch = ''; // ✅ جديد
                     this.selectedCircle = '';
                     this.selectedTeacher = '';
-                    this.selectedCollectedBy = ''; // ✅ جديد
+                    this.selectedCollectedBy = '';
+                    this.fetchOptions();
+                },
+                // ✅ جديد
+                onBranchChange() {
+                    this.selectedCircle = '';
+                    this.selectedTeacher = '';
+                    this.selectedCollectedBy = '';
                     this.fetchOptions();
                 },
                 onCircleChange() {
                     this.selectedTeacher = '';
-                    this.selectedCollectedBy = ''; // ✅ جديد
+                    this.selectedCollectedBy = '';
                     this.fetchOptions();
                 },
                 onTeacherChange() {
@@ -983,5 +1045,17 @@ $columnsCount = 11;
                 },
             }
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const params = new URLSearchParams(window.location.search);
+            const transferMessage = params.get('transfer_success');
+            if (transferMessage) {
+                showSuccess(transferMessage);
+                // ✅ تنظيف الـ URL من الـ query param بعد العرض، عشان الرسالة متتكررش لو المستخدم عمل refresh
+                params.delete('transfer_success');
+                const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+                window.history.replaceState({}, '', newUrl);
+            }
+        });
     </script>
 </x-layouts.markaz-layout>

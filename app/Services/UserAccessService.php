@@ -30,6 +30,28 @@ class UserAccessService
         return $this->teacherCache[$user->id];
     }
 
+
+    public function teacherCenterId(?Teacher $teacher): ?int
+    {
+        return $teacher?->branch?->center_id;
+    }
+
+    public function accessibleBranches(User $user): Builder
+    {
+        if ($user->hasRole(['admin', 'general_manager'])) {
+            return \App\Models\Branch::orderBy('name');
+        }
+
+        $teacher = $this->teacher($user);
+        $centerId = $this->teacherCenterId($teacher);
+
+        if ($centerId) {
+            return \App\Models\Branch::where('center_id', $centerId)->orderBy('name');
+        }
+
+        return \App\Models\Branch::whereRaw('1=0');
+    }
+
     private function rememberCircleIds(string $cacheKey, \Closure $resolver): Collection
     {
         if (!isset($this->circleIdsCache[$cacheKey])) {
@@ -49,25 +71,27 @@ class UserAccessService
         return $this->rememberCircleIds(
             "teacher_{$teacher->id}",
             fn() => $teacher->circles()
-                ->withoutGlobalScope(CenterScope::class)   // ← أضف
+                ->withoutGlobalScope(CenterScope::class)
                 ->wherePivotIn('role', ['main', 'assistant'])
                 ->pluck('circles.id')
         );
     }
 
+    // بعد (رجّعتها لمنطقها الأصلي: حلقات المعلم نفسه ضمن مركزه)
     public function teacherCircleIdsWithinCenter(User $user): Collection
     {
         $teacher = $this->teacher($user);
-        if (!$teacher || !$teacher->center_id) {
+        $centerId = $this->teacherCenterId($teacher);
+        if (!$teacher || !$centerId) {
             return collect();
         }
 
         return $this->rememberCircleIds(
             "teacher_center_{$teacher->id}",
             fn() => $teacher->circles()
-                ->withoutGlobalScope(CenterScope::class)   // ← أضف
+                ->withoutGlobalScope(CenterScope::class)
                 ->wherePivotIn('role', ['main', 'assistant'])
-                ->whereHas('branch', fn($q) => $q->where('center_id', $teacher->center_id))
+                ->whereHas('branch', fn($q) => $q->where('center_id', $centerId))
                 ->pluck('circles.id')
         );
     }
@@ -84,23 +108,28 @@ class UserAccessService
 
         return $this->rememberCircleIds(
             "supervisor_{$teacher->id}",
-            fn() => Circle::withoutGlobalScope(CenterScope::class)   // ← أضف السطر ده
-                ->whereHas('branch.supervisors', fn($q) => $q->where('teachers.id', $teacher->id))
+            fn() => Circle::withoutGlobalScope(CenterScope::class)
+                ->whereHas('branch.supervisors', function ($q) use ($teacher) {
+                    $q->withoutGlobalScope(CenterScope::class)   // ← الإضافة الحاسمة
+                        ->where('teachers.id', $teacher->id);
+                })
                 ->pluck('id')
         );
     }
 
+    // بعد
     public function managerCircleIds(User $user): Collection
     {
         $teacher = $this->teacher($user);
-        if (!$teacher || !$teacher->center_id) {
+        $centerId = $this->teacherCenterId($teacher);
+        if (!$teacher || !$centerId) {
             return collect();
         }
 
         return $this->rememberCircleIds(
-            "manager_{$teacher->center_id}",
-            fn() => Circle::withoutGlobalScope(CenterScope::class)   // ← أضف السطر ده
-                ->whereHas('branch', fn($q) => $q->where('center_id', $teacher->center_id))
+            "manager_{$centerId}",
+            fn() => Circle::withoutGlobalScope(CenterScope::class)
+                ->whereHas('branch', fn($q) => $q->where('center_id', $centerId))
                 ->pluck('id')
         );
     }
@@ -119,7 +148,7 @@ class UserAccessService
         return $this->rememberCircleIds(
             "circle_types_{$teacher->id}",
             fn() => $teacher->circles()
-                ->withoutGlobalScope(CenterScope::class)   // ← أضف
+                ->withoutGlobalScope(CenterScope::class)
                 ->wherePivotIn('role', ['main', 'assistant', 'supervisor'])
                 ->distinct()
                 ->pluck('circles.type')
@@ -129,11 +158,11 @@ class UserAccessService
     public function accessibleCircles(User $user): Builder
     {
         if ($user->hasRole(['admin', 'general_manager'])) {
-            return Circle::withoutGlobalScope(CenterScope::class)->orderBy('name');   // ← أضف
+            return Circle::withoutGlobalScope(CenterScope::class)->orderBy('name');
         }
 
         if ($user->hasRole('guardian')) {
-            return Circle::withoutGlobalScope(CenterScope::class)->whereIn(          // ← أضف
+            return Circle::withoutGlobalScope(CenterScope::class)->whereIn(
                 'id',
                 Student::where('guardian_id', $user->id)
                     ->whereNotNull('circle_id')
@@ -143,13 +172,14 @@ class UserAccessService
         }
 
         $teacher = $this->teacher($user);
-        if (!$teacher || !$teacher->center_id) {
-            return Circle::withoutGlobalScope(CenterScope::class)->whereRaw('1=0');   // ← أضف
+        $centerId = $this->teacherCenterId($teacher);
+        if (!$teacher || !$centerId) {
+            return Circle::withoutGlobalScope(CenterScope::class)->whereRaw('1=0');
         }
 
         if ($user->hasRole('manager')) {
-            return Circle::withoutGlobalScope(CenterScope::class)                     // ← أضف
-                ->whereHas('branch', fn($q) => $q->where('center_id', $teacher->center_id))
+            return Circle::withoutGlobalScope(CenterScope::class)
+                ->whereHas('branch', fn($q) => $q->where('center_id', $centerId))
                 ->orderBy('name');
         }
 
@@ -157,15 +187,15 @@ class UserAccessService
             $circleIds = $this->supervisorCircleIds($user);
 
             return $circleIds->isEmpty()
-                ? Circle::withoutGlobalScope(CenterScope::class)->whereRaw('1=0')     // ← أضف
-                : Circle::withoutGlobalScope(CenterScope::class)->whereIn('id', $circleIds)->orderBy('name');  // ← أضف
+                ? Circle::withoutGlobalScope(CenterScope::class)->whereRaw('1=0')
+                : Circle::withoutGlobalScope(CenterScope::class)->whereIn('id', $circleIds)->orderBy('name');
         }
 
         $circleIds = $this->teacherCircleIds($user);
 
         return $circleIds->isEmpty()
-            ? Circle::withoutGlobalScope(CenterScope::class)->whereRaw('1=0')          // ← أضف
-            : Circle::withoutGlobalScope(CenterScope::class)->whereIn('id', $circleIds)->orderBy('name');  // ← أضف
+            ? Circle::withoutGlobalScope(CenterScope::class)->whereRaw('1=0')
+            : Circle::withoutGlobalScope(CenterScope::class)->whereIn('id', $circleIds)->orderBy('name');
     }
 
     public function accessibleCenters(User $user): Builder
@@ -175,9 +205,10 @@ class UserAccessService
         }
 
         $teacher = $this->teacher($user);
+        $centerId = $this->teacherCenterId($teacher);
 
-        if ($teacher && $teacher->center_id) {
-            return Center::where('id', $teacher->center_id);
+        if ($centerId) {
+            return Center::where('id', $centerId);
         }
 
         return Center::whereRaw('1=0');
@@ -207,18 +238,19 @@ class UserAccessService
             return $circleIds->isEmpty()
                 ? $query->whereRaw('1=0')
                 : $query->whereHas('circles', fn($cq) => $cq
-                    ->withoutGlobalScope(CenterScope::class)   // ← أضف
+                    ->withoutGlobalScope(CenterScope::class)
                     ->whereIn('circles.id', $circleIds));
         }
 
         $teacher = $this->teacher($user);
+        $centerId = $this->teacherCenterId($teacher);
 
-        if ($teacher && $teacher->center_id) {
+        if ($teacher && $centerId) {
             $query = Teacher::withoutGlobalScope(CenterScope::class)
                 ->with('user.roles')
                 ->whereHas('user', fn($u) => $u->where('status', 'active'));
 
-            $this->applyTeacherCenterFilter($query, $teacher);
+            $this->applyTeacherCenterFilter($query, $centerId);
 
             return $query;
         }
@@ -232,13 +264,13 @@ class UserAccessService
             ->whereHas('user.roles', fn($r) => $r->whereIn('name', ['supervisor', 'manager', 'general_manager']));
     }
 
-    public function applyTeacherCenterFilter(Builder $query, Teacher $record): void
+    public function applyTeacherCenterFilter(Builder $query, int $centerId): void
     {
-        $query->where(function ($q) use ($record) {
-            $q->where('center_id', $record->center_id)
-                ->orWhereHas('circles', function ($cq) use ($record) {   // ← عدّل من 'circles.branch' لصيغة متداخلة صريحة
+        $query->where(function ($q) use ($centerId) {
+            $q->whereHas('branch', fn($bq) => $bq->where('center_id', $centerId))
+                ->orWhereHas('circles', function ($cq) use ($centerId) {
                     $cq->withoutGlobalScope(CenterScope::class)
-                        ->whereHas('branch', fn($bq) => $bq->where('center_id', $record->center_id));
+                        ->whereHas('branch', fn($bq) => $bq->where('center_id', $centerId));
                 });
         });
     }

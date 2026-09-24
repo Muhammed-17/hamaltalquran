@@ -19,7 +19,7 @@ class BranchController extends Controller
         $sort = in_array($request->get('sort'), $sortable) ? $request->get('sort') : 'created_at';
         $dir = $request->get('dir') === 'asc' ? 'asc' : 'desc';
 
-        $branches = Branch::with('center')
+        $branches = Branch::with(['center', 'supervisors.user'])
             ->when($request->filled('q'), function ($query) use ($request) {
                 $query->where('name', 'like', "%{$request->q}%");
             })
@@ -116,18 +116,22 @@ class BranchController extends Controller
                 'string',
                 'max:255',
                 Rule::unique('branches', 'name')
-                    ->where(fn ($query) => $query->where('center_id', $request->center_id))
+                    ->where(fn($query) => $query->where('center_id', $request->center_id))
                     ->ignore($branchId),
             ],
             'address' => ['nullable', 'string', 'max:255'],
-            'established_at' => ['nullable', 'date'],
-            'supervisor_ids' => ['nullable', 'array'],
+            'established_at' => ['required', 'date'],
+            'supervisor_ids' => ['required', 'array', 'min:1'],
             'supervisor_ids.*' => ['exists:teachers,id'],
         ], [
             'center_id.required' => 'يجب اختيار المركز.',
             'center_id.exists' => 'المركز المحدد غير موجود.',
             'name.required' => 'اسم الفرع مطلوب.',
             'name.unique' => 'هذا الفرع موجود بالفعل في نفس المركز.',
+            'established_at.required' => 'تاريخ الإنشاء مطلوب.',
+            'established_at.date' => 'صيغة تاريخ الإنشاء غير صحيحة.',
+            'supervisor_ids.required' => 'يجب اختيار مشرف واحد على الأقل.',
+            'supervisor_ids.min' => 'يجب اختيار مشرف واحد على الأقل.',
         ]);
     }
     /**
@@ -139,8 +143,22 @@ class BranchController extends Controller
         return Teacher::whereHas('user.roles', function ($query) {
             $query->whereIn('name', ['supervisor', 'manager', 'general_manager']);
         })
-            ->with('user.roles')
-            ->orderBy('name')
+            ->with(['user.roles', 'branch'])
+            ->join('users', 'teachers.user_id', '=', 'users.id')
+            ->orderBy('users.name')
+            ->select('teachers.*')
             ->get();
+    }
+
+    public function forCenter(Request $request)
+    {
+        $user   = auth()->user();
+        $access = app(\App\Services\UserAccessService::class);
+
+        $branches = $access->accessibleBranches($user)
+            ->when($request->filled('center_id'), fn($q) => $q->where('center_id', $request->center_id))
+            ->get(['id', 'name']);
+
+        return response()->json(['branches' => $branches]);
     }
 }

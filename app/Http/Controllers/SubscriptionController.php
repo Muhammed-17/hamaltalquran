@@ -50,6 +50,7 @@ class SubscriptionController extends Controller
         }
 
         $selectedCenterId    = $request->get('center_id');
+        $selectedBranchId    = $request->get('branch_id');
         $selectedTeacherId   = $request->get('teacher_id');
         $selectedCollectedById = $request->get('collected_by_id');
 
@@ -81,7 +82,7 @@ class SubscriptionController extends Controller
         if ($isGuardian) {
             $statsBaseQuery->whereIn('student_id', $user->students()->pluck('id'));
         } else {
-            $this->applyCircleFilter($statsBaseQuery, $user, $circleIds);
+            $this->access->applyScopeByCircleIds($statsBaseQuery, 'subscriptions', $circleIds);
         }
 
         if ($selectedCircleId) {
@@ -89,8 +90,14 @@ class SubscriptionController extends Controller
         }
 
         if ($selectedCenterId) {
-            $statsBaseQuery->whereHas('circle', function ($q) use ($selectedCenterId) {
+            $statsBaseQuery->whereHas('circle.branch', function ($q) use ($selectedCenterId) {
                 $q->where('center_id', $selectedCenterId);
+            });
+        }
+
+        if ($selectedBranchId) {
+            $statsBaseQuery->whereHas('circle', function ($q) use ($selectedBranchId) {
+                $q->where('branch_id', $selectedBranchId);
             });
         }
 
@@ -136,8 +143,14 @@ class SubscriptionController extends Controller
             }
 
             if ($selectedCenterId) {
-                $studentsQuery->whereHas('circle', function ($q) use ($selectedCenterId) {
+                $studentsQuery->whereHas('circle.branch', function ($q) use ($selectedCenterId) {
                     $q->where('center_id', $selectedCenterId);
+                });
+            }
+
+            if ($selectedBranchId) {
+                $studentsQuery->whereHas('circle', function ($q) use ($selectedBranchId) {
+                    $q->where('branch_id', $selectedBranchId);
                 });
             }
 
@@ -257,8 +270,14 @@ class SubscriptionController extends Controller
                 }
 
                 if ($selectedCenterId) {
-                    $studentsForStatsQuery->whereHas('circle', function ($q) use ($selectedCenterId) {
+                    $studentsForStatsQuery->whereHas('circle.branch', function ($q) use ($selectedCenterId) {
                         $q->where('center_id', $selectedCenterId);
+                    });
+                }
+
+                if ($selectedBranchId) {
+                    $studentsForStatsQuery->whereHas('circle', function ($q) use ($selectedBranchId) {
+                        $q->where('branch_id', $selectedBranchId);
                     });
                 }
 
@@ -325,7 +344,7 @@ class SubscriptionController extends Controller
                 'student' => function ($query) {
                     $query->withoutGlobalScopes();
                 },
-                'circle.center',
+                'circle.branch.center',
                 'collectedBy.roles',
                 'teacher',
                 'collectionRoundItem.collectionRound',
@@ -369,6 +388,13 @@ class SubscriptionController extends Controller
                     ->orderBy('centers.name', $direction)
                     ->select('subscriptions.*');
                 break;
+            case 'branch':
+                $recentSubscriptionsQuery
+                    ->join('circles', 'circles.id', '=', 'subscriptions.circle_id')
+                    ->join('branches', 'branches.id', '=', 'circles.branch_id')
+                    ->orderBy('branches.name', $direction)
+                    ->select('subscriptions.*');
+                break;
             case 'month':
                 $recentSubscriptionsQuery->orderBy('month', $direction);
                 break;
@@ -400,8 +426,26 @@ class SubscriptionController extends Controller
             $centers   = Center::whereIn('id', $centerIds)->orderBy('name')->get(['id', 'name']);
         }
 
-        // ✅ إضافة collected_by_id لـ hasActiveFilters
-        $hasActiveFilters = $request->anyFilled(['center_id', 'circle_id', 'status', 'teacher_id', 'collected_by_id', 'search'])
+        // ✅ قائمة المقرات (الفروع) لفلتر "المقر"
+        $branches = collect();
+        if ($user->hasRole(['admin', 'general_manager'])) {
+            $branchesQuery = \App\Models\Branch::orderBy('name');
+            if ($selectedCenterId) {
+                $branchesQuery->where('center_id', $selectedCenterId);
+            }
+            $branches = $branchesQuery->get(['id', 'name', 'center_id']);
+        } elseif ($user->hasRole('manager')) {
+            $managerTeacher   = $this->access->teacher($user);
+            $managerCenterId  = $this->access->teacherCenterId($managerTeacher);
+            if ($managerCenterId) {
+                $branches = \App\Models\Branch::where('center_id', $managerCenterId)
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'center_id']);
+            }
+        }
+
+        // ✅ إضافة collected_by_id و branch_id لـ hasActiveFilters
+        $hasActiveFilters = $request->anyFilled(['center_id', 'branch_id', 'circle_id', 'status', 'teacher_id', 'collected_by_id', 'search'])
             || ($request->filled('month') && $request->get('month') !== now()->format('Y-m'));
 
         return view('subscriptions.index', compact(
@@ -419,6 +463,8 @@ class SubscriptionController extends Controller
             'selectedStatus',
             'centers',
             'selectedCenterId',
+            'branches',
+            'selectedBranchId',
             'teachers',
             'selectedTeacherId',
             'selectedCollectedById',
@@ -545,7 +591,7 @@ class SubscriptionController extends Controller
     public function lateAndUnpaid(Request $request)
     {
         $query = Student::query()
-            ->with(['circle.center'])
+            ->with(['circle.branch.center'])
             ->whereIn('status', ['مقيد', 'متوقف'])
             ->whereHas('unpaidMonths', fn($q) => $q->where('unpaid_months_count', '>', 0))
             ->join('student_unpaid_months', 'students.id', '=', 'student_unpaid_months.student_id')
@@ -559,8 +605,13 @@ class SubscriptionController extends Controller
         }
         if ($request->circle_id) {
             $query->where('students.circle_id', $request->circle_id);
-        } elseif ($request->center_id) {
-            $query->whereHas('circle', fn($q) => $q->where('center_id', $request->center_id));
+        } else {
+            if ($request->center_id) {
+                $query->whereHas('circle.branch', fn($q) => $q->where('center_id', $request->center_id));
+            }
+            if ($request->branch_id) {
+                $query->whereHas('circle', fn($q) => $q->where('branch_id', $request->branch_id));
+            }
         }
         if ($request->teacher_id) {
             $query->whereHas('circle.teachers', fn($q) => $q->where('teachers.id', $request->teacher_id));
@@ -587,6 +638,11 @@ class SubscriptionController extends Controller
                 ->join('centers', 'centers.id', '=', 'branches.center_id')
                 ->orderBy('centers.name', $direction)
                 ->select('students.*', 'student_unpaid_months.unpaid_months_count'),
+            'branch' => $query
+                ->join('circles', 'circles.id', '=', 'students.circle_id')
+                ->join('branches', 'branches.id', '=', 'circles.branch_id')
+                ->orderBy('branches.name', $direction)
+                ->select('students.*', 'student_unpaid_months.unpaid_months_count'),
             default  => $query->orderBy('student_unpaid_months.unpaid_months_count', $direction),
         };
 
@@ -595,26 +651,39 @@ class SubscriptionController extends Controller
         $search            = $request->input('search');
         $selectedStatus    = $request->input('status');
         $selectedCenterId  = $request->input('center_id');
+        $selectedBranchId  = $request->input('branch_id');
         $selectedCircleId  = $request->input('circle_id');
         $selectedTeacherId = $request->input('teacher_id');
 
         $centers  = Center::orderBy('name')->get();
-        $circles  = Circle::when($selectedCenterId, fn($q) => $q->where('center_id', $selectedCenterId))
-            ->orderBy('name')->get();
-        $teachers = \App\Models\Teacher::orderBy('name')->get();
 
-        $hasActiveFilters = $request->anyFilled(['search', 'status', 'center_id', 'circle_id', 'teacher_id']);
+         // ✅ قائمة المقرات — Cascading حسب المركز المختار (لو فيه)
+        $branches = \App\Models\Branch::when($selectedCenterId, fn($q) => $q->where('center_id', $selectedCenterId))
+            ->orderBy('name')->get(['id', 'name', 'center_id']);
+
+        $circles  = Circle::when($selectedCenterId, fn($q) => $q->whereHas('branch', fn($bq) => $bq->where('center_id', $selectedCenterId)))
+            ->when($selectedBranchId, fn($q) => $q->where('branch_id', $selectedBranchId))
+            ->orderBy('name')->get();
+
+        $teachers = \App\Models\Teacher::with('user:id,name')
+            ->get()
+            ->sortBy('user.name')
+            ->values();
+
+        $hasActiveFilters = $request->anyFilled(['search', 'status', 'center_id', 'branch_id', 'circle_id', 'teacher_id']);
 
         return view('subscriptions.late_and_unpaid', compact(
             'students',
             'totalStudents',
             'totalUnpaidMonths',
             'centers',
+            'branches',
             'circles',
             'teachers',
             'search',
             'selectedStatus',
             'selectedCenterId',
+            'selectedBranchId',
             'selectedCircleId',
             'selectedTeacherId',
             'hasActiveFilters',
@@ -944,6 +1013,7 @@ class SubscriptionController extends Controller
 
         $user      = Auth::user();
         $centerId  = $request->get('center_id');
+        $branchId  = $request->get('branch_id');
         $circleId  = $request->get('circle_id');
         $teacherId = $request->get('teacher_id');
 
@@ -959,6 +1029,10 @@ class SubscriptionController extends Controller
 
         if ($centerId) {
             $circlesQuery->whereHas('branch', fn($bq) => $bq->where('center_id', $centerId));
+        }
+
+        if ($branchId) {
+            $circlesQuery->where('branch_id', $branchId);
         }
 
         if ($teacherId) {
@@ -977,7 +1051,11 @@ class SubscriptionController extends Controller
         })->orderBy('name');
 
         if ($centerId) {
-            $teachersQuery->whereHas('teacher', fn($q) => $q->where('center_id', $centerId));
+            $teachersQuery->whereHas('teacher.branch', fn($q) => $q->where('center_id', $centerId));
+        }
+
+        if ($branchId) {
+            $teachersQuery->whereHas('teacher', fn($q) => $q->where('branch_id', $branchId));
         }
 
         if ($circleId) {
@@ -985,31 +1063,46 @@ class SubscriptionController extends Controller
                 $q->whereHas('circles', fn($cq) => $cq->where('circles.id', $circleId));
             });
         }
-
         // ─── فلتر الفروع ────────────────────────────────────────
         $centersQuery = Center::orderBy('name');
 
         if ($circleId) {
-            $circle = Circle::find($circleId);
-            if ($circle) {
-                $centersQuery->where('id', $circle->center_id);
+            $circle = Circle::with('branch')->find($circleId);
+            if ($circle?->branch) {
+                $centersQuery->where('id', $circle->branch->center_id);
             }
         }
 
         if ($teacherId) {
-            $teacher = $teacher ?? \App\Models\Teacher::where('user_id', $teacherId)->first();
-            if ($teacher) {
-                $centersQuery->where('id', $teacher->center_id);
+            $teacher = $teacher ?? \App\Models\Teacher::with('branch')->where('user_id', $teacherId)->first();
+            if ($teacher?->branch) {
+                $centersQuery->where('id', $teacher->branch->center_id);
             }
         }
 
 
-        $collectedByUsers = $this->buildCollectedByUsers($user, $centerId, $circleId);
+        // ─── فلتر المقرات (الفروع) ──────────────────────────────
+        if ($user->hasRole(['admin', 'general_manager'])) {
+            $branchesQuery = \App\Models\Branch::orderBy('name');
+        } elseif ($user->hasRole('manager')) {
+            $managerTeacher  = $this->access->teacher($user);
+            $managerCenterId = $this->access->teacherCenterId($managerTeacher);
+            $branchesQuery   = \App\Models\Branch::where('center_id', $managerCenterId ?? 0)->orderBy('name');
+        } else {
+            $branchesQuery = \App\Models\Branch::whereRaw('1 = 0');
+        }
+
+        if ($centerId) {
+            $branchesQuery->where('center_id', $centerId);
+        }
+
+        $collectedByUsers = $this->buildCollectedByUsers($user, $centerId, $circleId, $branchId);
 
         return response()->json([
             'circles'          => $circlesQuery->get(['id', 'name']),
             'teachers'         => $teachersQuery->get(['id', 'name']),
             'centers'          => $centersQuery->get(['id', 'name']),
+            'branches'         => $branchesQuery->get(['id', 'name']),
             'collected_by'     => $collectedByUsers, // ✅ جديد
         ]);
     }
@@ -1017,36 +1110,51 @@ class SubscriptionController extends Controller
      * بناء قائمة المحصِّلين المتاحين حسب دور المستخدم.
      * admin/general_manager → الكل | manager → فرعه | supervisor → حلقاته | غيرهم → فارغة
      */
-    private function buildCollectedByUsers(User $user, ?int $centerId = null, ?int $circleId = null): \Illuminate\Support\Collection
+    private function buildCollectedByUsers(User $user, ?int $centerId = null, ?int $circleId = null, ?int $branchId = null): \Illuminate\Support\Collection
     {
         $query = null;
 
+        // ✅ الأدوار المسموح ظهورها كـ "محصِّل" — يستبعد صراحةً guardian و admin
+        // بدل الاعتماد على استبعاد دور admin فقط (وده كان بيسيب أولياء الأمور داخلين بالخطأ)
+        $collectorRoles = ['teacher', 'supervisor', 'manager', 'general_manager'];
+
         if ($user->hasRole(['admin', 'general_manager'])) {
-            $query = User::whereDoesntHave('roles', fn($q) => $q->where('name', 'admin'));
+            $query = User::whereHas('roles', fn($q) => $q->whereIn('name', $collectorRoles));
         } elseif ($user->hasRole('manager')) {
-            $managerCenter = \App\Models\Teacher::where('user_id', $user->id)->value('center_id');
-            if ($managerCenter) {
-                $query = User::whereHas('teacher', fn($q) => $q->where('center_id', $managerCenter));
+            $managerCenterId = \App\Models\Teacher::where('user_id', $user->id)
+                ->whereHas('branch')
+                ->with('branch')
+                ->first()?->branch?->center_id;
+
+            if ($managerCenterId) {
+                $query = User::whereHas('teacher.branch', fn($q) => $q->where('center_id', $managerCenterId));
             }
         } elseif ($user->hasRole('supervisor')) {
-            $supervisorCircleIds = DB::table('circle_teacher')
-                ->where('teacher_id', function ($sub) use ($user) {
-                    $sub->select('id')->from('teachers')->where('user_id', $user->id);
-                })
-                ->where('role', 'supervisor')
-                ->pluck('circle_id');
+            $teacher = $this->access->teacher($user);
 
-            $query = User::whereHas('teacher', function ($q) use ($supervisorCircleIds) {
-                $q->whereHas('circles', fn($cq) => $cq->whereIn('circles.id', $supervisorCircleIds));
-            });
+            if ($teacher && $teacher->branch_id) {
+                $branchId = $teacher->branch_id;
+
+                $query = User::whereHas('roles', fn($q) => $q->whereIn('name', $collectorRoles))
+                    ->whereHas('teacher', function ($q) use ($branchId) {
+                        $q->where('branch_id', $branchId)
+                            ->orWhereHas('circles', function ($cq) use ($branchId) {
+                                $cq->withoutGlobalScope(\App\Models\Scopes\CenterScope::class)
+                                    ->where('branch_id', $branchId);
+                            });
+                    });
+            }
         }
-
         if (!$query) {
             return collect();
         }
 
         if ($centerId) {
-            $query->whereHas('teacher', fn($q) => $q->where('center_id', $centerId));
+            $query->whereHas('teacher.branch', fn($q) => $q->where('center_id', $centerId));
+        }
+
+        if ($branchId) {
+            $query->whereHas('teacher', fn($q) => $q->where('branch_id', $branchId));
         }
 
         if ($circleId) {

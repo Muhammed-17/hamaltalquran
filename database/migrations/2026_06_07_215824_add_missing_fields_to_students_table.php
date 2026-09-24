@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('students', function (Blueprint $table) {
             $table->string('decision')->nullable();
             $table->decimal('subscription_fees', 8, 2)->nullable();
-            $table->string('received_tools')->nullable()->after('subscription_fees');
+            $table->string('received_tools')->nullable();
         });
     }
 

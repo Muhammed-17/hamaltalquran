@@ -83,7 +83,7 @@ class SurahTestController extends Controller
     // =============================================================
     private function baseIndexQuery(Request $request, string $fixedType)
     {
-        $query = SurahTest::with(['surah', 'circle.center', 'teacher.user'])
+        $query = SurahTest::with(['surah', 'circle.branch.center', 'teacher.user'])
             ->withAvg('results', 'percentage')
             ->where('test_type', $fixedType)
             ->when($request->filled('center_id'), fn($q) => $q->whereHas(
@@ -190,6 +190,7 @@ class SurahTestController extends Controller
     public function create(Request $request): View
     {
         $this->authorize('create', SurahTest::class);
+        $canEditPercentage = auth()->user()->can('edit surah test percentage');
 
         $user   = Auth::user();
         $access = app(UserAccessService::class);
@@ -205,7 +206,7 @@ class SurahTestController extends Controller
 
         $view = $type === 'group' ? 'surah_tests.create_group' : 'surah_tests.create_individual';
 
-        return view($view, compact('circles', 'teachers', 'surahs'));
+        return view($view, compact('circles', 'teachers', 'surahs', 'canEditPercentage'));
     }
 
     // =============================================================
@@ -316,6 +317,7 @@ class SurahTestController extends Controller
     public function edit(SurahTest $surahTest): View
     {
         $this->authorize('update', $surahTest);
+        $canEditPercentage = auth()->user()->can('edit surah test percentage');
 
         $access = app(UserAccessService::class);
 
@@ -342,7 +344,8 @@ class SurahTestController extends Controller
             'surahTest',
             'circles',
             'teachers',
-            'surahs'
+            'surahs',
+            'canEditPercentage',
         ));
     }
     // =============================================================

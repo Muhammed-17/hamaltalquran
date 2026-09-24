@@ -43,15 +43,44 @@
             </div>
 
             @if(auth()->user()->hasAnyRole(['admin', 'general_manager']))
-            {{-- فلتر الفرع --}}
+            {{-- فلتر المركز --}}
             <div class="w-full lg:w-48">
-                <label for="filter_center_id" class="block text-xs font-bold text-gray-400 mb-1.5">الفرع</label>
+                <label for="filter_center_id" class="block text-xs font-bold text-gray-400 mb-1.5">المركز</label> {{-- ← عدّلتها من "الفرع" لـ "المركز" --}}
                 <x-searchable-select
                     name="center_id"
                     :options="collect($centers ?? [])->map(fn($c) => ['value' => $c->id, 'label' => $c->name])->values()"
                     :defaultValue="request('center_id', '')"
+                    placeholder="كل المراكز"
+                    searchPlaceholder="ابحث عن مركز..." />
+            </div>
+            @endif
+
+            @if(auth()->user()->hasAnyRole(['supervisor', 'manager', 'general_manager', 'admin']))
+            {{-- فلتر الفرع (المقر) --}}
+            <div class="w-full lg:w-48" x-data="behavioralNotesFilters()">
+                <label for="filter_branch_id" class="block text-xs font-bold text-gray-400 mb-1.5">الفرع</label>
+                <x-searchable-select
+                    name="branch_id"
+                    :options="collect($branches ?? [])->map(fn($b) => ['value' => $b->id, 'label' => $b->name])->values()"
+                    :defaultValue="request('branch_id', '')"
                     placeholder="كل الفروع"
                     searchPlaceholder="ابحث عن فرع..." />
+            </div>
+
+            {{-- فلتر الحلقة --}}
+            <div class="w-full lg:w-48">
+                <label for="filter_circle_id" class="block text-xs font-bold text-gray-400 mb-1.5">الحلقة</label>
+                <x-searchable-select
+                    name="circle_id"
+                    :options="collect($circles ?? [])->map(fn($c) => ['value' => $c->id, 'label' => $c->name])->values()"
+                    :defaultValue="request('circle_id', '')"
+                    placeholder="كل الحلقات"
+                    searchPlaceholder="ابحث عن حلقة..." />
+            </div>
+
+            {{-- فلتر المعلم --}}
+            <div class="w-full lg:w-48">
+                ...
             </div>
             @endif
 
@@ -185,4 +214,46 @@
         </div>
         @endif
     </div>
+    <script>
+        function behavioralNotesFilters() {
+            return {
+                init() {
+                    window.addEventListener('searchable-change', (e) => {
+                        if (e.detail.name === 'center_id') {
+                            this.fetchBranches(e.detail.value);
+                        }
+                    });
+                },
+                async fetchBranches(centerId) {
+                    try {
+                        const url = `{{ route('branches.for-center') }}` + (centerId ? `?center_id=${centerId}` : '');
+                        const response = await fetch(url, {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                        });
+                        const data = await response.json();
+                        const formatted = (data.branches || []).map(b => ({
+                            value: b.id,
+                            label: b.name
+                        }));
+                        window.dispatchEvent(new CustomEvent('update-options', {
+                            detail: {
+                                name: 'branch_id',
+                                options: formatted
+                            }
+                        }));
+                        window.dispatchEvent(new CustomEvent('clear-selection', {
+                            detail: {
+                                name: 'branch_id'
+                            }
+                        }));
+                    } catch (error) {
+                        console.error('Error fetching branches:', error);
+                    }
+                },
+            };
+        }
+    </script>
 </x-layouts.markaz-layout>

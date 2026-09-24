@@ -223,7 +223,10 @@ class CompetitionParticipantController extends Controller
                 ->get()
                 ->map(fn($student) => [
                     'value' => $student->id,
-                    'label' => $student->name,
+                    'label' => $student->name
+                        . ($student->date_of_birth
+                            ? ' — ' . \Carbon\Carbon::parse($student->date_of_birth)->format('Y-m-d')
+                            : ''),
                 ])
                 ->values()
                 ->toArray();
@@ -342,7 +345,10 @@ class CompetitionParticipantController extends Controller
             ->get()
             ->map(fn($student) => [
                 'value' => $student->id,
-                'label' => $student->name,
+                'label' => $student->name
+                    . ($student->date_of_birth
+                        ? ' — ' . \Carbon\Carbon::parse($student->date_of_birth)->format('Y-m-d')
+                        : ''),
             ]);
 
         return response()->json($students);

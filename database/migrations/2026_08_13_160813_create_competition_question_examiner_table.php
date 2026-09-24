@@ -83,9 +83,8 @@ return new class extends Migration
     public function down(): void
     {
         if (! Schema::hasColumn('competition_questions', 'competition_examiner_id')) {
+            // 1) Add the column + its FK first — don't touch cp_questions_level_name_unique yet
             Schema::table('competition_questions', function (Blueprint $table) {
-                $table->dropUnique('cp_questions_level_name_unique');
-
                 $table->foreignId('competition_examiner_id')
                     ->nullable()
                     ->after('competition_level_id')
@@ -93,7 +92,7 @@ return new class extends Migration
                     ->nullOnDelete();
             });
 
-            // استرجاع أول مختبر لكل سؤال (تراجع تقريبي)
+            // Restore approximate data
             DB::table('competition_question_examiner')
                 ->select('competition_question_id', DB::raw('MIN(competition_examiner_id) as examiner_id'))
                 ->groupBy('competition_question_id')
@@ -106,11 +105,18 @@ return new class extends Migration
                     }
                 });
 
+            // 2) Create the old composite unique — it also starts with competition_level_id,
+            //    so it now supports that FK
             Schema::table('competition_questions', function (Blueprint $table) {
                 $table->unique(
                     ['competition_level_id', 'competition_examiner_id', 'name'],
                     'cp_questions_level_examiner_name_unique'
                 );
+            });
+
+            // 3) Now it's safe to drop the newer unique — a replacement index exists
+            Schema::table('competition_questions', function (Blueprint $table) {
+                $table->dropUnique('cp_questions_level_name_unique');
             });
         }
 

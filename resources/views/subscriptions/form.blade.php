@@ -87,7 +87,7 @@
                     name="teacher_id"
                     placeholder="اختر المعلم..."
                     search-placeholder="ابحث عن معلم..."
-                    :options="json_encode($teacherOptions)"
+                    :options="$teacherOptions"
                     :default-value="old('teacher_id', $subscription->teacher_id ?? '')" />
                 <p class="text-xs text-gray-400 mt-1">يتم تسجيل الاشتراك باسم المعلم المختار...</p>
                 <x-input-error :messages="$errors->get('teacher_id')" class="mt-2" />
@@ -123,7 +123,7 @@
                     name="collected_by"
                     placeholder="اختر المحصِّل..."
                     search-placeholder="ابحث عن محصِّل..."
-                    :options="json_encode($collectedByOptions)"
+                    :options="$collectedByOptions"
                     :default-value="old('collected_by', $subscription->collected_by ?? $currentUser->id)" />
                 <p class="text-xs text-gray-400 mt-1">الشخص الذي استلم المبلغ فعلياً — قد يختلف عن المعلم المسجِّل.</p>
                 <x-input-error :messages="$errors->get('collected_by')" class="mt-2" />
@@ -149,7 +149,7 @@
                         name="circle_id"
                         placeholder="اختر الحلقة..."
                         search-placeholder="ابحث عن حلقة..."
-                        :options="json_encode($circleOptions)"
+                        :options="$circleOptions"
                         default-value="" />
                     <x-input-error :messages="$errors->get('circle_id')" class="mt-2" />
                 </div>
@@ -163,7 +163,7 @@
                         name="student_id"
                         placeholder="اختر الطالب..."
                         search-placeholder="ابحث عن طالب..."
-                        options="[]"
+                        :options="[]"
                         default-value="" />
 
                     <p x-show="selectedCircle && filteredStudents.length === 0"

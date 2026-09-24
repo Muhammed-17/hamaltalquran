@@ -31,20 +31,6 @@ $action = $isEdit
             </div>
         </div>
 
-        {{-- ─── أخطاء الـ Validation ─── --}}
-        @if($errors->any())
-        <div class="bg-red-50 border border-red-100 rounded-2xl p-4 space-y-2">
-            <p class="text-red-700 font-bold text-sm flex items-center gap-2">
-                <span>⚠️</span> تعذّر الحفظ — راجع الحقول التالية:
-            </p>
-            <ul class="text-red-600 text-sm list-disc pr-5 space-y-0.5">
-                @foreach($errors->all() as $error)
-                <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-        @endif
-
         {{-- ─── النموذج ─── --}}
         <form method="POST" action="{{ $action }}" class="space-y-5">
             @csrf
@@ -71,7 +57,7 @@ $action = $isEdit
                         value="{{ old('name', $guardian->name ?? '') }}"
                         placeholder="اسم ولي الأمر رباعياً"
                         class="w-full p-3 bg-white border rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all
-                               {{ $errors->has('name') ? 'border-red-400 bg-red-50' : 'border-gray-200' }}">
+                            {{ $errors->has('name') ? 'border-red-400 bg-red-50' : 'border-gray-200' }}">
                     @error('name')
                     <p class="text-red-500 text-xs font-semibold">{{ $message }}</p>
                     @enderror
@@ -82,7 +68,7 @@ $action = $isEdit
                     <label class="block text-sm font-bold text-gray-700">الفرع</label>
                     <select name="center_id"
                         class="w-full p-3 bg-white border rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all appearance-none
-                               {{ $errors->has('center_id') ? 'border-red-400 bg-red-50' : 'border-gray-200' }}">
+                            {{ $errors->has('center_id') ? 'border-red-400 bg-red-50' : 'border-gray-200' }}">
                         <option value="">— بدون فرع محدد —</option>
                         @foreach($centers ?? [] as $center)
                         <option value="{{ $center->id }}"
@@ -115,7 +101,7 @@ $action = $isEdit
                     <label class="block text-sm font-bold text-gray-700">
                         البريد الإلكتروني
                     </label>
-                    <input type="tel" name="email"
+                    <input type="email" name="email"
                         value="{{ old('email', $guardian->email ?? '') }}"
                         placeholder="name@markaz.com"
 
@@ -139,7 +125,7 @@ $action = $isEdit
                         <input :type="showPass ? 'text' : 'password'" name="password"
                             placeholder="{{ $isEdit ? 'أدخل كلمة مرور جديدة...' : 'الرجاء إدخال كلمة مرور حتى تتمكن من إنشاء الحساب' }}"
                             class="w-full p-3 pl-11 bg-white border rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all
-                                   {{ $errors->has('password') ? 'border-red-400 bg-red-50' : 'border-gray-200' }}">
+                                {{ $errors->has('password') ? 'border-red-400 bg-red-50' : 'border-gray-200' }}">
                         <button type="button" @click="showPass = !showPass"
                             class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
                             <svg x-show="!showPass" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

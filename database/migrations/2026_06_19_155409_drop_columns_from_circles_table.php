@@ -29,15 +29,14 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('circles', function (Blueprint $table) {
-            // إعادة إنشاء الأعمدة بالترتيب الأصلي في حال التراجع عن الهجرة
-            $table->unsignedBigInteger('supervisor_id')->nullable()->after('center_id');
-            $table->text('notes')->nullable()->after('level');
-            $table->integer('max_students')->nullable()->after('level');
-            $table->boolean('is_active')->default(true)->after('level');
+            // إعادة إنشاء الأعمدة بدون افتراض ترتيب عمود غير مؤكد الوجود
+            $table->unsignedBigInteger('supervisor_id')->nullable();
+            $table->text('notes')->nullable();
+            $table->integer('max_students')->nullable();
+            $table->boolean('is_active')->default(true);
 
-
-            // إعادة بناء قيد العلاقة للمفتاح الأجنبي
-            $table->foreign('supervisor_id')->references('id')->on('teachers')->onDelete('set null'); // 👈 تأكد من اسم جدول المدرسين (teachers أو users) حسب مشروعك
+            // ⚠️ لم يتم تفعيل قيد المفتاح الأجنبي هنا لحين التأكد من الجدول المرجعي (teachers أم users)
+            // $table->foreign('supervisor_id')->references('id')->on('teachers')->onDelete('set null');
         });
     }
 };

@@ -4,14 +4,14 @@
 'placeholder' => 'اختر...',
 'searchPlaceholder' => 'ابحث...',
 'defaultValue' => '',
+'neutralPlaceholder' => false,
 ])
 
 
 <div
     x-data="searchableSelect('{{ $name }}', @js($options), @js($defaultValue), @js($placeholder), @js($searchPlaceholder))"
-    class="relative w-full"
+    {{ $attributes->merge(['class' => 'relative w-full']) }}
     @click.away="close()">
-    <!-- Trigger -->
     <!-- Trigger -->
     <div
         x-ref="trigger"

@@ -187,18 +187,6 @@
                             </a>
                             @endif
 
-                            {{-- زر رسالة واتساب مخصصة --}}
-                            @if($whatsappNumber)
-                            <a href="https://wa.me/{{ $whatsappNumber }}?text={{ urlencode('السلام عليكم، بخصوص الطالب ' . $student->name . '...') }}"
-                                target="_blank"
-                                class="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold rounded-2xl transition-all shadow-sm active:scale-95">
-                                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                </svg>
-                                إرسال رسالة
-                            </a>
-                            @endif
-
                             {{-- زر تعديل --}}
                             @can('update', $student)
                             <a href="{{ route('students.edit', $student->id) }}"
@@ -286,15 +274,15 @@
                                         </svg>
                                         فتح واتساب
                                     </a>
-                                    <a href="https://wa.me/{{ $whatsappNumber }}?text={{ urlencode('السلام عليكم، بخصوص الطالب ' . $student->name . '...') }}"
-                                        target="_blank"
-                                        class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl transition-all active:scale-95">
+                                    <a href="tel:{{ $whatsappNumber }}"
+                                        class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-xl transition-all active:scale-95">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.5c.683.204.85.826.85 1.498V19a2 2 0 01-2 2h-3c-8.284 0-15-6.716-15-15v-3z" />
                                         </svg>
-                                        إرسال رسالة
+                                        اتصال
                                     </a>
                                 </div>
+                                
                             </div>
                             @endif
 
@@ -310,13 +298,23 @@
                                         @endif
                                     </div>
                                 </div>
-                                <a href="tel:{{ $phoneNumber }}"
-                                    class="w-full flex items-center justify-center gap-1.5 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-xl transition-all active:scale-95">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.5c.683.204.85.826.85 1.498V19a2 2 0 01-2 2h-3c-8.284 0-15-6.716-15-15v-3z" />
-                                    </svg>
-                                    اتصال الآن
-                                </a>
+                                <div class="flex gap-2">
+                                    <a href="https://wa.me/{{ $phoneNumber }}" target="_blank"
+                                        class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[#25D366] hover:bg-[#20bd5a] text-white text-xs font-bold rounded-xl transition-all active:scale-95">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+                                            <path d="M12 0C5.373 0 0 5.373 0 12c0 2.126.555 4.122 1.524 5.856L.057 23.887l6.169-1.449C7.906 23.467 9.909 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.891 0-3.658-.523-5.168-1.432l-.371-.22-3.822.899.943-3.72-.242-.386C2.514 15.554 2 13.832 2 12 2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
+                                        </svg>
+                                        فتح واتساب
+                                    </a>
+                                    <a href="tel:{{ $phoneNumber }}"
+                                        class="flex-1 flex items-center justify-center gap-1.5 py-2 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded-xl transition-all active:scale-95">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.5c.683.204.85.826.85 1.498V19a2 2 0 01-2 2h-3c-8.284 0-15-6.716-15-15v-3z" />
+                                        </svg>
+                                        اتصال الآن
+                                    </a>
+                                </div>
                             </div>
                             @endif
 
@@ -361,49 +359,6 @@
                         </div>
                     </div>
 
-                    {{-- معلومات ولي الأمر --}}
-                    <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100">
-                        <h3 class="font-black text-gray-900 mb-5 flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                                </svg>
-                            </div>
-                            معلومات ولي الأمر
-                        </h3>
-                        <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl mb-4">
-                            <div class="w-12 h-12 rounded-xl bg-white border border-gray-100 shadow-sm overflow-hidden flex-shrink-0">
-                                <img src="https://ui-avatars.com/api/?name={{ urlencode($student->guardian->name ?? 'ولي أمر') }}&background=6b7280&color=fff"
-                                    class="w-full h-full object-cover" alt="Guardian">
-                            </div>
-                            <div>
-                                <span class="block font-black text-gray-900">{{ $student->guardian->name ?? 'غير متوفر' }}</span>
-                                <span class="block text-xs text-gray-500 font-bold">{{ $student->applicant ?? 'ولي أمر' }}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- الوضع المالي --}}
-                    <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100">
-                        <h3 class="font-black text-gray-900 mb-4 flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                </svg>
-                            </div>
-                            الوضع المالي
-                        </h3>
-                        @if($unpaidMonthsCount > 0)
-                        <div class="bg-rose-50 border border-rose-100 rounded-2xl p-4 text-rose-700">
-                            <p class="text-sm font-black">يوجد اشتراكات غير مدفوعة</p>
-                            <p class="text-xs font-bold opacity-80 mt-1">إجمالي المتأخرات: {{ $unpaidMonthsCount }} شهر</p>
-                        </div>
-                        @else
-                        <div class="bg-emerald-50 border border-emerald-100 rounded-2xl p-4 text-emerald-700">
-                            <p class="text-sm font-black">الاشتراكات مدفوعة بالكامل ✓</p>
-                        </div>
-                        @endif
-                    </div>
                 </div>
 
                 {{-- العمود الرئيسي --}}
@@ -491,9 +446,9 @@
                     ['label' => 'النوع', 'value' => $student->gender],
                     ['label' => 'تاريخ الميلاد', 'value' => $student->date_of_birth?->format('Y-m-d')],
                     ['label' => 'العمر', 'value' => ($student->date_of_birth ? $student->date_of_birth->age . ' سنة' : null)],
-                    ['label' => 'كود الطالب', 'value' => $student->student_code],
+                    ['label' => 'الرقم القومي', 'value' => $student->student_code],
                     ['label' => 'العنوان', 'value' => $student->address],
-                    ['label' => 'المركز / الفرع', 'value' => $student->center?->name],
+                    ['label' => 'المركز', 'value' => $student->center?->name],
                     ];
                     @endphp
                     @foreach($personalFields as $field)
@@ -553,7 +508,12 @@
                         <div class="flex items-center justify-between py-2 border-b border-gray-50">
                             <span class="text-gray-500 text-sm font-bold">واتساب</span>
                             <div class="flex items-center gap-2">
-                                <span class="font-black text-gray-800 text-sm" dir="ltr">{{ $student->whatsapp_number }}</span>
+                                <div class="text-left">
+                                    <span class="font-black text-gray-800 text-sm block" dir="ltr">{{ $student->whatsapp_number }}</span>
+                                    @if($student->whatsapp_owner)
+                                    <span class="text-xs text-gray-400 block">{{ $student->whatsapp_owner }}</span>
+                                    @endif
+                                </div>
                                 <a href="https://wa.me/{{ $whatsappNumber }}" target="_blank"
                                     class="p-1.5 bg-[#25D366] text-white rounded-lg hover:bg-[#20bd5a] transition">
                                     <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
@@ -569,7 +529,12 @@
                         <div class="flex items-center justify-between py-2 border-b border-gray-50">
                             <span class="text-gray-500 text-sm font-bold">رقم إضافي</span>
                             <div class="flex items-center gap-2">
-                                <span class="font-black text-gray-800 text-sm" dir="ltr">{{ $phoneNumber }}</span>
+                                <div class="text-left">
+                                    <span class="font-black text-gray-800 text-sm block" dir="ltr">{{ $phoneNumber }}</span>
+                                    @if($student->additional_contact_owner)
+                                    <span class="text-xs text-gray-400 block">{{ $student->additional_contact_owner }}</span>
+                                    @endif
+                                </div>
                                 <a href="tel:{{ $phoneNumber }}"
                                     class="p-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition">
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -690,6 +655,8 @@
                             ['label' => 'التقييم الذاتي', 'value' => $student->itqanDetail->self_evaluation ? $student->itqanDetail->self_evaluation . '/10' : null],
                             ['label' => 'متن التجويد', 'value' => $student->itqanDetail->tajweed_matn],
                             ['label' => 'المسار المرغوب', 'value' => $student->itqanDetail->desired_path],
+                            ['label' => 'الوقت المناسب للمجلس', 'value' => $student->itqanDetail->preferred_time === 'أون لاين' ? 'أون لاين (عبر الإنترنت)' : $student->itqanDetail->preferred_time],
+                            ['label' => 'المعلم', 'value' => $student->itqanDetail->teacher_name === 'بدون تحديد' ? 'بدون تحديد (حسب المتاح)' : $student->itqanDetail->teacher_name],
                             ] as $f)
                             @if($f['value'])
                             <div class="bg-white rounded-xl p-3 border border-amber-50">
@@ -842,18 +809,10 @@
                 </div>
                 @endif
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-emerald-100">
-                        <span class="text-gray-500 text-xs font-bold block mb-2">الأشهر المدفوعة</span>
-                        <p class="text-3xl font-black text-emerald-600">{{ $paidMonthsCount }}</p>
-                    </div>
-                    <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-rose-100">
+                <div class="gap-6">
+                    <div class="bg-white rounded-4xl p-6 shadow-sm border border-rose-100">
                         <span class="text-gray-500 text-xs font-bold block mb-2">الأشهر المتأخرة</span>
                         <p class="text-3xl font-black text-rose-600">{{ $unpaidMonthsCount }}</p>
-                    </div>
-                    <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-blue-100">
-                        <span class="text-gray-500 text-xs font-bold block mb-2">إجمالي المدفوع</span>
-                        <p class="text-3xl font-black text-blue-600">{{ number_format($totalPaidAmount, 2) }} <span class="text-sm text-gray-400">ج.م</span></p>
                     </div>
                 </div>
 

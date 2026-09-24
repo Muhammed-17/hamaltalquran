@@ -10,7 +10,7 @@ class StudentSurahTestResult extends Model
 {
     use HasFactory;
 
-    public const LEVELS = ['ممتاز', 'جيد جداً', 'جيد', 'مقبول', 'ضعيف', 'إعادة'];
+    public const LEVELS = ['ممتاز', 'جيد جداً', 'جيد', 'مقبول','إعادة'];
 
 
     /**

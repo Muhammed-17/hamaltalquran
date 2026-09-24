@@ -28,9 +28,17 @@ return new class extends Migration
     }
 
     public function down()
-    {
+{
+    if (Schema::hasColumn('student_ibda_details', 'supervisor_name')) {
         Schema::table('student_ibda_details', function (Blueprint $table) {
             $table->dropColumn('supervisor_name');
         });
     }
+
+    if (Schema::hasColumn('student_itqan_details', 'tajweed_matn')) {
+        Schema::table('student_itqan_details', function (Blueprint $table) {
+            $table->dropColumn('tajweed_matn');
+        });
+    }
+}
 };

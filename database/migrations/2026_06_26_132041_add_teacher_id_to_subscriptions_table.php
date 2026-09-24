@@ -16,7 +16,7 @@ return new class extends Migration
     public function down()
     {
         Schema::table('subscriptions', function (Blueprint $table) {
-            $table->dropForeignIdFor(\App\Models\User::class, 'teacher_id');
+            $table->dropForeign(['teacher_id']);
             $table->dropColumn('teacher_id');
         });
     }

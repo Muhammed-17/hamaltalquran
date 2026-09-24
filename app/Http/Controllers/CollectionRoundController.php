@@ -121,6 +121,10 @@ class CollectionRoundController extends Controller
             $query->whereIn('circle_id', $this->access->accessibleCircles($user)->pluck('id'));
         }
 
+        if ($request->filled('branch_id')) {
+            $query->whereHas('circle', fn($cq) => $cq->where('branch_id', $request->branch_id));
+        }
+
         if ($request->filled('search')) {
             $search = $request->get('search');
             $query->where(function ($q) use ($search) {
@@ -195,20 +199,22 @@ class CollectionRoundController extends Controller
 
         $rounds = $query->paginate(20)->withQueryString();
 
-        $filters = $request->only(['circle_id', 'period_month', 'status', 'center_id', 'created_by', 'search']);
+        $filters = $request->only(['circle_id', 'period_month', 'status', 'center_id', 'branch_id', 'created_by', 'search']);
 
-        // ─── Build filter lists with center_id info for dynamic filtering ───
+        // ─── Build filter lists with center_id/branch_id info for dynamic filtering ───
         $centers = collect();
+        $branches = collect();
         $allCircles = collect();
         $allCreators = collect();
         $circles = collect();
         $creators = collect();
 
         if ($user->hasRole(['admin', 'general_manager'])) {
-            $centers = Center::orderBy('name')->get(['id', 'name']);
+            $centers  = Center::orderBy('name')->get(['id', 'name']);
+            $branches = \App\Models\Branch::orderBy('name')->get(['id', 'name', 'center_id']);
 
             $allCircles = Circle::with('branch')->orderBy('name')->get(['id', 'name', 'branch_id'])
-                ->map(fn($c) => (object) ['id' => $c->id, 'name' => $c->name, 'center_id' => $c->branch?->center_id]);
+                ->map(fn($c) => (object) ['id' => $c->id, 'name' => $c->name, 'branch_id' => $c->branch_id, 'center_id' => $c->branch?->center_id]);
             $circles = $allCircles;
 
             // ✅ لازم نجيب المستخدمين الأول
@@ -231,11 +237,14 @@ class CollectionRoundController extends Controller
         } else {
             $accessibleCircleIds = $this->access->accessibleCircles($user)->pluck('id');
             $circles = Circle::with('branch')->whereIn('id', $accessibleCircleIds)->orderBy('name')->get(['id', 'name', 'branch_id'])
-                ->map(fn($c) => (object) ['id' => $c->id, 'name' => $c->name, 'center_id' => $c->branch?->center_id]);
+                ->map(fn($c) => (object) ['id' => $c->id, 'name' => $c->name, 'branch_id' => $c->branch_id, 'center_id' => $c->branch?->center_id]);
             $allCircles = $circles;
 
             $centerIds = $circles->pluck('center_id')->unique();
             $centers = Center::whereIn('id', $centerIds)->orderBy('name')->get(['id', 'name']);
+
+            $branchIds = $circles->pluck('branch_id')->unique()->filter();
+            $branches  = \App\Models\Branch::whereIn('id', $branchIds)->orderBy('name')->get(['id', 'name', 'center_id']);
 
             $creators = User::whereHas('collectionRounds', fn($q) => $q->whereIn('circle_id', $accessibleCircleIds))
                 ->orderBy('name')
@@ -257,22 +266,25 @@ class CollectionRoundController extends Controller
         }
 
         $selectedCenterId = $request->get('center_id');
+        $selectedBranchId = $request->get('branch_id');
         $selectedCircleId = $request->get('circle_id');
         $selectedCreatorId = $request->get('created_by');
         $search = $request->get('search', '');
 
-        $hasActiveFilters = $request->anyFilled(['center_id', 'circle_id', 'period_month', 'status', 'created_by', 'search']);
+        $hasActiveFilters = $request->anyFilled(['center_id', 'branch_id', 'circle_id', 'period_month', 'status', 'created_by', 'search']);
 
         return view('collection_rounds.index', compact(
             'rounds',
             'stats',
             'filters',
             'centers',
+            'branches',
             'circles',
             'creators',
             'allCircles',
             'allCreators',
             'selectedCenterId',
+            'selectedBranchId',
             'selectedCircleId',
             'selectedCreatorId',
             'search',

@@ -69,7 +69,7 @@
                 </div>
 
                 {{-- الصف الثاني: الحالة + الفرع + الحلقة + المعلم --}}
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 {{ $centers->count() > 0 ? 'lg:grid-cols-4' : '' }} gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
 
                     <div class="w-full">
                         <label class="block text-sm font-semibold text-gray-700 mb-2">الحالة</label>
@@ -83,16 +83,27 @@
 
                     @if($centers->count() > 0)
                     <div class="w-full">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">الفرع</label>
-                        <select name="center_id"
-                            x-model="selectedCenter"
-                            @change="onCenterChange()"
-                            class="w-full rounded-xl border-gray-200 focus:border-[#0b3d2c] focus:ring-[#0b3d2c] text-sm h-11">
-                            <option value="">جميع الفروع</option>
-                            <template x-for="center in centers" :key="center.id">
-                                <option :value="center.id" :selected="center.id == selectedCenter" x-text="center.name"></option>
-                            </template>
-                        </select>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">المركز</label>
+                        <x-searchable-select
+                            name="center_id"
+                            placeholder="جميع المراكز"
+                            search-placeholder="ابحث عن مركز..."
+                            default-option="جميع المراكز"
+                            default-value="{{ request('center_id', $selectedCenterId ?? '') }}"
+                            :options="$centers->map(fn($c) => ['value' => $c->id, 'label' => $c->name])->values()" />
+                    </div>
+                    @endif
+
+                    @if($branches->count() > 0)
+                    <div class="w-full">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">المقر</label>
+                        <x-searchable-select
+                            name="branch_id"
+                            placeholder="جميع المقرات"
+                            search-placeholder="ابحث عن مقر..."
+                            default-option="جميع المقرات"
+                            default-value="{{ request('branch_id', $selectedBranchId ?? '') }}"
+                            :options="$branches->map(fn($b) => ['value' => $b->id, 'label' => $b->name])->values()" />
                     </div>
                     @endif
 
@@ -104,7 +115,7 @@
                             search-placeholder="ابحث عن حلقة..."
                             default-option="جميع الحلقات"
                             default-value="{{ request('circle_id', $selectedCircleId ?? '') }}"
-                            :options="$circles->map(fn($c) => ['value' => $c->id, 'label' => $c->name])->values()->toJson()" />
+                            :options="$circles->map(fn($c) => ['value' => $c->id, 'label' => $c->name])->values()" />
                     </div>
 
                     <div class="w-full">
@@ -115,7 +126,7 @@
                             search-placeholder="ابحث عن معلم..."
                             default-option="جميع المعلمين"
                             default-value="{{ request('teacher_id', $selectedTeacherId ?? '') }}"
-                            :options="$teachers->map(fn($t) => ['value' => $t->id, 'label' => $t->name])->values()->toJson()" />
+                            :options="$teachers->map(fn($t) => ['value' => $t->id, 'label' => $t->user->name ?? '—'])->values()" />
                     </div>
 
                 </div>
@@ -230,6 +241,15 @@
                                 </div>
                             </th>
 
+                            {{-- المقر --}}
+                            <th class="{{ $thBase }} {{ $currentSort === 'branch' ? $thActive : $thMuted }}"
+                                onclick="window.location='{{ $sortLink('branch') }}'">
+                                <div class="flex items-center justify-end gap-1">
+                                    المقر
+                                    {!! $sortIcon('branch') !!}
+                                </div>
+                            </th>
+
                             {{-- عدد الأشهر المتأخرة --}}
                             <th class="{{ $thBase }} {{ $currentSort === 'unpaid_months' ? $thActive : $thMuted }}"
                                 onclick="window.location='{{ $sortLink('unpaid_months') }}'">
@@ -265,7 +285,8 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 text-gray-600">{{ $student->circle?->name ?? '—' }}</td>
-                            <td class="px-6 py-4 text-gray-600">{{ $student->circle?->center?->name ?? '—' }}</td>
+                            <td class="px-6 py-4 text-gray-600">{{ $student->circle?->branch?->center?->name ?? '—' }}</td>
+                            <td class="px-6 py-4 text-gray-600">{{ $student->circle?->branch?->name ?? '—' }}</td>
                             <td class="px-6 py-4">
                                 <span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-bold">
                                     {{ $student->unpaid_months_count }} أشهر
@@ -307,7 +328,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="px-6 py-12 text-center text-gray-400">
+                            <td colspan="9" class="px-6 py-12 text-center text-gray-400">
                                 <div class="flex flex-col items-center gap-2">
                                     <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -485,10 +506,12 @@
         function lateUnpaidFilters() {
             return {
                 selectedCenter: '{{ request("center_id", $selectedCenterId ?? "") }}',
+                selectedBranch: '{{ request("branch_id", $selectedBranchId ?? "") }}',
                 selectedCircle: '{{ request("circle_id", $selectedCircleId ?? "all") }}',
                 selectedTeacher: '{{ request("teacher_id", $selectedTeacherId ?? "") }}',
 
                 centers: @json($centers),
+                branches: @json($branches),
                 circles: @json($circles),
                 teachers: @json($teachers),
 
@@ -496,6 +519,14 @@
 
                 init() {
                     window.addEventListener('searchable-change', (e) => {
+                        if (e.detail.name === 'center_id') {
+                            this.selectedCenter = e.detail.value || '';
+                            this.onCenterChange();
+                        }
+                        if (e.detail.name === 'branch_id') {
+                            this.selectedBranch = e.detail.value || '';
+                            this.onBranchChange();
+                        }
                         if (e.detail.name === 'circle_id') {
                             this.selectedCircle = e.detail.value || 'all';
                             this.onCircleChange();
@@ -506,7 +537,7 @@
                         }
                     });
 
-                    if (this.selectedCenter || (this.selectedCircle && this.selectedCircle !== 'all') || this.selectedTeacher) {
+                    if (this.selectedCenter || this.selectedBranch || (this.selectedCircle && this.selectedCircle !== 'all') || this.selectedTeacher) {
                         this.fetchOptions();
                     }
                 },
@@ -514,6 +545,7 @@
                 async fetchOptions() {
                     const params = new URLSearchParams();
                     if (this.selectedCenter) params.append('center_id', this.selectedCenter);
+                    if (this.selectedBranch) params.append('branch_id', this.selectedBranch);
                     if (this.selectedCircle && this.selectedCircle !== 'all') params.append('circle_id', this.selectedCircle);
                     if (this.selectedTeacher) params.append('teacher_id', this.selectedTeacher);
 
@@ -522,10 +554,19 @@
                         const data = await res.json();
 
                         this.centers = data.centers;
+                        this.branches = data.branches;
                         this.circles = data.circles;
                         this.teachers = data.teachers;
 
-                        // ✅ حدّث الكومبوننتات (الحلقة والمعلم)
+                        window.dispatchEvent(new CustomEvent('update-options', {
+                            detail: {
+                                name: 'branch_id',
+                                options: data.branches.map(b => ({
+                                    value: b.id,
+                                    label: b.name
+                                }))
+                            }
+                        }));
                         window.dispatchEvent(new CustomEvent('update-options', {
                             detail: {
                                 name: 'circle_id',
@@ -546,6 +587,7 @@
                         }));
 
                         if (this.selectedCenter && !data.centers.find(c => c.id == this.selectedCenter)) this.selectedCenter = '';
+                        if (this.selectedBranch && !data.branches.find(b => b.id == this.selectedBranch)) this.selectedBranch = '';
                         if (this.selectedCircle !== 'all' && !data.circles.find(c => c.id == this.selectedCircle)) this.selectedCircle = 'all';
                         if (this.selectedTeacher && !data.teachers.find(t => t.id == this.selectedTeacher)) this.selectedTeacher = '';
                     } catch (e) {
@@ -554,6 +596,12 @@
                 },
 
                 onCenterChange() {
+                    this.selectedBranch = '';
+                    this.selectedCircle = 'all';
+                    this.selectedTeacher = '';
+                    this.fetchOptions();
+                },
+                onBranchChange() {
                     this.selectedCircle = 'all';
                     this.selectedTeacher = '';
                     this.fetchOptions();

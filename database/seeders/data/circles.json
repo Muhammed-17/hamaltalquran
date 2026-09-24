@@ -1,0 +1,274 @@
+[
+  {
+    "name": "عثمان بن عفان",
+    "type": "group",
+    "level": "build",
+    "url": "",
+    "branch_name": "الرئيسي",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "أبي بن كعب",
+    "type": "group",
+    "level": "build",
+    "url": "",
+    "branch_name": "الرئيسي",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "الأرقم بن أبي الأرقم",
+    "type": "group",
+    "level": "build",
+    "url": "",
+    "branch_name": "الرئيسي",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "الزبير بن العوام",
+    "type": "group",
+    "level": "build",
+    "url": "",
+    "branch_name": "الرئيسي",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "تمهيدي",
+    "type": "group",
+    "level": "build",
+    "url": "",
+    "branch_name": "الرئيسي",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "حليمة السعدية",
+    "type": "group",
+    "level": "build",
+    "url": "",
+    "branch_name": "الرئيسي",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "خديجة بنت خويلد",
+    "type": "individual",
+    "level": "build",
+    "url": "",
+    "branch_name": "الرئيسي",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "زيد بن ثابت",
+    "type": "group",
+    "level": "build",
+    "url": "",
+    "branch_name": "الرئيسي",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "سعد الغامدي",
+    "type": "group",
+    "level": "build",
+    "url": "",
+    "branch_name": "الرئيسي",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "عبدالرحمن بن عوف",
+    "type": "group",
+    "level": "build",
+    "url": "",
+    "branch_name": "الرئيسي",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "أم سلمة",
+    "type": "individual",
+    "level": "build",
+    "url": "",
+    "branch_name": "الرئيسي",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "معاذ بن جبل",
+    "type": "group",
+    "level": "build",
+    "url": "",
+    "branch_name": "الرئيسي",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "معاوية بن أبي سفيان",
+    "type": "group",
+    "level": "build",
+    "url": "",
+    "branch_name": "الرئيسي",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "أبو هريرة",
+    "type": "group",
+    "level": "build",
+    "url": "",
+    "branch_name": "الرئيسي",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "المتميزون",
+    "type": "individual",
+    "level": "mastery",
+    "url": "",
+    "branch_name": "الرئيسي",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "علي بن أبي طالب",
+    "type": "group",
+    "level": "build",
+    "url": "",
+    "branch_name": "الرئيسي",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "حفصة بنت عمر",
+    "type": "individual",
+    "level": "build",
+    "url": "",
+    "branch_name": "الرئيسي",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "أبو بكر الصديق",
+    "type": "individual",
+    "level": "build",
+    "url": "",
+    "branch_name": "الرئيسي",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "أبوبكر الصديق",
+    "type": "individual",
+    "level": "build",
+    "url": "",
+    "branch_name": "الصديق",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "المغيرة بن شعبة",
+    "type": "group",
+    "level": "build",
+    "url": "",
+    "branch_name": "الصديق",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "عبدالله بن مسعود",
+    "type": "individual",
+    "level": "build",
+    "url": "",
+    "branch_name": "الصديق",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "عمر بن الخطاب",
+    "type": "individual",
+    "level": "build",
+    "url": "",
+    "branch_name": "الفاروق",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "حفصة بنت عمر بن الخطاب",
+    "type": "individual",
+    "level": "build",
+    "url": "",
+    "branch_name": "الفاروق",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "عائشة بنت أبي بكر الصديق",
+    "type": "individual",
+    "level": "build",
+    "url": "",
+    "branch_name": "الفاروق",
+    "center_name": "صبيح"
+  },
+  {
+    "name": "الصديق",
+    "type": "individual",
+    "level": "build",
+    "url": "",
+    "branch_name": "العواسجة",
+    "center_name": "العواسجة"
+  },
+  {
+    "name": "أبو عبيدة بن الجراح",
+    "type": "individual",
+    "level": "build",
+    "url": "",
+    "branch_name": "العواسجة",
+    "center_name": "العواسجة"
+  },
+  {
+    "name": "مصعب بن عمير",
+    "type": "group",
+    "level": "build",
+    "url": "",
+    "branch_name": "العواسجة",
+    "center_name": "العواسجة"
+  },
+  {
+    "name": "الحسين بن علي",
+    "type": "group",
+    "level": "build",
+    "url": "",
+    "branch_name": "العواسجة",
+    "center_name": "العواسجة"
+  },
+  {
+    "name": "الحسن بن علي",
+    "type": "group",
+    "level": "build",
+    "url": "",
+    "branch_name": "العواسجة",
+    "center_name": "العواسجة"
+  },
+  {
+    "name": "البراء بن عازب",
+    "type": "group",
+    "level": "build",
+    "url": "",
+    "branch_name": "العواسجة",
+    "center_name": "العواسجة"
+  },
+  {
+    "name": "عبدالله بن عباس",
+    "type": "group",
+    "level": "build",
+    "url": "",
+    "branch_name": "العواسجة",
+    "center_name": "العواسجة"
+  },
+  {
+    "name": "أسماء بنت أبي بكر",
+    "type": "individual",
+    "level": "build",
+    "url": "",
+    "branch_name": "العواسجة",
+    "center_name": "العواسجة"
+  },
+  {
+    "name": "فاطمة الزهراء",
+    "type": "individual",
+    "level": "build",
+    "url": "",
+    "branch_name": "العواسجة",
+    "center_name": "العواسجة"
+  },
+  {
+    "name": "فرع العواسجة",
+    "type": "individual",
+    "level": "build",
+    "url": "",
+    "branch_name": "العواسجة",
+    "center_name": "العواسجة"
+  }
+]

@@ -124,6 +124,7 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                         :options="['الأم', 'الأب', 'الطالب نفسه']"
                         :value="old('applicant', $student->applicant ?? '')"
                         placeholder="اختر أو اكتب مقدم الطلب..." />
+                    <span data-error-for="applicant" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                     @error('applicant')
                     <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                     @enderror
@@ -140,6 +141,7 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                             pattern="[0-9]{14}"
                             oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 14)"
                             class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all">
+                        <span data-error-for="student_code" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                         @error('student_code')
                         <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                         @enderror
@@ -148,8 +150,8 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                         <label class="block text-sm font-bold text-gray-700">اسم الطالب (رباعيًّا) <span class="text-red-500">*</span></label>
                         <input type="text" name="name" data-field="name" placeholder="الاسم الرباعي كاملًا"
                             value="{{ old('name', $student->name ?? '') }}"
-                            class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all"
-                            required>
+                            class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all">
+                        <span data-error-for="name" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                         @error('name')
                         <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                         @enderror
@@ -164,11 +166,12 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                             <label class="flex items-center gap-2 text-sm font-semibold text-gray-600 cursor-pointer">
                                 <input type="radio" name="gender" value="{{ $genderOption }}" data-field="gender"
                                     @checked(old('gender', $student->gender ?? '') == $genderOption)
-                                class="text-[#0a5c36] focus:ring-[#0a5c36]" required>
+                                class="text-[#0a5c36] focus:ring-[#0a5c36]" >
                                 <span>{{ $genderOption }}</span>
                             </label>
                             @endforeach
                         </div>
+                        <span data-error-for="gender" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                         @error('gender')
                         <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                         @enderror
@@ -179,6 +182,7 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                             value="{{ old('date_of_birth', $student->date_of_birth?->format('Y-m-d') ?? '') }}"
                             max="{{ now()->subMonths(30)->format('Y-m-d') }}"
                             class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all">
+                        <span data-error-for="date_of_birth" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                         @error('date_of_birth')
                         <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                         @enderror
@@ -191,8 +195,8 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                         <input type="text" name="address" data-field="address"
                             value="{{ old('address', $student->address ?? '') }}"
                             placeholder="مثال: الشرقية - ههيا - قرية صبيح"
-                            class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all"
-                            required>
+                            class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all">
+                        <span data-error-for="address" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                         @error('address')
                         <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                         @enderror
@@ -207,6 +211,7 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                             </option>
                             @endforeach
                         </select>
+                        <span data-error-for="center_id" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                         @error('center_id')
                         <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                         @enderror
@@ -236,6 +241,7 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                                 تحقق
                             </button>
                         </div>
+                        <span data-error-for="whatsapp_number" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                         @error('whatsapp_number')
                         <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                         @enderror
@@ -260,6 +266,7 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                                 تحقق
                             </button>
                         </div>
+                        <span data-error-for="second_phone" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                         @error('second_phone')
                         <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                         @enderror
@@ -399,6 +406,7 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                     <input type="hidden" name="guardian_id" id="guardianIdInput"
                         value="{{ old('guardian_id', $student->guardian_id ?? '') }}">
 
+                    <span data-error-for="guardian_id" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                     @error('guardian_id')
                     <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                     @enderror
@@ -418,10 +426,11 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                             <label class="block text-sm font-bold text-gray-700">
                                 اسم ولي الأمر <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" name="guardian_name" id="guardianNameInput"
+                            <input type="text" name="guardian_name" id="guardianNameInput" data-field="guardian_name"
                                 value="{{ old('guardian_name') }}"
                                 placeholder="اسم ولي الأمر كاملًا"
                                 class="w-full p-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all">
+                            <span data-error-for="guardian_name" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                             @error('guardian_name')
                             <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                             @enderror
@@ -473,8 +482,7 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                 <div class="space-y-2">
                     <label class="block text-sm font-bold text-gray-700">المرحلة الدراسية <span class="text-red-500">*</span></label>
                     <select name="educational_stage" data-field="educational_stage"
-                        class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all appearance-none"
-                        required>
+                        class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all appearance-none">
                         <option value="" @selected(old('educational_stage', $student->educational_stage ?? '') == '')>-- اختر المرحلة --</option>
                         @foreach(['تمهيدي', 'حضانة', 'ابتدائي', 'اعدادي', 'ثانوي', 'جامعي', 'خريج'] as $stage)
                         <option value="{{ $stage }}" @selected(old('educational_stage', $student->educational_stage ?? '') == $stage)>
@@ -482,6 +490,7 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                         </option>
                         @endforeach
                     </select>
+                    <span data-error-for="educational_stage" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                     @error('educational_stage')
                     <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                     @enderror
@@ -496,6 +505,7 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                         <option value="أزهري" @selected(old('education_type', $student->education_type ?? '') == 'أزهري')>أزهري</option>
                         <option value="عام (تربية وتعليم)" @selected(old('education_type', $student->education_type ?? '') == 'عام (تربية وتعليم)')>عام (تربية وتعليم)</option>
                     </select>
+                    <span data-error-for="education_type" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                     @error('education_type')
                     <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                     @enderror
@@ -511,13 +521,13 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                     </div>
                     @endif
                     <select name="school_grade" data-field="school_grade"
-                        class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all appearance-none"
-                        required>
+                        class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all appearance-none">
                         <option value="" @selected(old('school_grade', $suggestedGrade)=='' )>-- اختر الصف --</option>
                         @foreach(['لا يوجد', 'الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس', 'دراسات عليا'] as $grade)
                         <option value="{{ $grade }}" @selected(old('school_grade', $suggestedGrade)==$grade)>{{ $grade }}</option>
                         @endforeach
                     </select>
+                    <span data-error-for="school_grade" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                     @error('school_grade')
                     <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                     @enderror
@@ -528,8 +538,8 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                     <input type="text" name="previous_school" data-field="previous_school"
                         value="{{ old('previous_school', $student->previous_school ?? '') }}"
                         placeholder="اسم المؤسسة التعليمية بالكامل"
-                        class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all"
-                        required>
+                        class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all">
+                    <span data-error-for="previous_school" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                     @error('previous_school')
                     <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                     @enderror
@@ -555,6 +565,7 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                     :options="['طبيعية (الحمد الله)']"
                     :value="old('health_status', $student->health_status ?? '')"
                     placeholder="اختر أو اكتب الحالة الصحية..." />
+                <span data-error-for="health_status" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                 @error('health_status')
                 <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                 @enderror
@@ -567,6 +578,7 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                     :options="['لا يوجد (الحمد الله)']"
                     :value="old('learning_difficulties', $student->learning_difficulties ?? '')"
                     placeholder="اختر أو اكتب صعوبات التعلم..." />
+                <span data-error-for="learning_difficulties" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                 @error('learning_difficulties')
                 <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                 @enderror
@@ -579,6 +591,7 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                     :options="['لا يوجد']"
                     :value="old('personal_traits', $student->personal_traits ?? '')"
                     placeholder="اختر أو اكتب السمات الشخصية..." />
+                <span data-error-for="personal_traits" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                 @error('personal_traits')
                 <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                 @enderror
@@ -596,6 +609,7 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                     :options="['كرة القدم', 'الكاراتيه', 'الرسم', 'البرمجة والألعاب الإلكترونية', 'الأشغال اليدوية', 'القراءة والإطلاع']"
                     :value="$savedHobbies"
                     placeholder="اختر أو اكتب هوايات..." />
+                <span data-error-for="hobbies" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                 @error('hobbies')
                 <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                 @enderror
@@ -608,840 +622,852 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                     :options="['بمفرده', 'مع ولي الأمر أو أحد الأقارب']"
                     :value="old('student_exit_status', $student->student_exit_status ?? '')"
                     placeholder="اختر أو اكتب حالة الخروج..." />
+                <span data-error-for="student_exit_status" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                 @error('student_exit_status')
                 <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                 @enderror
             </div>
+        </div>
 
-            <div x-data="{ selectedLevel: '{{ old('center_entry_level', $student->center_entry_level ?? 'construction') }}', studySystem: '{{ old('study_system', $construction->study_system ?? 'group') }}' }">
-                <!-- ───────────────── تقييم التلاوة ───────────────── -->
-                <div id="step-5" class="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 space-y-6">
-                    <div class="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
-                        <div class="p-3 bg-[#e8f5ed] text-[#0a5c36] rounded-2xl text-xl">🎤</div>
-                        <div>
-                            <h2 class="text-xl font-black text-gray-800">تقييم التلاوة وتحديد مستوى الالتحاق</h2>
-                            <p class="text-xs text-gray-400 mt-1">تحديد المسار الفني والتعليمي للطالب بناء على تقييم الشيخ المختبر</p>
-                        </div>
+        <div" x-data="{ selectedLevel: '{{ old('center_entry_level', $student->center_entry_level ?? 'construction') }}', studySystem: '{{ old('study_system', $construction->study_system ?? 'group') }}' }">
+            <!-- ───────────────── تقييم التلاوة ───────────────── -->
+            <div id="step-5" class="bg-white rounded-3xl shadow-sm border border-gray-100 mb-8 p-8 space-y-6">
+                <div class="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
+                    <div class="p-3 bg-[#e8f5ed] text-[#0a5c36] rounded-2xl text-xl">🎤</div>
+                    <div>
+                        <h2 class="text-xl font-black text-gray-800">تقييم التلاوة وتحديد مستوى الالتحاق</h2>
+                        <p class="text-xs text-gray-400 mt-1">تحديد المسار الفني والتعليمي للطالب بناء على تقييم الشيخ المختبر</p>
                     </div>
+                </div>
 
-                    <div class="space-y-2">
-                        <label class="block text-sm font-bold text-gray-700">مستوى القراءة من المصحف <span class="text-red-500">*</span></label>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                            @foreach([
-                            ['value' => 'مبتدئ', 'desc' => 'لا يقرأ'],
-                            ['value' => 'مقبول', 'desc' => 'يقرأ ببطء'],
-                            ['value' => 'متمكن', 'desc' => 'بدون أحكام'],
-                            ['value' => 'متقن', 'desc' => 'توجد أحكام'],
-                            ] as $readingOption)
-                            <label class="flex items-center gap-2 p-3 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-[#0a5c36]/50 transition-all text-sm font-semibold text-gray-600">
-                                <input type="radio" name="reading" value="{{ $readingOption['value'] }}"
-                                    data-field="reading"
-                                    @checked(old('reading', $student->reading ?? '') == $readingOption['value'])
-                                class="text-[#0a5c36] focus:ring-[#0a5c36]" required>
-                                <span>{{ $readingOption['value'] }} <span class="text-xs text-gray-400 font-normal">({{ $readingOption['desc'] }})</span></span>
-                            </label>
-                            @endforeach
-                        </div>
-                        @error('reading')
-                        <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <div class="space-y-4 pt-2">
-                        <label class="block text-sm font-bold text-gray-700">
-                            اختر مستوى تحضير أو التحاق الطالب بعد الاختبار <span class="text-red-500">*</span>
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-gray-700">مستوى القراءة من المصحف <span class="text-red-500">*</span></label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        @foreach([
+                        ['value' => 'مبتدئ', 'desc' => 'لا يقرأ'],
+                        ['value' => 'مقبول', 'desc' => 'يقرأ ببطء'],
+                        ['value' => 'متمكن', 'desc' => 'بدون أحكام'],
+                        ['value' => 'متقن', 'desc' => 'توجد أحكام'],
+                        ] as $readingOption)
+                        <label class="flex items-center gap-2 p-3 bg-white border border-gray-200 rounded-xl cursor-pointer hover:border-[#0a5c36]/50 transition-all text-sm font-semibold text-gray-600">
+                            <input type="radio" name="reading" value="{{ $readingOption['value'] }}"
+                                data-field="reading"
+                                @checked(old('reading', $student->reading ?? '') == $readingOption['value'])
+                            class="text-[#0a5c36] focus:ring-[#0a5c36]">
+                            <span>{{ $readingOption['value'] }} <span class="text-xs text-gray-400 font-normal">({{ $readingOption['desc'] }})</span></span>
                         </label>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <label class="flex flex-col p-4 border rounded-2xl cursor-pointer hover:border-[#0a5c36] transition-all border-gray-100 bg-gray-50">
-                                <div class="flex items-center gap-2 font-bold text-[#0a5c36]">
-                                    <input type="radio" name="center_entry_level" value="construction"
-                                        x-model="selectedLevel" data-field="center_entry_level" required
-                                        class="text-[#0a5c36] focus:ring-[#0a5c36]">
-                                    <span>🌱 مستوى البناء</span>
-                                </div>
-                                <span class="text-xs text-gray-500 mt-2 mr-5">الحلقات التأسيسية وحفظ الأجزاء المنتظمة</span>
-                            </label>
-                            <label class="flex flex-col p-4 border rounded-2xl cursor-pointer hover:border-[#7a6020] transition-all border-gray-100 bg-gray-50">
-                                <div class="flex items-center gap-2 font-bold text-[#7a6020]">
-                                    <input type="radio" name="center_entry_level" value="mastery"
-                                        x-model="selectedLevel" data-field="center_entry_level"
-                                        class="text-[#b8973a] focus:ring-[#b8973a]">
-                                    <span>⭐ مستوى الإتقان</span>
-                                </div>
-                                <span class="text-xs text-gray-500 mt-2 mr-5">حلقات التثبيت، المراجعة المكثفة والخاتمين</span>
-                            </label>
-                            <label class="flex flex-col p-4 border rounded-2xl cursor-pointer hover:border-indigo-600 transition-all border-gray-100 bg-gray-50">
-                                <div class="flex items-center gap-2 font-bold text-indigo-800">
-                                    <input type="radio" name="center_entry_level" value="creativity"
-                                        x-model="selectedLevel" data-field="center_entry_level"
-                                        class="text-indigo-600 focus:ring-indigo-500">
-                                    <span>🏆 مستوى الإبداع</span>
-                                </div>
-                                <span class="text-xs text-gray-500 mt-2 mr-5">مجالس الإجازات، القراءات والسند المتصل</span>
-                            </label>
-                        </div>
-                        @error('center_entry_level')
-                        <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
-                        @enderror
-                    </div>
-                </div>
-
-                <!-- ───────────────── مستوى البناء ───────────────── -->
-                <div id="step-6" x-show="selectedLevel === 'construction'" x-transition
-                    class="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 space-y-6">
-                    <div class="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
-                        <div class="p-3 bg-emerald-50 text-[#0a5c36] rounded-2xl text-xl">🌱</div>
-                        <div>
-                            <h2 class="text-xl font-black text-[#0a5c36]">مستوى البناء</h2>
-                            <p class="text-xs text-gray-400 mt-1">تسكين الطالب في الحلقات وخطة الحفظ</p>
-                        </div>
-                    </div>
-
-                    {{-- نظام الدراسة --}}
-                    <div class="space-y-2">
-                        <label class="block text-sm font-bold text-gray-700">نظام الدراسة <span class="text-red-500">*</span></label>
-                        <div class="flex gap-6 p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-600 cursor-pointer">
-                                <input type="radio" name="study_system" value="group" x-model="studySystem" data-field="study_system" required
-                                    @checked(old('study_system', $construction->study_system ?? 'group') == 'group')>
-                                <span>جماعي</span>
-                            </label>
-                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-600 cursor-pointer">
-                                <input type="radio" name="study_system" value="individual" x-model="studySystem" data-field="study_system" required
-                                    @checked(old('study_system', $construction->study_system ?? '') == 'individual')>
-                                <span>فردي</span>
-                            </label>
-                        </div>
-                        @error('study_system')
-                        <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    {{-- الحلقة --}}
-                    <div class="space-y-2">
-                        <label class="block text-sm font-bold text-gray-700">الحلقة <span class="text-red-500">*</span></label>
-                        <select name="circle_id" id="circleSelect" data-field="circle_id"
-                            class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all appearance-none">
-                            <option value="" @selected(old('circle_id', $construction->circle_id ?? '') == '')>-- اختر الحلقة --</option>
-                            @foreach($circles as $circle)
-                            <option value="{{ $circle->id }}" data-type="{{ $circle->type }}"
-                                @selected(old('circle_id', $construction->circle_id ?? '') == $circle->id)>
-                                {{ $circle->name }}
-                            </option>
-                            @endforeach
-                        </select>
-                        @error('circle_id')
-                        <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    {{-- بطاقة معلومات خطة الحلقة الجماعية (عرض فقط، تساعد المشرف على القرار) --}}
-                    <div id="groupPlanInfo" class="hidden bg-blue-50 border border-blue-100 rounded-2xl p-4 space-y-2">
-                        <p class="text-sm font-bold text-blue-700">📋 خطة الحفظ الحالية لهذه الحلقة:</p>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-blue-800">
-                            <p>السورة الحالية: <span id="groupPlanSurah" class="font-bold"></span></p>
-                            <p>خطة الحفظ الجديد: <span id="groupPlanNew" class="font-bold"></span></p>
-                            <p>خطة المراجعة: <span id="groupPlanRevision" class="font-bold"></span></p>
-                            <p>خطة الحفظ القديم: <span id="groupPlanOld" class="font-bold"></span></p>
-                        </div>
-                        <p class="text-xs text-blue-500 mt-1">تأكد من مناسبة مستوى الحلقة لمستوى الطالب قبل التسكين. سيتم ربط الطالب بهذه الخطة تلقائيًا.</p>
-                    </div>
-
-                    <div id="groupPlanEmpty" class="hidden bg-amber-50 border border-amber-100 rounded-2xl p-4 text-sm text-amber-700 font-semibold">
-                        ⚠️ لا توجد بيانات خطة مسجلة لهذه الحلقة بعد. سيتم إنشاء خطة الطالب كأول سجل للحلقة.
-                    </div>
-
-                    {{-- خطط الفردي فقط: السورة + الخطط الثلاثة (تظهر وتُملأ يدويًا) --}}
-                    <div x-show="studySystem === 'individual'" x-transition class="space-y-6">
-                        <div class="space-y-2">
-                            <label class="block text-sm font-bold text-gray-700">السورة الحالية</label>
-                            <select name="current_surah_id" data-field="current_surah_id"
-                                class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all appearance-none">
-                                <option value="" @selected(old('current_surah_id', $construction->current_surah_id ?? '') == '')>-- اختر السورة --</option>
-                                @foreach($surahs ?? [] as $surah)
-                                <option value="{{ $surah->id }}" @selected(old('current_surah_id', $construction->current_surah_id ?? '') == $surah->id)>
-                                    {{ $surah->number }}. {{ $surah->name_arabic }}
-                                </option>
-                                @endforeach
-                            </select>
-                            @error('current_surah_id')
-                            <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
-                            @enderror
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div class="space-y-2">
-                                <label class="block text-sm font-bold text-gray-700">خطة الحفظ الجديد <span class="text-red-500">*</span></label>
-                                <input type="text" name="new_memorization_plan" data-field="new_memorization_plan"
-                                    value="{{ old('new_memorization_plan', $construction->new_memorization_plan ?? '') }}"
-                                    placeholder="مثال: 5 سطور يومياً"
-                                    class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all">
-                                @error('new_memorization_plan')
-                                <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
-                                @enderror
-                            </div>
-                            <div class="space-y-2">
-                                <label class="block text-sm font-bold text-gray-700">خطة المراجعة <span class="text-red-500">*</span></label>
-                                <input type="text" name="revision_plan" data-field="revision_plan"
-                                    value="{{ old('revision_plan', $construction->revision_plan ?? '') }}"
-                                    placeholder="مثال: وجه يومياً"
-                                    class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all">
-                                @error('revision_plan')
-                                <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
-                                @enderror
-                            </div>
-                            <div class="space-y-2">
-                                <label class="block text-sm font-bold text-gray-700">خطة الحفظ القديم <span class="text-red-500">*</span></label>
-                                <input type="text" name="old_memorization_plan" data-field="old_memorization_plan"
-                                    value="{{ old('old_memorization_plan', $construction->old_memorization_plan ?? '') }}"
-                                    placeholder="مثال: حزب أسبوعياً"
-                                    class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all">
-                                @error('old_memorization_plan')
-                                <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- تقييم التسكين --}}
-                    <div class="space-y-2">
-                        <label class="block text-sm font-bold text-gray-700">تقييم التسكين</label>
-                        <textarea name="placement_evaluation" data-field="placement_evaluation" rows="3"
-                            placeholder="نتائج تقييم التسكين..."
-                            class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all">{{ old('placement_evaluation', $construction->placement_evaluation ?? '') }}</textarea>
-                        @error('placement_evaluation')
-                        <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
-                        @enderror
-                    </div>
-                </div>
-
-                <!-- ───────────────── مستوى الإتقان ───────────────── -->
-                <div id="step-7" x-show="selectedLevel === 'mastery'" x-transition
-                    class="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 space-y-6">
-                    <div class="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
-                        <div class="p-3 bg-amber-50 text-amber-600 rounded-2xl text-xl">⭐</div>
-                        <div>
-                            <h2 class="text-xl font-black text-amber-600">مستوى الإتقان</h2>
-                            <p class="text-xs text-gray-400 mt-1">تفاصيل الحفظ والمراجعة للمتقدمين المتميزين</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="space-y-2">
-                            <label class="block text-sm font-bold text-gray-700">جهة الحفظ السابقة <span class="text-red-500">*</span></label>
-                            <input type="text" name="previous_memorization_side"
-                                value="{{ old('previous_memorization_side', $itqan->previous_memorization_side ?? '') }}"
-                                placeholder="اسم المسجد، المركز، أو الشيخ السابق"
-                                class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all">
-                            @error('previous_memorization_side')
-                            <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
-                            @enderror
-                        </div>
-                        <div class="space-y-2">
-                            <label class="block text-sm font-bold text-gray-700">عدد الختمات السابقة <span class="text-red-500">*</span></label>
-                            <input type="text" name="previous_khatamat_count"
-                                value="{{ old('previous_khatamat_count', $itqan->previous_khatamat_count ?? '') }}"
-                                placeholder="مثال: ختمة واحدة أو أكثر"
-                                class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all">
-                            @error('previous_khatamat_count')
-                            <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="block text-sm font-bold text-gray-700">مقدار المراجعة الحالي <span class="text-red-500">*</span></label>
-                        <input type="text" name="current_review_amount"
-                            value="{{ old('current_review_amount', $itqan->current_review_amount ?? '') }}"
-                            placeholder="مثال: جزء يوميًّا، حزب، نصف جزء..."
-                            class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all">
-                        @error('current_review_amount')
-                        <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="block text-sm font-bold text-gray-700">تقييم مستوى الحفظ (1-10) <span class="text-red-500">*</span></label>
-                        <select name="self_evaluation"
-                            class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all appearance-none">
-                            <option value="">-- اختر التقييم --</option>
-                            @for ($i = 1; $i <= 10; $i++)
-                                <option value="{{ $i }}" @selected(old('self_evaluation', $itqan?->self_evaluation ?? 0) == $i)>{{ $i }}</option>
-                                @endfor
-                        </select>
-                        @error('self_evaluation')
-                        <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="block text-sm font-bold text-gray-700">متون التجويد المحفوظة <span class="text-red-500">*</span></label>
-                        <x-creatable-select
-                            name="tajweed_matn"
-                            :options="['لا يوجد', 'تحفة الأطفال', 'المقدمة الجزرية']"
-                            :value="old('tajweed_matn', $itqan->tajweed_matn ?? '')"
-                            placeholder="اختر أو اكتب متن التجويد..." />
-                        @error('tajweed_matn')
-                        <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="space-y-2">
-                            <label class="block text-sm font-bold text-gray-700">المسار المرغوب فيه <span class="text-red-500">*</span></label>
-                            <div class="flex flex-col gap-2 p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                                @foreach(['تثبيت الحفظ' => 'تثبيت الحفظ وتجويده', 'تصحيح التلاوة' => 'تصحيح التلاوة والنطق', 'الإجازة والسند' => 'الإجازة والسند المتصل'] as $val => $lbl)
-                                <label class="flex items-center gap-2 text-sm font-semibold text-gray-600 cursor-pointer">
-                                    <input type="radio" name="desired_path" value="{{ $val }}" data-field="desired_path"
-                                        @checked(old('desired_path', $itqan->desired_path ?? '') == $val)>
-                                    <span>{{ $lbl }}</span>
-                                </label>
-                                @endforeach
-                            </div>
-                            @error('desired_path')
-                            <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
-                            @enderror
-                        </div>
-                        <div class="space-y-2">
-                            <label class="block text-sm font-bold text-gray-700">الوقت المناسب للمجلس <span class="text-red-500">*</span></label>
-                            <div class="grid grid-cols-2 gap-2 p-3 bg-gray-50 rounded-2xl border border-gray-100"
-                                x-bind:inert="selectedLevel !== 'mastery'">
-                                @foreach(['صباحًا', 'ظهرًا', 'عصرًا', 'ليلًا', 'أون لاين'] as $time)
-                                <label class="flex items-center gap-2 text-sm font-semibold text-gray-600 cursor-pointer {{ $time === 'أون لاين' ? 'col-span-2' : '' }}">
-                                    <input type="radio" name="preferred_time" value="{{ $time }}" data-field="preferred_time"
-                                        @checked(old('preferred_time', $itqan->preferred_time ?? '') == $time)>
-                                    <span>{{ $time === 'أون لاين' ? 'أون لاين (عبر الإنترنت)' : $time }}</span>
-                                </label>
-                                @endforeach
-                            </div>
-                            @error('preferred_time')
-                            <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <select name="teacher_name" data-field="teacher_name"
-                        x-bind:disabled="selectedLevel !== 'mastery'"
-                        class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all appearance-none">
-                        <option value="" @selected(old('teacher_name', $itqan->teacher_name ?? '') == '')>-- اختر المعلم --</option>
-                        <option value="بدون تحديد" @selected(old('teacher_name', $itqan->teacher_name ?? '') == 'بدون تحديد')>بدون تحديد (حسب المتاح)</option>
-                        @foreach ($teachers ?? [] as $teacherItem)
-                        <option value="{{ $teacherItem->name }}" @selected(old('teacher_name', $itqan->teacher_name ?? '') == $teacherItem->name)>
-                            {{ $teacherItem->name }}
-                        </option>
                         @endforeach
-                    </select>
-                    @error('teacher_name')
+                    </div>
+                    <span data-error-for="reading" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                    @error('reading')
                     <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                     @enderror
                 </div>
 
-                <!-- ───────────────── مستوى الإبداع ───────────────── -->
-                <div id="step-8" x-show="selectedLevel === 'creativity'" x-transition
-                    class="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 space-y-6">
-                    <div class="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
-                        <div class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl text-xl">🏆</div>
-                        <div>
-                            <h2 class="text-xl font-black text-indigo-600">مستوى الإبداع</h2>
-                            <p class="text-xs text-gray-400 mt-1">بيانات الروايات والأسانيد التي حصل عليها الطالب</p>
-                        </div>
+                <div class="space-y-4 pt-2">
+                    <label class="block text-sm font-bold text-gray-700">
+                        اختر مستوى تحضير أو التحاق الطالب بعد الاختبار <span class="text-red-500">*</span>
+                    </label>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <label class="flex flex-col p-4 border rounded-2xl cursor-pointer hover:border-[#0a5c36] transition-all border-gray-100 bg-gray-50">
+                            <div class="flex items-center gap-2 font-bold text-[#0a5c36]">
+                                <input type="radio" name="center_entry_level" value="construction"
+                                    x-model="selectedLevel" data-field="center_entry_level"
+                                    class="text-[#0a5c36] focus:ring-[#0a5c36]">
+                                <span>🌱 مستوى البناء</span>
+                            </div>
+                            <span class="text-xs text-gray-500 mt-2 mr-5">الحلقات التأسيسية وحفظ الأجزاء المنتظمة</span>
+                        </label>
+                        <label class="flex flex-col p-4 border rounded-2xl cursor-pointer hover:border-[#7a6020] transition-all border-gray-100 bg-gray-50">
+                            <div class="flex items-center gap-2 font-bold text-[#7a6020]">
+                                <input type="radio" name="center_entry_level" value="mastery"
+                                    x-model="selectedLevel" data-field="center_entry_level"
+                                    class="text-[#b8973a] focus:ring-[#b8973a]">
+                                <span>⭐ مستوى الإتقان</span>
+                            </div>
+                            <span class="text-xs text-gray-500 mt-2 mr-5">حلقات التثبيت، المراجعة المكثفة والخاتمين</span>
+                        </label>
+                        <label class="flex flex-col p-4 border rounded-2xl cursor-pointer hover:border-indigo-600 transition-all border-gray-100 bg-gray-50">
+                            <div class="flex items-center gap-2 font-bold text-indigo-800">
+                                <input type="radio" name="center_entry_level" value="creativity"
+                                    x-model="selectedLevel" data-field="center_entry_level"
+                                    class="text-indigo-600 focus:ring-indigo-500">
+                                <span>🏆 مستوى الإبداع</span>
+                            </div>
+                            <span class="text-xs text-gray-500 mt-2 mr-5">مجالس الإجازات، القراءات والسند المتصل</span>
+                        </label>
                     </div>
-
-                    <div class="space-y-2">
-                        <label class="block text-sm font-bold text-gray-700">الإجازات والأسانيد السابقة <span class="text-red-500">*</span></label>
-                        <textarea name="previous_licenses_and_chains"
-                            placeholder="يرجى ذكر الإجازات، اسم الشيخ المجيز، والمتن..."
-                            class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all min-h-25">{{ old('previous_licenses_and_chains', $ibda->previous_licenses_and_chains ?? '') }}</textarea>
-                        @error('previous_licenses_and_chains')
-                        <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="block text-sm font-bold text-gray-700">المسار والرواية المراد دراستها <span class="text-red-500">*</span></label>
-                        <input type="text" name="desired_narration_and_path"
-                            value="{{ old('desired_narration_and_path', $ibda->desired_narration_and_path ?? '') }}"
-                            placeholder="مثال: رواية ورش عن نافع، القراءات العشر..."
-                            class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all">
-                        @error('desired_narration_and_path')
-                        <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="block text-sm font-bold text-gray-700">الوقت المناسب للمجلس <span class="text-red-500">*</span></label>
-                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 p-3 bg-gray-50 rounded-2xl border border-gray-100"
-                            x-bind:inert="selectedLevel !== 'creativity'">
-                            @foreach(['صباحًا', 'ظهرًا', 'عصرًا', 'ليلًا', 'أون لاين'] as $time)
-                            <label class="flex items-center gap-1 text-xs font-bold text-gray-600 cursor-pointer">
-                                <input type="radio" name="preferred_time" value="{{ $time }}" data-field="preferred_time"
-                                    @checked(old('preferred_time', $ibda->preferred_time ?? '') == $time)>
-                                <span>{{ $time === 'أون لاين' ? 'عن بُعد' : $time }}</span>
-                            </label>
-                            @endforeach
-                        </div>
-
-                        <select name="supervisor_name" data-field="supervisor_name"
-                            x-bind:disabled="selectedLevel !== 'creativity'"
-                            class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all appearance-none">
-                            <option value="">-- اختر المعلم --</option>
-                            @foreach ($teachers ?? [] as $teacherItem)
-                            <option value="{{ $teacherItem->name }}" @selected(old('supervisor_name', $ibda->supervisor_name ?? '') == $teacherItem->name)>
-                                {{ $teacherItem->name }}
-                            </option>
-                            @endforeach
-                        </select>
-                        @error('supervisor_name')
-                        <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
-                        @enderror
-                    </div>
+                    <span data-error-for="center_entry_level" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                    @error('center_entry_level')
+                    <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
+                    @enderror
                 </div>
             </div>
 
-            <!-- ───────────────── التوصيات النهائية ───────────────── -->
-            <div id="step-9" class="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 space-y-6">
+            <!-- ───────────────── مستوى البناء ───────────────── -->
+            <div id="step-6" x-show="selectedLevel === 'construction'" x-transition
+                class="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 space-y-6">
                 <div class="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
-                    <div class="p-3 bg-[#e8f5ed] text-[#0a5c36] rounded-2xl text-xl">📝</div>
+                    <div class="p-3 bg-emerald-50 text-[#0a5c36] rounded-2xl text-xl">🌱</div>
                     <div>
-                        <h2 class="text-xl font-black text-gray-800">التوصيات النهائية والملاحظات الإدارية</h2>
-                        <p class="text-xs text-gray-400 mt-1">الاعتماد المالي وقرار الإدارة النهائي لتسجيل الطالب</p>
+                        <h2 class="text-xl font-black text-[#0a5c36]">مستوى البناء</h2>
+                        <p class="text-xs text-gray-400 mt-1">تسكين الطالب في الحلقات وخطة الحفظ</p>
                     </div>
                 </div>
 
-                <div class="bg-[#e8f5ed]/50 rounded-2xl p-4 text-center border border-[#d4c98a] my-4">
-                    <div class="font-serif font-bold text-[#0a5c36] text-lg">« وَلَقَدْ يَسَّرْنَا الْقُرْآنَ لِلذِّكْرِ فَهَلْ مِن مُّدَّكِرٍ »</div>
-                    <div class="text-[10px] text-gray-400 mt-1">سورة القمر - آية ١٧</div>
+                {{-- نظام الدراسة --}}
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-gray-700">نظام الدراسة <span class="text-red-500">*</span></label>
+                    <div class="flex gap-6 p-3 bg-gray-50 rounded-2xl border border-gray-100">
+                        <label class="flex items-center gap-2 text-sm font-semibold text-gray-600 cursor-pointer">
+                            <input type="radio" name="study_system" value="group" x-model="studySystem" data-field="study_system"
+                                @checked(old('study_system', $construction->study_system ?? 'group') == 'group')>
+                            <span>جماعي</span>
+                        </label>
+                        <label class="flex items-center gap-2 text-sm font-semibold text-gray-600 cursor-pointer">
+                            <input type="radio" name="study_system" value="individual" x-model="studySystem" data-field="study_system"
+                                @checked(old('study_system', $construction->study_system ?? '') == 'individual')>
+                            <span>فردي</span>
+                        </label>
+                    </div>
+                    <span data-error-for="study_system" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                    @error('study_system')
+                    <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
+                    @enderror
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                    <div class="space-y-2">
-                        <label class="block text-sm font-bold text-gray-700">رسوم حجز المقعد</label>
-                        <input type="text" name="subscription_fees"
-                            value="{{ old('subscription_fees', $student->subscription_fees ?? '') }}"
-                            placeholder="مثال: 150"
-                            class="w-full p-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm">
-                        @error('subscription_fees')
-                        <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
-                        @enderror
+                {{-- الحلقة --}}
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-gray-700">الحلقة <span class="text-red-500">*</span></label>
+                    <select name="circle_id" id="circleSelect" data-field="circle_id"
+                        class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all appearance-none">
+                        <option value="" @selected(old('circle_id', $construction->circle_id ?? '') == '')>-- اختر الحلقة --</option>
+                        @foreach($circles as $circle)
+                        <option value="{{ $circle->id }}" data-type="{{ $circle->type }}" data-url="{{ $circle->url }}"
+                            @selected(old('circle_id', $construction->circle_id ?? '') == $circle->id)>
+                            {{ $circle->name }}
+                        </option>
+                        @endforeach
+                    </select>
+                    <span data-error-for="circle_id" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                    @error('circle_id')
+                    <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                {{-- بطاقة معلومات خطة الحلقة الجماعية (عرض فقط، تساعد المشرف على القرار) --}}
+                <div id="groupPlanInfo" class="hidden bg-blue-50 border border-blue-100 rounded-2xl p-4 space-y-2">
+                    <p class="text-sm font-bold text-blue-700">📋 خطة الحفظ الحالية لهذه الحلقة:</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-blue-800">
+                        <p>السورة الحالية: <span id="groupPlanSurah" class="font-bold"></span></p>
+                        <p>خطة الحفظ الجديد: <span id="groupPlanNew" class="font-bold"></span></p>
+                        <p>خطة المراجعة: <span id="groupPlanRevision" class="font-bold"></span></p>
+                        <p>خطة الحفظ القديم: <span id="groupPlanOld" class="font-bold"></span></p>
                     </div>
+                    <p class="text-xs text-blue-500 mt-1">تأكد من مناسبة مستوى الحلقة لمستوى الطالب قبل التسكين. سيتم ربط الطالب بهذه الخطة تلقائيًا.</p>
+                </div>
+
+                <div id="groupPlanEmpty" class="hidden bg-amber-50 border border-amber-100 rounded-2xl p-4 text-sm text-amber-700 font-semibold">
+                    ⚠️ لا توجد بيانات خطة مسجلة لهذه الحلقة بعد. سيتم إنشاء خطة الطالب كأول سجل للحلقة.
+                </div>
+
+                {{-- خطط الفردي فقط: السورة + الخطط الثلاثة (تظهر وتُملأ يدويًا) --}}
+                <div x-show="studySystem === 'individual'" x-transition class="space-y-6">
                     <div class="space-y-2">
-                        <label class="block text-xs font-black text-gray-600">الأدوات والكتب المستلمة</label>
-                        <select name="received_tools"
-                            class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium appearance-none">
-                            <option value="" @selected(old('received_tools', $student->received_tools ?? '') == '')>-- اختر نوع العهدة --</option>
-                            @foreach(['لم يأخذ شيء' => 'لم يأخذ شيء', 'المصحف فقط' => 'المصحف فقط', 'المتابعة فقط' => 'دفتر المتابعة فقط', 'المصحف والمتابعة' => 'المصحف ودفتر المتابعة معًا'] as $val => $lbl)
-                            <option value="{{ $val }}" @selected(old('received_tools', $student->received_tools ?? '') == $val)>{{ $lbl }}</option>
+                        <label class="block text-sm font-bold text-gray-700">السورة الحالية</label>
+                        <select name="current_surah_id" data-field="current_surah_id"
+                            class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all appearance-none">
+                            <option value="" @selected(old('current_surah_id', $construction->current_surah_id ?? '') == '')>-- اختر السورة --</option>
+                            @foreach($surahs ?? [] as $surah)
+                            <option value="{{ $surah->id }}" @selected(old('current_surah_id', $construction->current_surah_id ?? '') == $surah->id)>
+                                {{ $surah->number }}. {{ $surah->name_arabic }}
+                            </option>
                             @endforeach
                         </select>
-                        @error('received_tools')
+                        <span data-error-for="current_surah_id" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                        @error('current_surah_id')
                         <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                         @enderror
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="space-y-2">
+                            <label class="block text-sm font-bold text-gray-700">خطة الحفظ الجديد <span class="text-red-500">*</span></label>
+                            <input type="text" name="new_memorization_plan" data-field="new_memorization_plan"
+                                value="{{ old('new_memorization_plan', $construction->new_memorization_plan ?? '') }}"
+                                placeholder="مثال: 5 سطور يومياً"
+                                class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all">
+                            <span data-error-for="new_memorization_plan" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                            @error('new_memorization_plan')
+                            <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-bold text-gray-700">خطة المراجعة <span class="text-red-500">*</span></label>
+                            <input type="text" name="revision_plan" data-field="revision_plan"
+                                value="{{ old('revision_plan', $construction->revision_plan ?? '') }}"
+                                placeholder="مثال: وجه يومياً"
+                                class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all">
+                            <span data-error-for="revision_plan" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                            @error('revision_plan')
+                            <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="space-y-2">
+                            <label class="block text-sm font-bold text-gray-700">خطة الحفظ القديم <span class="text-red-500">*</span></label>
+                            <input type="text" name="old_memorization_plan" data-field="old_memorization_plan"
+                                value="{{ old('old_memorization_plan', $construction->old_memorization_plan ?? '') }}"
+                                placeholder="مثال: حزب أسبوعياً"
+                                class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all">
+                            <span data-error-for="old_memorization_plan" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                            @error('old_memorization_plan')
+                            <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    </div>
+                </div>
+
+                {{-- تقييم التسكين --}}
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-gray-700">تقييم التسكين</label>
+                    <textarea name="placement_evaluation" data-field="placement_evaluation" rows="3"
+                        placeholder="نتائج تقييم التسكين..."
+                        class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all">{{ old('placement_evaluation', $construction->placement_evaluation ?? '') }}</textarea>
+                </div>
+            </div>
+
+            <!-- ───────────────── مستوى الإتقان ───────────────── -->
+            <div id="step-7" x-show="selectedLevel === 'mastery'" x-transition
+                class="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 space-y-6">
+                <div class="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
+                    <div class="p-3 bg-amber-50 text-amber-600 rounded-2xl text-xl">⭐</div>
+                    <div>
+                        <h2 class="text-xl font-black text-amber-600">مستوى الإتقان</h2>
+                        <p class="text-xs text-gray-400 mt-1">تفاصيل الحفظ والمراجعة للمتقدمين المتميزين</p>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    @can('edit students')
                     <div class="space-y-2">
-                        <label class="block text-sm font-bold text-gray-700">حالة الطالب</label>
-                        <select name="status" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm">
-                            @foreach(['مقيد', 'متوقف', 'مسافر'] as $statusOption)
-                            <option value="{{ $statusOption }}" @selected(old('status', $student->status ?? 'مقيد') == $statusOption)>{{ $statusOption }}</option>
-                            @endforeach
-                        </select>
-                        @error('status')
+                        <label class="block text-sm font-bold text-gray-700">جهة الحفظ السابقة <span class="text-red-500">*</span></label>
+                        <input type="text" name="previous_memorization_side" data-field="previous_memorization_side"
+                            value="{{ old('previous_memorization_side', $itqan->previous_memorization_side ?? '') }}"
+                            placeholder="اسم المسجد، المركز، أو الشيخ السابق"
+                            class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all">
+                        <span data-error-for="previous_memorization_side" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                        @error('previous_memorization_side')
                         <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                         @enderror
                     </div>
-                    @else
-                    <input type="hidden" name="status" value="{{ old('status', $student->status ?? 'مقيد') }}">
-                    @endcan
-
-                    @can('manage student status')
                     <div class="space-y-2">
-                        <label class="block text-sm font-bold text-gray-700">قرار الإدارة</label>
-                        <select name="decision" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm">
-                            @foreach(['تحت الاختبار', 'مقبول', 'مرفوض'] as $decisionOption)
-                            <option value="{{ $decisionOption }}" @selected(old('decision', $student->decision ?? 'تحت الاختبار') == $decisionOption)>{{ $decisionOption }}</option>
-                            @endforeach
-                        </select>
-                        @error('decision')
+                        <label class="block text-sm font-bold text-gray-700">عدد الختمات السابقة <span class="text-red-500">*</span></label>
+                        <input type="text" name="previous_khatamat_count" data-field="previous_khatamat_count"
+                            value="{{ old('previous_khatamat_count', $itqan->previous_khatamat_count ?? '') }}"
+                            placeholder="مثال: ختمة واحدة أو أكثر"
+                            class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all">
+                        <span data-error-for="previous_khatamat_count" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                        @error('previous_khatamat_count')
                         <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                         @enderror
                     </div>
-                    @else
-                    <div class="space-y-2">
-                        <label class="block text-sm font-bold text-gray-700">قرار الإدارة</label>
-                        @php $decision = old('decision', $student->decision ?? 'تحت الاختبار'); @endphp
-                        <div class="w-full p-3 bg-gray-100 border border-gray-200 rounded-2xl text-sm text-gray-600 flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full inline-block
-                            {{ $decision === 'مقبول' ? 'bg-emerald-500' : ($decision === 'مرفوض' ? 'bg-red-500' : 'bg-amber-400') }}">
-                            </span>
-                            {{ $decision }}
-                            <span class="text-xs text-gray-400 mr-auto">(صلاحيات الإدارة فقط)</span>
-                        </div>
-                        <input type="hidden" name="decision" value="{{ $decision }}">
-                    </div>
-                    @endcan
                 </div>
 
                 <div class="space-y-2">
-                    <div class="flex justify-between items-center">
-                        <label class="block text-sm font-bold text-gray-700">ملاحظات الشيخ المختبر / المشرف الفنية</label>
+                    <label class="block text-sm font-bold text-gray-700">مقدار المراجعة الحالي <span class="text-red-500">*</span></label>
+                    <input type="text" name="current_review_amount" data-field="current_review_amount"
+                        value="{{ old('current_review_amount', $itqan->current_review_amount ?? '') }}"
+                        placeholder="مثال: جزء يوميًّا، حزب، نصف جزء..."
+                        class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all">
+                    <span data-error-for="current_review_amount" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                    @error('current_review_amount')
+                    <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-gray-700">تقييم مستوى الحفظ (1-10) <span class="text-red-500">*</span></label>
+                    <select name="self_evaluation" data-field="self_evaluation"
+                        class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all appearance-none">
+                        <option value="">-- اختر التقييم --</option>
+                        @for ($i = 1; $i <= 10; $i++)
+                            <option value="{{ $i }}" @selected(old('self_evaluation', $itqan?->self_evaluation ?? 0) == $i)>{{ $i }}</option>
+                            @endfor
+                    </select>
+                    <span data-error-for="self_evaluation" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                    @error('self_evaluation')
+                    <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-gray-700">متون التجويد المحفوظة <span class="text-red-500">*</span></label>
+                    <x-creatable-select
+                        name="tajweed_matn"
+                        :options="['لا يوجد', 'تحفة الأطفال', 'المقدمة الجزرية']"
+                        :value="old('tajweed_matn', $itqan->tajweed_matn ?? '')"
+                        placeholder="اختر أو اكتب متن التجويد..." />
+                    <span data-error-for="tajweed_matn" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                    @error('tajweed_matn')
+                    <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-gray-700">المسار المرغوب فيه <span class="text-red-500">*</span></label>
+                        <x-creatable-select
+                            name="desired_path"
+                            :options="['تثبيت الحفظ', 'تصحيح التلاوة', 'الإجازة والسند']"
+                            :value="old('desired_path', $itqan->desired_path ?? '')"
+                            placeholder="اختر أو اكتب المسار المرغوب..." />
+                        <span data-error-for="desired_path" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                        @error('desired_path')
+                        <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
+                        @enderror
                     </div>
-                    <textarea name="notes" data-field="notes"
-                        placeholder="اكتب التوصيات الخاصة بمخارج الحروف والتجويد..."
-                        class="w-full p-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm min-h-25">{{ old('notes', $student->notes ?? '') }}</textarea>
-                    @error('notes')
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-gray-700">الوقت المناسب للمجلس <span class="text-red-500">*</span></label>
+                        <x-creatable-select
+                        name="preferred_time_mastery"
+                        :options="['صباحًا', 'ظهرًا', 'عصرًا', 'ليلًا', 'أون لاين']"
+                        :value="old('preferred_time_mastery', $itqan->preferred_time ?? '')"
+                        placeholder="اختر أو اكتب الوقت المناسب..." />
+                        <span data-error-for="preferred_time_mastery" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                        @error('preferred_time_mastery')
+                        <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
+                        @enderror
+                    </div>
+                </div>
+                
+                <label class="block mb-2 text-sm font-bold text-gray-700">المعلم <span class="text-red-500">*</span></label>
+                <select name="teacher_name" data-field="teacher_name"
+                    x-bind:disabled="selectedLevel !== 'mastery'"
+                    class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all appearance-none">
+                    <option value="" @selected(old('teacher_name', $itqan->teacher_name ?? '') == '')>-- اختر المعلم --</option>
+                    <option value="بدون تحديد" @selected(old('teacher_name', $itqan->teacher_name ?? '') == 'بدون تحديد')>بدون تحديد (حسب المتاح)</option>
+                    @foreach ($teachers ?? [] as $teacherItem)
+                    <option value="{{ $teacherItem->name }}" @selected(old('teacher_name', $itqan->teacher_name ?? '') == $teacherItem->name)>
+                        {{ $teacherItem->name }}
+                    </option>
+                    @endforeach
+                </select>
+                <span data-error-for="teacher_name" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                @error('teacher_name')
+                <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
+                @enderror
+            </div>
+
+            <!-- ───────────────── مستوى الإبداع ───────────────── -->
+            <div id="step-8" x-show="selectedLevel === 'creativity'" x-transition
+                class="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 space-y-6">
+                <div class="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
+                    <div class="p-3 bg-indigo-50 text-indigo-600 rounded-2xl text-xl">🏆</div>
+                    <div>
+                        <h2 class="text-xl font-black text-indigo-600">مستوى الإبداع</h2>
+                        <p class="text-xs text-gray-400 mt-1">بيانات الروايات والأسانيد التي حصل عليها الطالب</p>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-gray-700">الإجازات والأسانيد السابقة <span class="text-red-500">*</span></label>
+                    <textarea name="previous_licenses_and_chains" data-field="previous_licenses_and_chains"
+                        placeholder="يرجى ذكر الإجازات، اسم الشيخ المجيز، والمتن..."
+                        class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all min-h-25">{{ old('previous_licenses_and_chains', $ibda->previous_licenses_and_chains ?? '') }}</textarea>
+                    <span data-error-for="previous_licenses_and_chains" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                    @error('previous_licenses_and_chains')
+                    <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-gray-700">المسار والرواية المراد دراستها <span class="text-red-500">*</span></label>
+                    <input type="text" name="desired_narration_and_path" data-field="desired_narration_and_path"
+                        value="{{ old('desired_narration_and_path', $ibda->desired_narration_and_path ?? '') }}"
+                        placeholder="مثال: رواية ورش عن نافع، القراءات العشر..."
+                        class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all">
+                    <span data-error-for="desired_narration_and_path" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                    @error('desired_narration_and_path')
+                    <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-bold text-gray-700">الوقت المناسب للمجلس <span class="text-red-500">*</span></label>
+                    <x-creatable-select
+                    name="preferred_time_creativity"
+                    :options="['صباحًا', 'ظهرًا', 'عصرًا', 'ليلًا', 'أون لاين']"
+                    :value="old('preferred_time_creativity', $ibda->preferred_time ?? '')"
+                    placeholder="اختر أو اكتب الوقت المناسب..." />
+                    <span data-error-for="preferred_time_creativity" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                    @error('preferred_time_creativity')
+                    <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
+                    @enderror
+                    
+                    <label class="block text-sm font-bold text-gray-700">المعلم <span class="text-red-500">*</span></label>
+                    <select name="supervisor_name" data-field="supervisor_name"
+                        x-bind:disabled="selectedLevel !== 'creativity'"
+                        class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all appearance-none">
+                        <option value="">-- اختر المعلم --</option>
+                        @foreach ($teachers ?? [] as $teacherItem)
+                        <option value="{{ $teacherItem->name }}" @selected(old('supervisor_name', $ibda->supervisor_name ?? '') == $teacherItem->name)>
+                            {{ $teacherItem->name }}
+                        </option>
+                        @endforeach
+                    </select>
+                    <span data-error-for="supervisor_name" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                    @error('supervisor_name')
                     <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
                     @enderror
                 </div>
             </div>
+    </div>
 
-            <div class="flex justify-end items-center pt-6 border-t border-gray-100 mt-8">
-                <button type="submit"
-                    class="flex items-center gap-2 px-8 py-3 bg-[#0a5c36] hover:bg-[#084d2d] text-white font-black rounded-2xl shadow-md transition-all text-sm">
-                    حفظ البيانات وإرسال النموذج ✓
-                </button>
+    <!-- ───────────────── التوصيات النهائية ───────────────── -->
+    <div id="step-9" class="bg-white rounded-3xl shadow-sm border border-gray-100 mt-8 p-8 space-y-6">
+        <div class="flex items-center gap-3 mb-6 border-b border-gray-50 pb-4">
+            <div class="p-3 bg-[#e8f5ed] text-[#0a5c36] rounded-2xl text-xl">📝</div>
+            <div>
+                <h2 class="text-xl font-black text-gray-800">التوصيات النهائية والملاحظات الإدارية</h2>
+                <p class="text-xs text-gray-400 mt-1">الاعتماد المالي وقرار الإدارة النهائي لتسجيل الطالب</p>
             </div>
-
         </div>
 
-        {{-- ============================================================
-         JavaScript
+        <div class="bg-[#e8f5ed]/50 rounded-2xl p-4 text-center border border-[#d4c98a] my-4">
+            <div class="font-serif font-bold text-[#0a5c36] text-lg">« وَلَقَدْ يَسَّرْنَا الْقُرْآنَ لِلذِّكْرِ فَهَلْ مِن مُّدَّكِرٍ »</div>
+            <div class="text-[10px] text-gray-400 mt-1">سورة القمر - آية ١٧</div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+            <div class="space-y-2">
+                <label class="block text-sm font-bold text-gray-700">رسوم حجز المقعد</label>
+                <input type="text" name="subscription_fees" data-field="subscription_fees"
+                    value="{{ old('subscription_fees', $student->subscription_fees ?? '') }}"
+                    placeholder="مثال: 150"
+                    class="w-full p-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm">
+                <span data-error-for="subscription_fees" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                @error('subscription_fees')
+                <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
+                @enderror
+            </div>
+            <div class="space-y-2">
+                <label class="block text-xs font-black text-gray-600">الأدوات والكتب المستلمة</label>
+                <select name="received_tools" data-field="received_tools"
+                    class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium appearance-none">
+                    <option value="" @selected(old('received_tools', $student->received_tools ?? '') == '')>-- اختر نوع العهدة --</option>
+                    @foreach(['لم يأخذ شيء' => 'لم يأخذ شيء', 'المصحف فقط' => 'المصحف فقط', 'المتابعة فقط' => 'دفتر المتابعة فقط', 'المصحف والمتابعة' => 'المصحف ودفتر المتابعة معًا'] as $val => $lbl)
+                    <option value="{{ $val }}" @selected(old('received_tools', $student->received_tools ?? '') == $val)>{{ $lbl }}</option>
+                    @endforeach
+                </select>
+                <span data-error-for="received_tools" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                @error('received_tools')
+                <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
+                @enderror
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            @can('edit students')
+            <div class="space-y-2">
+                <label class="block text-sm font-bold text-gray-700">حالة الطالب</label>
+                <select name="status" data-field="status" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm">
+                    @foreach(['مقيد', 'متوقف', 'مسافر'] as $statusOption)
+                    <option value="{{ $statusOption }}" @selected(old('status', $student->status ?? 'مقيد') == $statusOption)>{{ $statusOption }}</option>
+                    @endforeach
+                </select>
+                <span data-error-for="status" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                @error('status')
+                <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
+                @enderror
+            </div>
+            @else
+            <input type="hidden" name="status" value="{{ old('status', $student->status ?? 'مقيد') }}">
+            @endcan
+
+            @can('manage student status')
+            <div class="space-y-2">
+                <label class="block text-sm font-bold text-gray-700">قرار الإدارة</label>
+                <select name="decision" data-field="decision" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm">
+                    @foreach(['تحت الاختبار', 'مقبول', 'مرفوض'] as $decisionOption)
+                    <option value="{{ $decisionOption }}" @selected(old('decision', $student->decision ?? 'تحت الاختبار') == $decisionOption)>{{ $decisionOption }}</option>
+                    @endforeach
+                </select>
+                <span data-error-for="decision" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
+                @error('decision')
+                <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
+                @enderror
+            </div>
+            @else
+            <div class="space-y-2">
+                <label class="block text-sm font-bold text-gray-700">قرار الإدارة</label>
+                @php $decision = old('decision', $student->decision ?? 'تحت الاختبار'); @endphp
+                <div class="w-full p-3 bg-gray-100 border border-gray-200 rounded-2xl text-sm text-gray-600 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full inline-block
+                            {{ $decision === 'مقبول' ? 'bg-emerald-500' : ($decision === 'مرفوض' ? 'bg-red-500' : 'bg-amber-400') }}">
+                    </span>
+                    {{ $decision }}
+                    <span class="text-xs text-gray-400 mr-auto">(صلاحيات الإدارة فقط)</span>
+                </div>
+                <input type="hidden" name="decision" value="{{ $decision }}">
+            </div>
+            @endcan
+        </div>
+
+        <div class="space-y-2">
+            <div class="flex justify-between items-center">
+                <label class="block text-sm font-bold text-gray-700">ملاحظات الشيخ المختبر / المشرف الفنية</label>
+            </div>
+            <textarea name="notes" data-field="notes"
+                placeholder="اكتب التوصيات الخاصة بمخارج الحروف والتجويد..."
+                class="w-full p-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm min-h-25">{{ old('notes', $student->notes ?? '') }}</textarea>
+            @error('notes')
+            <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
+            @enderror
+        </div>
+    </div>
+
+    <div class="flex justify-end items-center pt-6 border-t border-gray-100 mt-8">
+        <button type="submit"
+            class="flex items-center gap-2 px-8 py-3 bg-[#0a5c36] hover:bg-[#084d2d] text-white font-black rounded-2xl shadow-md transition-all text-sm">
+            حفظ البيانات وإرسال النموذج ✓
+        </button>
+    </div>
+
+    {{-- ============================================================
+        JavaScript
     ============================================================ --}}
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
 
-                // ── 1) data-show-when ──────────────────────────────────────
-                function initShowWhen(input) {
-                    const condition = input.getAttribute('data-show-when');
-                    if (!condition) return;
+            // ── 1) data-show-when ──────────────────────────────────────
+            function initShowWhen(input) {
+                const condition = input.getAttribute('data-show-when');
+                if (!condition) return;
 
-                    const eqIndex = condition.indexOf('=');
-                    const fieldName = condition.substring(0, eqIndex);
-                    const expected = condition.substring(eqIndex + 1);
+                const eqIndex = condition.indexOf('=');
+                const fieldName = condition.substring(0, eqIndex);
+                const expected = condition.substring(eqIndex + 1);
 
-                    function getVal() {
-                        const checked = document.querySelector(`[name="${fieldName}"]:checked`);
-                        if (checked) return checked.value;
-                        const sel = document.querySelector(`select[name="${fieldName}"]`);
-                        if (sel) return sel.value;
-                        return '';
-                    }
-
-                    function toggle() {
-                        input.style.display = getVal() === expected ? 'block' : 'none';
-                    }
-
-                    document.querySelectorAll(`[name="${fieldName}"]`).forEach(el => {
-                        el.addEventListener('change', toggle);
-                    });
-
-                    toggle();
+                function getVal() {
+                    const checked = document.querySelector(`[name="${fieldName}"]:checked`);
+                    if (checked) return checked.value;
+                    const sel = document.querySelector(`select[name="${fieldName}"]`);
+                    if (sel) return sel.value;
+                    return '';
                 }
 
-                document.querySelectorAll('[data-show-when]').forEach(initShowWhen);
-
-                // ── 3) فلترة الحلقات حسب النظام + عرض بطاقة معلومات الجماعي ─
-                const circleSelect = document.getElementById('circleSelect');
-                const groupPlanInfo = document.getElementById('groupPlanInfo');
-                const groupPlanEmpty = document.getElementById('groupPlanEmpty');
-                const groupPlanSurah = document.getElementById('groupPlanSurah');
-                const groupPlanNew = document.getElementById('groupPlanNew');
-                const groupPlanRevision = document.getElementById('groupPlanRevision');
-                const groupPlanOld = document.getElementById('groupPlanOld');
-
-                // ✅ فلاج لمنع مسح قيمة الحلقة المحفوظة عند أول تحميل لصفحة التعديل
-                let isFirstCircleFilterRun = true;
-
-                function filterCirclesBySystem() {
-                    if (!circleSelect) return;
-                    const selectedSystem = document.querySelector('input[name="study_system"]:checked')?.value;
-                    if (!selectedSystem) return;
-
-                    let currentValueStillValid = false;
-                    Array.from(circleSelect.options).forEach(opt => {
-                        if (!opt.value) return;
-                        const matches = opt.getAttribute('data-type') === selectedSystem;
-                        opt.hidden = !matches;
-                        if (matches && opt.value === circleSelect.value) currentValueStillValid = true;
-                    });
-
-                    // ✅ في أول تشغيل (تحميل الصفحة)، لا نمسح القيمة القادمة من السيرفر
-                    // حتى لو data-type مش متطابق، عشان نضمن ظهور بيانات التعديل
-                    // المسح يحصل فقط لما المستخدم يغيّر نظام الدراسة يدويًا بعد كده
-                    if (!currentValueStillValid && !isFirstCircleFilterRun) {
-                        circleSelect.value = '';
-                        hideGroupPlanInfo();
-                    }
-                    isFirstCircleFilterRun = false;
+                function toggle() {
+                    input.style.display = getVal() === expected ? 'block' : 'none';
                 }
 
-                function hideGroupPlanInfo() {
-                    groupPlanInfo?.classList.add('hidden');
-                    groupPlanEmpty?.classList.add('hidden');
-                }
-
-                async function showGroupPlanInfo() {
-                    if (!circleSelect || !circleSelect.value) {
-                        hideGroupPlanInfo();
-                        return;
-                    }
-
-                    const opt = circleSelect.options[circleSelect.selectedIndex];
-                    const circleType = opt?.getAttribute('data-type');
-
-                    if (circleType !== 'group') {
-                        hideGroupPlanInfo();
-                        return;
-                    }
-
-                    try {
-                        const res = await fetch(`/circles/${circleSelect.value}/group-plan`, {
-                            headers: {
-                                'Accept': 'application/json'
-                            }
-                        });
-                        if (!res.ok) return;
-
-                        const data = await res.json();
-
-                        if (!data.found) {
-                            groupPlanInfo?.classList.add('hidden');
-                            groupPlanEmpty?.classList.remove('hidden');
-                            return;
-                        }
-
-                        if (groupPlanSurah) groupPlanSurah.textContent = data.current_surah_name ?? '—';
-                        if (groupPlanNew) groupPlanNew.textContent = data.new_memorization_plan || '—';
-                        if (groupPlanRevision) groupPlanRevision.textContent = data.revision_plan || '—';
-                        if (groupPlanOld) groupPlanOld.textContent = data.old_memorization_plan || '—';
-
-                        groupPlanEmpty?.classList.add('hidden');
-                        groupPlanInfo?.classList.remove('hidden');
-                    } catch (e) {
-                        console.error('Group plan fetch error:', e);
-                    }
-                }
-
-                document.querySelectorAll('input[name="study_system"]').forEach(radio => {
-                    radio.addEventListener('change', filterCirclesBySystem);
+                document.querySelectorAll(`[name="${fieldName}"]`).forEach(el => {
+                    el.addEventListener('change', toggle);
                 });
 
-                if (circleSelect) {
-                    circleSelect.addEventListener('change', showGroupPlanInfo);
-                }
-
-                filterCirclesBySystem();
-                showGroupPlanInfo(); // في حالة edit لو الحلقة محددة مسبقًا
-
-                // ── 4) guardian_id قبل الإرسال ────────────────────────────
-                const studentForm = document.querySelector('form');
-                if (studentForm) {
-                    studentForm.addEventListener('submit', function() {
-                        const guardianInput = document.getElementById('guardianIdInput');
-                        if (guardianInput && !guardianInput.value) {
-                            guardianInput.value = 'none';
-                        }
-                    });
-                }
-
-                // ── 5) استعادة حالة guardian بعد validation error ─────────
-                const guardianIdVal = document.getElementById('guardianIdInput')?.value;
-                if (guardianIdVal === 'new') {
-                    document.getElementById('newGuardianFields').style.display = 'grid';
-                }
-
-                // ── 6) ربط checkGuardianExists بحقل الواتساب ──────────────
-                const whatsappInput = document.getElementById('whatsappInput');
-                if (whatsappInput) {
-                    let whatsappTimer;
-                    whatsappInput.addEventListener('input', () => {
-                        clearTimeout(whatsappTimer);
-                        whatsappTimer = setTimeout(checkGuardianExists, 600);
-                    });
-                }
-
-                // ── 7) ربط قرار الإدارة "مرفوض" بحالة الطالب "متوقف" تلقائيًا ──────
-                const decisionSelect = document.querySelector('select[name="decision"]');
-                const statusSelect = document.querySelector('select[name="status"]');
-
-                if (decisionSelect && statusSelect) {
-                    decisionSelect.addEventListener('change', function() {
-                        if (this.value === 'مرفوض') {
-                            statusSelect.value = 'متوقف';
-                        }
-                    });
-                }
-            });
-
-            // ── Alpine: guardianSearch ─────────────────────────────────────
-            function guardianSearch() {
-                return {
-                    query: '{{ addslashes($guardianQueryName) }}',
-                    results: [],
-                    selected: @json($guardianData ?? null),
-                    searching: false,
-                    noResults: false,
-
-                    async search() {
-                        if (this.query.length < 2) {
-                            this.results = [];
-                            this.noResults = false;
-                            return;
-                        }
-
-                        this.searching = true;
-                        this.noResults = false;
-
-                        try {
-                            // ✅ URL محدث
-                            const res = await fetch(
-                                `/guardians/search?q=${encodeURIComponent(this.query)}`, {
-                                    headers: {
-                                        'Accept': 'application/json',
-                                        'X-Requested-With': 'XMLHttpRequest'
-                                    }
-                                }
-                            );
-
-                            if (!res.ok) {
-                                console.error('Guardian search failed:', res.status);
-                                return;
-                            }
-
-                            this.results = await res.json();
-                            this.noResults = this.results.length === 0;
-
-                            if (this.noResults) {
-                                document.getElementById('guardianIdInput').value = 'new';
-                                document.getElementById('newGuardianFields').style.display = 'grid';
-                            } else {
-                                document.getElementById('newGuardianFields').style.display = 'none';
-                            }
-                        } catch (e) {
-                            console.error('Guardian search error:', e);
-                        } finally {
-                            this.searching = false;
-                        }
-                    },
-
-                    select(guardian) {
-                        this.selected = guardian;
-                        this.query = guardian.name;
-                        this.results = [];
-                        this.noResults = false;
-                        document.getElementById('guardianIdInput').value = guardian.id;
-                        document.getElementById('newGuardianFields').style.display = 'none';
-                        document.getElementById('guardianExistsAlert')?.classList.add('hidden');
-                    },
-
-                    clear() {
-                        this.selected = null;
-                        this.query = '';
-                        this.results = [];
-                        this.noResults = false;
-                        document.getElementById('guardianIdInput').value = '';
-                        document.getElementById('newGuardianFields').style.display = 'none';
-                        document.getElementById('guardianExistsAlert')?.classList.add('hidden');
-                    },
-
-                    createNew() {
-                        this.selected = null;
-                        document.getElementById('guardianIdInput').value = 'new';
-                        document.getElementById('newGuardianFields').style.display = 'grid';
-                    },
-
-                    skipGuardian() {
-                        this.selected = {
-                            id: null,
-                            name: 'بدون ولي أمر',
-                        };
-                        this.query = '';
-                        this.results = [];
-                        this.noResults = false;
-                        document.getElementById('guardianIdInput').value = 'none';
-                        document.getElementById('newGuardianFields').style.display = 'none';
-                    },
-                };
+                toggle();
             }
 
-            // ── checkGuardianExists ────────────────────────────────────────
-            let _existingGuardianFromCheck = null;
+            document.querySelectorAll('[data-show-when]').forEach(initShowWhen);
 
-            async function checkGuardianExists() {
-                const email = document.getElementById('parentEmailInput')?.value?.trim() ?? '';
+            // ── 3) فلترة الحلقات حسب النظام + عرض بطاقة معلومات الجماعي ─
+            const circleSelect = document.getElementById('circleSelect');
+            const groupPlanInfo = document.getElementById('groupPlanInfo');
+            const groupPlanEmpty = document.getElementById('groupPlanEmpty');
+            const groupPlanSurah = document.getElementById('groupPlanSurah');
+            const groupPlanNew = document.getElementById('groupPlanNew');
+            const groupPlanRevision = document.getElementById('groupPlanRevision');
+            const groupPlanOld = document.getElementById('groupPlanOld');
 
-                if (!email) return;
+            // ✅ فلاج لمنع مسح قيمة الحلقة المحفوظة عند أول تحميل لصفحة التعديل
+            let isFirstCircleFilterRun = true;
 
-                const params = new URLSearchParams();
-                if (email) params.set('email', email);
+            function filterCirclesBySystem() {
+                if (!circleSelect) return;
+                const selectedSystem = document.querySelector('input[name="study_system"]:checked')?.value;
+                if (!selectedSystem) return;
 
-                try {
-                    const res = await fetch(`/guardians/check?${params}`, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    });
+                let currentValueStillValid = false;
+                Array.from(circleSelect.options).forEach(opt => {
+                    if (!opt.value) return;
+                    const matches = opt.getAttribute('data-type') === selectedSystem;
+                    opt.hidden = !matches;
+                    if (matches && opt.value === circleSelect.value) currentValueStillValid = true;
+                });
 
-                    if (!res.ok) return;
-
-                    const data = await res.json();
-                    const alertEl = document.getElementById('guardianExistsAlert');
-                    const emailResult = document.getElementById('emailCheckResult');
-
-                    if (data.exists) {
-                        _existingGuardianFromCheck = data;
-                        alertEl?.classList.remove('hidden');
-                        if (emailResult) {
-                            emailResult.className = 'text-xs font-medium mt-1 text-amber-600';
-                            emailResult.textContent = `⚠️ حساب موجود: ${data.name} (#${data.id})`;
-                            emailResult.classList.remove('hidden');
-                        }
-                    } else {
-                        _existingGuardianFromCheck = null;
-                        alertEl?.classList.add('hidden');
-                        if (emailResult) {
-                            emailResult.className = 'text-xs font-medium mt-1 text-emerald-600';
-                            emailResult.textContent = '✓ متاح — سيُنشأ حساب جديد';
-                            emailResult.classList.remove('hidden');
-                        }
-                    }
-                } catch (e) {
-                    console.error('Guardian check error:', e);
+                // ✅ في أول تشغيل (تحميل الصفحة)، لا نمسح القيمة القادمة من السيرفر
+                // حتى لو data-type مش متطابق، عشان نضمن ظهور بيانات التعديل
+                // المسح يحصل فقط لما المستخدم يغيّر نظام الدراسة يدويًا بعد كده
+                if (!currentValueStillValid && !isFirstCircleFilterRun) {
+                    circleSelect.value = '';
+                    hideGroupPlanInfo();
                 }
+                isFirstCircleFilterRun = false;
             }
 
-            // ── useExistingGuardian ────────────────────────────────────────
-            function useExistingGuardian() {
-                if (!_existingGuardianFromCheck) return;
-
-                document.getElementById('guardianIdInput').value = _existingGuardianFromCheck.id;
-                document.getElementById('newGuardianFields').style.display = 'none';
-                document.getElementById('guardianExistsAlert')?.classList.add('hidden');
-                document.getElementById('emailCheckResult')?.classList.add('hidden');
-
-                _existingGuardianFromCheck = null;
+            function hideGroupPlanInfo() {
+                groupPlanInfo?.classList.add('hidden');
+                groupPlanEmpty?.classList.add('hidden');
             }
 
-            // ── تحقق سريع من رقم واتساب عن طريق فتح wa.me ──────────────────
-            function checkWhatsappNumber(inputId) {
-                const input = document.getElementById(inputId);
-                if (!input) return;
-
-                let number = input.value.replace(/[^0-9]/g, '');
-
-                if (!number) {
-                    alert('يرجى إدخال رقم أولًا');
+            async function showGroupPlanInfo() {
+                if (!circleSelect || !circleSelect.value) {
+                    hideGroupPlanInfo();
                     return;
                 }
 
-                // ✅ تحويل الرقم المصري المحلي (01xxxxxxxxx) لصيغة دولية (2xxxxxxxxxx)
-                if (number.startsWith('0')) {
-                    number = '2' + number;
+                const opt = circleSelect.options[circleSelect.selectedIndex];
+                const circleType = opt?.getAttribute('data-type');
+
+                if (circleType !== 'group') {
+                    hideGroupPlanInfo();
+                    return;
                 }
 
-                window.open(`https://wa.me/${number}`, '_blank');
+                try {
+                    const res = await fetch(`/circles/${circleSelect.value}/group-plan`, {
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+                    if (!res.ok) return;
+
+                    const data = await res.json();
+
+                    if (!data.found) {
+                        groupPlanInfo?.classList.add('hidden');
+                        groupPlanEmpty?.classList.remove('hidden');
+                        return;
+                    }
+
+                    if (groupPlanSurah) groupPlanSurah.textContent = data.current_surah_name ?? '—';
+                    if (groupPlanNew) groupPlanNew.textContent = data.new_memorization_plan || '—';
+                    if (groupPlanRevision) groupPlanRevision.textContent = data.revision_plan || '—';
+                    if (groupPlanOld) groupPlanOld.textContent = data.old_memorization_plan || '—';
+
+                    groupPlanEmpty?.classList.add('hidden');
+                    groupPlanInfo?.classList.remove('hidden');
+                } catch (e) {
+                    console.error('Group plan fetch error:', e);
+                }
             }
-        </script>
+
+            document.querySelectorAll('input[name="study_system"]').forEach(radio => {
+                radio.addEventListener('change', filterCirclesBySystem);
+            });
+
+            if (circleSelect) {
+                circleSelect.addEventListener('change', showGroupPlanInfo);
+            }
+
+            filterCirclesBySystem();
+            showGroupPlanInfo(); // في حالة edit لو الحلقة محددة مسبقًا
+
+            // ── 4) guardian_id قبل الإرسال ────────────────────────────
+            const studentForm = document.querySelector('form');
+            if (studentForm) {
+                studentForm.addEventListener('submit', function() {
+                    const guardianInput = document.getElementById('guardianIdInput');
+                    if (guardianInput && !guardianInput.value) {
+                        guardianInput.value = 'none';
+                    }
+                });
+            }
+
+            // ── 5) استعادة حالة guardian بعد validation error ─────────
+            const guardianIdVal = document.getElementById('guardianIdInput')?.value;
+            if (guardianIdVal === 'new') {
+                document.getElementById('newGuardianFields').style.display = 'grid';
+            }
+
+            // ── 6) ربط checkGuardianExists بحقل الواتساب ──────────────
+            const whatsappInput = document.getElementById('whatsappInput');
+            if (whatsappInput) {
+                let whatsappTimer;
+                whatsappInput.addEventListener('input', () => {
+                    clearTimeout(whatsappTimer);
+                    whatsappTimer = setTimeout(checkGuardianExists, 600);
+                });
+            }
+
+            // ── 7) ربط قرار الإدارة "مرفوض" بحالة الطالب "متوقف" تلقائيًا ──────
+            const decisionSelect = document.querySelector('select[name="decision"]');
+            const statusSelect = document.querySelector('select[name="status"]');
+
+            if (decisionSelect && statusSelect) {
+                decisionSelect.addEventListener('change', function() {
+                    if (this.value === 'مرفوض') {
+                        statusSelect.value = 'متوقف';
+                    }
+                });
+            }
+        });
+
+        // ── Alpine: guardianSearch ─────────────────────────────────────
+        function guardianSearch() {
+            return {
+                query: '{{ addslashes($guardianQueryName) }}',
+                results: [],
+                selected: @json($guardianData ?? null),
+                searching: false,
+                noResults: false,
+
+                async search() {
+                    if (this.query.length < 2) {
+                        this.results = [];
+                        this.noResults = false;
+                        return;
+                    }
+
+                    this.searching = true;
+                    this.noResults = false;
+
+                    try {
+                        // ✅ URL محدث
+                        const res = await fetch(
+                            `/guardians/search?q=${encodeURIComponent(this.query)}`, {
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            }
+                        );
+
+                        if (!res.ok) {
+                            console.error('Guardian search failed:', res.status);
+                            return;
+                        }
+
+                        this.results = await res.json();
+                        this.noResults = this.results.length === 0;
+
+                        if (this.noResults) {
+                            document.getElementById('guardianIdInput').value = 'new';
+                            document.getElementById('newGuardianFields').style.display = 'grid';
+                        } else {
+                            document.getElementById('newGuardianFields').style.display = 'none';
+                        }
+                    } catch (e) {
+                        console.error('Guardian search error:', e);
+                    } finally {
+                        this.searching = false;
+                    }
+                },
+
+                select(guardian) {
+                    this.selected = guardian;
+                    this.query = guardian.name;
+                    this.results = [];
+                    this.noResults = false;
+                    document.getElementById('guardianIdInput').value = guardian.id;
+                    document.getElementById('newGuardianFields').style.display = 'none';
+                    document.getElementById('guardianExistsAlert')?.classList.add('hidden');
+                },
+
+                clear() {
+                    this.selected = null;
+                    this.query = '';
+                    this.results = [];
+                    this.noResults = false;
+                    document.getElementById('guardianIdInput').value = '';
+                    document.getElementById('newGuardianFields').style.display = 'none';
+                    document.getElementById('guardianExistsAlert')?.classList.add('hidden');
+                },
+
+                createNew() {
+                    this.selected = null;
+                    document.getElementById('guardianIdInput').value = 'new';
+                    document.getElementById('newGuardianFields').style.display = 'grid';
+                },
+
+                skipGuardian() {
+                    this.selected = {
+                        id: null,
+                        name: 'بدون ولي أمر',
+                    };
+                    this.query = '';
+                    this.results = [];
+                    this.noResults = false;
+                    document.getElementById('guardianIdInput').value = 'none';
+                    document.getElementById('newGuardianFields').style.display = 'none';
+                },
+            };
+        }
+
+        // ── checkGuardianExists ────────────────────────────────────────
+        let _existingGuardianFromCheck = null;
+
+        async function checkGuardianExists() {
+            const email = document.getElementById('parentEmailInput')?.value?.trim() ?? '';
+
+            if (!email) return;
+
+            const params = new URLSearchParams();
+            if (email) params.set('email', email);
+
+            try {
+                const res = await fetch(`/guardians/check?${params}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!res.ok) return;
+
+                const data = await res.json();
+                const alertEl = document.getElementById('guardianExistsAlert');
+                const emailResult = document.getElementById('emailCheckResult');
+
+                if (data.exists) {
+                    _existingGuardianFromCheck = data;
+                    alertEl?.classList.remove('hidden');
+                    if (emailResult) {
+                        emailResult.className = 'text-xs font-medium mt-1 text-amber-600';
+                        emailResult.textContent = `⚠️ حساب موجود: ${data.name} (#${data.id})`;
+                        emailResult.classList.remove('hidden');
+                    }
+                } else {
+                    _existingGuardianFromCheck = null;
+                    alertEl?.classList.add('hidden');
+                    if (emailResult) {
+                        emailResult.className = 'text-xs font-medium mt-1 text-emerald-600';
+                        emailResult.textContent = '✓ متاح — سيُنشأ حساب جديد';
+                        emailResult.classList.remove('hidden');
+                    }
+                }
+            } catch (e) {
+                console.error('Guardian check error:', e);
+            }
+        }
+
+        // ── useExistingGuardian ────────────────────────────────────────
+        function useExistingGuardian() {
+            if (!_existingGuardianFromCheck) return;
+
+            document.getElementById('guardianIdInput').value = _existingGuardianFromCheck.id;
+            document.getElementById('newGuardianFields').style.display = 'none';
+            document.getElementById('guardianExistsAlert')?.classList.add('hidden');
+            document.getElementById('emailCheckResult')?.classList.add('hidden');
+
+            _existingGuardianFromCheck = null;
+        }
+
+        // ── تحقق سريع من رقم واتساب عن طريق فتح wa.me ──────────────────
+        function checkWhatsappNumber(inputId) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+
+            let number = input.value.replace(/[^0-9]/g, '');
+
+            if (!number) {
+                showError('يرجى إدخال رقم أولًا');
+                return;
+            }
+
+            // ✅ تحويل الرقم المصري المحلي (01xxxxxxxxx) لصيغة دولية (2xxxxxxxxxx)
+            if (number.startsWith('0')) {
+                number = '2' + number;
+            }
+
+            window.open(`https://wa.me/${number}`, '_blank');
+        }
+    </script>

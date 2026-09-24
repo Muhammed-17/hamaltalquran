@@ -6,10 +6,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
+use App\Models\Center;
+use App\Models\Student;
+use App\Models\Teacher;
+use App\Models\Examiner;
+use App\Models\Subscription;
+use App\Models\CollectionRound;
+use App\Models\Attendance;
+use App\Models\CompetitionParticipant;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
@@ -21,14 +28,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string $status
- * @property int|null $center_id
  * @property \Illuminate\Support\Carbon|null $last_login_at
  * @property \Illuminate\Support\Carbon|null $last_seen_at
  * @property-read bool $is_online
  */
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles;
 
     /**
@@ -39,7 +44,6 @@ class User extends Authenticatable
         'email',
         'password',
         'status',
-        'center_id',
     ];
 
     /**
@@ -60,15 +64,14 @@ class User extends Authenticatable
             'password' => 'hashed',
             'last_login_at' => 'datetime',
             'last_seen_at' => 'datetime',
-            'center_id' => 'integer',
         ];
     }
 
     /*
     |--------------------------------------------------------------------------
-    | العلاقات (Relations) - مع إضافة الـ Return Types لتوثيق أفضل للـ IDE
+    | العلاقات (Relations)
     |--------------------------------------------------------------------------
-    |*/
+    */
 
     public function students(): HasMany
     {
@@ -80,14 +83,14 @@ class User extends Authenticatable
         return $this->hasOne(Teacher::class);
     }
 
+    public function center()
+    {
+        return $this->belongsTo(Center::class, 'center_id');
+    }
+
     public function examiner(): HasOne
     {
         return $this->hasOne(Examiner::class);
-    }
-
-    public function center(): BelongsTo
-    {
-        return $this->belongsTo(Center::class, 'center_id');
     }
 
     public function collectedSubscriptions(): HasMany
@@ -100,11 +103,21 @@ class User extends Authenticatable
         return $this->hasMany(Attendance::class, 'user_id');
     }
 
+    public function collectionRounds(): HasMany
+    {
+        return $this->hasMany(CollectionRound::class, 'created_by');
+    }
+
+    public function competitionParticipants(): HasMany
+    {
+        return $this->hasMany(CompetitionParticipant::class);
+    }
+
     /*
     |--------------------------------------------------------------------------
-    | الصفات المشتقة الحديثة (Modern Accessors)
+    | الصفات المشتقة (Accessors)
     |--------------------------------------------------------------------------
-    |*/
+    */
 
     /**
      * التحقق مما إذا كان المستخدم متصلاً الآن (خلال آخر 5 دقائق)
@@ -114,20 +127,5 @@ class User extends Authenticatable
         return Attribute::make(
             get: fn() => $this->last_seen_at ? $this->last_seen_at->gt(now()->subMinutes(5)) : false,
         );
-    }
-
-    /**
-     * جلب الصفة الإدارية للمعلم مباشرة من خلال كائن الـ User
-     * تنبيه: تأكد من عمل eager load للعلاقة عبر User::with('teacher') عند جلب مجموعات كبيرة.
-     */
-
-    public function collectionRounds()
-    {
-        return $this->hasMany(CollectionRound::class, 'created_by');
-    }
-
-    public function competitionParticipants(): HasMany
-    {
-        return $this->hasMany(CompetitionParticipant::class);
     }
 }

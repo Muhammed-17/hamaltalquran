@@ -25,6 +25,11 @@ $externalParticipant = $externalParticipant ?? null;
             <label for="national_id" class="block text-sm font-bold text-gray-700">الرقم القومي</label>
             <input id="national_id" type="text" name="national_id" autocomplete="off"
                 value="{{ old('national_id', $externalParticipant->national_id ?? '') }}"
+                inputmode="numeric"
+                pattern="\d{14}"
+                maxlength="14"
+                minlength="14"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 14)"
                 class="w-full px-4 py-3 bg-gray-50 border border-gray-200 focus:bg-white focus:ring-2 focus:ring-emerald-100 focus:border-[#0a5c36] rounded-2xl outline-none transition-all">
             @error('national_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>

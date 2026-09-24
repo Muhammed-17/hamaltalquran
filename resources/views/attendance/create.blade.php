@@ -178,16 +178,15 @@
                         :default-value="$selectedCircleId"
                         :options="$circles->map(fn($c) => ['value' => $c->id, 'label' => $c->name])"
                         @searchable-change.window="
-                    if ($event.detail.name === 'circle_id') {
-                        const url = new URL(window.location.href);
-                        url.searchParams.set('circle_id', $event.detail.value);
-                        url.searchParams.set('date', '{{ $date }}');
-                        @if($selectedTeacherId)
-                        url.searchParams.set('teacher_id', '{{ $selectedTeacherId }}');
-                        @endif
-                        window.location.href = url.toString();
-                    }
-                " />
+        if ($event.detail.name === 'circle_id') {
+            const url = new URL(window.location.href);
+            url.searchParams.set('circle_id', $event.detail.value);
+            url.searchParams.set('date', '{{ $date }}');
+            const teacherId = '{{ $selectedTeacherId ?? '' }}';
+            if (teacherId) { url.searchParams.set('teacher_id', teacherId); }
+            window.location.href = url.toString();
+        }
+    " />
                 </div>
             </form>
 

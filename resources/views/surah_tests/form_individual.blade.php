@@ -7,8 +7,11 @@ $selectClass = 'w-full appearance-none rounded-xl border-0 bg-gray-50 pl-10 pr-4
 $inputClass = 'w-full rounded-xl border-0 bg-gray-50 px-4 py-3 text-sm text-gray-700 focus:ring-2 focus:ring-[#0a5c36]/40';
 $readonlyClass = 'w-full rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600';
 
-// قائمة التقديرات — من StudentSurahTestResult::LEVELS (نفس المصدر في form_group.blade.php)
 $levels = \App\Models\StudentSurahTestResult::LEVELS;
+
+// صلاحية تعديل النسبة والتقدير يدويًا — لازم الكنترولر يبعتها
+$canEditPercentage = $canEditPercentage ?? false;
+$levelFieldStyle = $canEditPercentage ? '' : 'pointer-events:none; background-color:#f3f4f6; opacity:0.7; cursor:not-allowed;';
 @endphp
 
 <div class="bg-white rounded-2xl border border-gray-100 p-6 md:p-8 space-y-6">
@@ -94,17 +97,17 @@ $levels = \App\Models\StudentSurahTestResult::LEVELS;
         </div>
     </div>
 
-    @if($isCreate)
     <!-- ═══════════════════════════════════════ -->
     <!-- نتيجة الطالب (تظهر بعد اختيار الطالب) -->
     <!-- ═══════════════════════════════════════ -->
-    <div id="individual-result-card" class="bg-white rounded-2xl border border-gray-100 p-6 md:p-8" style="display:none;">
+    @if($isCreate)
+    <div id="individual-result-card" class="js-result-card bg-white rounded-2xl border border-gray-100 p-6 md:p-8" style="display:none;">
         <h3 class="text-base font-bold text-[#1e2942] mb-6">نتيجة الاختبار</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                 <label class="{{ $labelClass }}">عدد أخطاء الفتح</label>
                 <input type="number" min="0" name="results[0][prompt_errors]" value="{{ old('results.0.prompt_errors', 0) }}"
-                    class="{{ $inputClass }}">
+                    class="js-prompt-errors {{ $inputClass }}">
                 @error('results.0.prompt_errors')
                 <p class="text-xs text-red-600 mt-1.5">{{ $message }}</p>
                 @enderror
@@ -112,7 +115,7 @@ $levels = \App\Models\StudentSurahTestResult::LEVELS;
             <div>
                 <label class="{{ $labelClass }}">عدد الأخطاء التشكيلية</label>
                 <input type="number" min="0" name="results[0][tashkeel_errors]" value="{{ old('results.0.tashkeel_errors', 0) }}"
-                    class="{{ $inputClass }}">
+                    class="js-tashkeel-errors {{ $inputClass }}">
                 @error('results.0.tashkeel_errors')
                 <p class="text-xs text-red-600 mt-1.5">{{ $message }}</p>
                 @enderror
@@ -120,7 +123,8 @@ $levels = \App\Models\StudentSurahTestResult::LEVELS;
             <div>
                 <label class="{{ $labelClass }}">النسبة %</label>
                 <input type="number" min="0" max="100" name="results[0][percentage]" value="{{ old('results.0.percentage', 100) }}"
-                    class="{{ $inputClass }}">
+                    class="js-percentage {{ $inputClass }}"
+                    @if(!$canEditPercentage) readonly @endif>
                 @error('results.0.percentage')
                 <p class="text-xs text-red-600 mt-1.5">{{ $message }}</p>
                 @enderror
@@ -128,7 +132,8 @@ $levels = \App\Models\StudentSurahTestResult::LEVELS;
             <div>
                 <label class="{{ $labelClass }}">التقدير</label>
                 <div class="relative">
-                    <select name="results[0][level]" class="{{ $selectClass }}">
+                    <select name="results[0][level]" class="js-level {{ $selectClass }}"
+                        @if(!$canEditPercentage) style="{{ $levelFieldStyle }}" tabindex="-1" @endif>
                         <option value="">-- بدون تقدير --</option>
                         @foreach($levels as $lvl)
                         <option value="{{ $lvl }}" {{ old('results.0.level') == $lvl ? 'selected' : '' }}>
@@ -160,21 +165,21 @@ $levels = \App\Models\StudentSurahTestResult::LEVELS;
     </div>
     @endif
 
-    @if($isEdit)
     <!-- ═══════════════════════════════════════ -->
     <!-- نتيجة الطالب القابلة للتعديل -->
     <!-- ═══════════════════════════════════════ -->
+    @if($isEdit)
     @php($result = $surahTest->results->first())
     <div class="bg-white rounded-2xl border border-gray-100 p-6 md:p-8">
         <h3 class="text-base font-bold text-[#1e2942] mb-6">نتيجة الاختبار</h3>
         @if($result)
         <input type="hidden" name="results[0][id]" value="{{ $result->id }}">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="js-result-card grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
                 <label class="{{ $labelClass }}">عدد أخطاء الفتح</label>
                 <input type="number" min="0" name="results[0][prompt_errors]"
                     value="{{ old('results.0.prompt_errors', $result->prompt_errors) }}"
-                    class="{{ $inputClass }}">
+                    class="js-prompt-errors {{ $inputClass }}">
                 @error('results.0.prompt_errors')
                 <p class="text-xs text-red-600 mt-1.5">{{ $message }}</p>
                 @enderror
@@ -183,7 +188,7 @@ $levels = \App\Models\StudentSurahTestResult::LEVELS;
                 <label class="{{ $labelClass }}">عدد الأخطاء التشكيلية</label>
                 <input type="number" min="0" name="results[0][tashkeel_errors]"
                     value="{{ old('results.0.tashkeel_errors', $result->tashkeel_errors) }}"
-                    class="{{ $inputClass }}">
+                    class="js-tashkeel-errors {{ $inputClass }}">
                 @error('results.0.tashkeel_errors')
                 <p class="text-xs text-red-600 mt-1.5">{{ $message }}</p>
                 @enderror
@@ -192,7 +197,8 @@ $levels = \App\Models\StudentSurahTestResult::LEVELS;
                 <label class="{{ $labelClass }}">النسبة %</label>
                 <input type="number" min="0" max="100" name="results[0][percentage]"
                     value="{{ old('results.0.percentage', $result->percentage) }}"
-                    class="{{ $inputClass }}">
+                    class="js-percentage {{ $inputClass }}"
+                    @if(!$canEditPercentage) readonly @endif>
                 @error('results.0.percentage')
                 <p class="text-xs text-red-600 mt-1.5">{{ $message }}</p>
                 @enderror
@@ -200,7 +206,8 @@ $levels = \App\Models\StudentSurahTestResult::LEVELS;
             <div>
                 <label class="{{ $labelClass }}">التقدير</label>
                 <div class="relative">
-                    <select name="results[0][level]" class="{{ $selectClass }}">
+                    <select name="results[0][level]" class="js-level {{ $selectClass }}"
+                        @if(!$canEditPercentage) style="{{ $levelFieldStyle }}" tabindex="-1" @endif>
                         <option value="">-- بدون تقدير --</option>
                         @foreach($levels as $lvl)
                         <option value="{{ $lvl }}" {{ old('results.0.level', $result->level) == $lvl ? 'selected' : '' }}>
@@ -231,3 +238,86 @@ $levels = \App\Models\StudentSurahTestResult::LEVELS;
         @endif
     </div>
     @endif
+    <script>
+        // القيم جايه مباشرة من StudentSurahTestResult::LEVELS لتفادي أي اختلاف في الكتابة
+        const LEVELS_LIST = @json($levels);
+
+        // السورة المختارة حاليًا
+        let currentSurahId = @json(old('surah_id', $isEdit ? ($surahTest->surah_id ?? null) : null));
+
+        // تتبّع تغيير السورة (الحدث بيتبعت من x-searchable-select في select() و clearSelection())
+        window.addEventListener('searchable-change', function(e) {
+            if (e.detail.name === 'surah_id') {
+                currentSurahId = e.detail.value;
+                recalculateAllCards();
+            }
+        });
+
+        // تتبّع تغيير عدد الأخطاء
+        document.addEventListener('input', function(e) {
+            if (!e.target.matches('.js-prompt-errors, .js-tashkeel-errors')) return;
+
+            const card = e.target.closest('.js-result-card');
+            if (!card) return;
+
+            calculateCardResult(card);
+        });
+
+        function recalculateAllCards() {
+            document.querySelectorAll('.js-result-card').forEach(calculateCardResult);
+        }
+
+        // أوزان الخصم: من يس (36) إلى الناس (114) = فتح 1 / تشكيل 0.5، غير كده = فتح 2 / تشكيل 1
+        function getWeights(surahId) {
+            const id = parseInt(surahId, 10);
+
+            // الفاتحة (1) أو من يس (36) إلى الناس (114): الفتح = 1، التشكيل = 0.5
+            if (!isNaN(id) && (id === 1 || (id >= 36 && id <= 114))) {
+                return {
+                    prompt: 1,
+                    tashkeel: 0.5
+                };
+            }
+
+            // باقي السور (الافتراضي): الفتح = 2، التشكيل = 1
+            return {
+                prompt: 2,
+                tashkeel: 1
+            };
+        }
+
+        function calculateCardResult(card) {
+            const promptInput = card.querySelector('.js-prompt-errors');
+            const tashkeelInput = card.querySelector('.js-tashkeel-errors');
+            const percentageInput = card.querySelector('.js-percentage');
+            const levelSelect = card.querySelector('.js-level');
+
+            const promptErrors = parseFloat(promptInput?.value) || 0;
+            const tashkeelErrors = parseFloat(tashkeelInput?.value) || 0;
+
+            const weights = getWeights(currentSurahId);
+
+            let percentage = 100 - (promptErrors * weights.prompt) - (tashkeelErrors * weights.tashkeel);
+            percentage = Math.max(0, Math.min(100, percentage));
+
+            if (percentageInput) {
+                percentageInput.value = percentage;
+            }
+
+            if (levelSelect) {
+                const level = getLevelFromPercentage(percentage);
+                const optionExists = Array.from(levelSelect.options).some(o => o.value === level);
+                if (optionExists) {
+                    levelSelect.value = level;
+                }
+            }
+        }
+
+        function getLevelFromPercentage(percentage) {
+            if (percentage >= 95) return LEVELS_LIST[0]; // ممتاز
+            if (percentage >= 90) return LEVELS_LIST[1]; // جيد جداً
+            if (percentage >= 85) return LEVELS_LIST[2]; // جيد
+            if (percentage >= 80) return LEVELS_LIST[3]; // مقبول
+            return LEVELS_LIST[4]; // إعادة
+        }
+    </script>

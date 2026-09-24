@@ -2,147 +2,97 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\User;
+use App\Models\Branch;
+use App\Models\Center;
 use App\Models\Teacher;
+use App\Models\User;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class TeacherSeeder extends Seeder
 {
     public function run(): void
     {
-        // مصفوفة الموظفين الموسعة والموزعة بدقة بين الفروع والأدوار
-        $staffMembers = [
-            // --- الموظفون السابقون ---
-            [
-                'name'              => 'سعد أحمد سعد الشعراوي',
-                'email'             => '03212345678@teacher.com',
-                'role'              => 'supervisor',
-                'password'          => '12345678',
-                'center_id'         => 2, // فرع العواسجة
-            ],
-            [
-                'name'              => 'عبدالفتاح أحمد سعدون',
-                'email'             => '03350375090@teacher.com',
-                'role'              => 'teacher',
-                'password'          => '12345678',
-                'center_id'         => 2, // فرع العواسجة
-            ],
-            [
-                'name'              => 'عبدالبديع أبوالمعاطي',
-                'email'             => 'adbelbadea@teacher.com',
-                'role'              => 'supervisor',
-                'password'          => '12345678',
-                'center_id'         => 1, // الفرع الرئيسي
-            ],
+        // ─────────────────────────────────────────
+        // 1) تجهيز الفروع بشكل آمن ودقيق
+        // ─────────────────────────────────────────
+        // جلب الفرع الرئيسي الأول من المركز الرئيسي (مقر الصديق أو الفاروق)
+        $mainBranch = Branch::where('name', 'مقر الصديق')->first()
+            ?? Branch::whereHas('center', fn($q) => $q->where('name', 'like', '%الرئيسي%'))->first();
 
-            // --- الموظفون المضافون حديثاً لفرع العواسجة (Center ID: 2) ---
-            [
-                'name'              => 'محمد جمال عبد الحميد',
-                'email'             => 'mohamed.gamal@teacher.com',
-                'role'              => 'teacher',
-                'password'          => '12345678',
-                'center_id'         => 2,
-            ],
-            [
-                'name'              => 'أحمد محمود الرفاعي',
-                'email'             => 'ahmed.refaei@teacher.com',
-                'role'              => 'teacher',
-                'password'          => '12345678',
-                'center_id'         => 2,
-            ],
-            [
-                'name'              => 'خالد وليد الشربيني',
-                'email'             => 'khaled.sharbini@teacher.com',
-                'role'              => 'teacher',
-                'password'          => '12345678',
-                'center_id'         => 2,
-            ],
-            [
-                'name'              => 'محمود عبد العزيز غانم',
-                'email'             => 'mahmoud.ghanem@teacher.com',
-                'role'              => 'supervisor',
-                'password'          => '12345678',
-                'center_id'         => 2,
-            ],
-            [
-                'name'              => 'مصطفى هاني القاضي',
-                'email'             => 'mostafa.qadi@teacher.com',
-                'role'              => 'teacher',
-                'password'          => '12345678',
-                'center_id'         => 2,
-            ],
+        // جلب الفرع الأول من مركز العواسجة (مقر ذو النورين أو مقر علي بن أبي طالب)
+        $awasjaBranch = Branch::where('name', 'مقر ذو النورين')->first()
+            ?? Branch::whereHas('center', fn($q) => $q->where('name', 'like', '%العواسجة%'))->first();
 
-            // --- الموظفون المضافون حديثاً للفرع الرئيسي (Center ID: 3) ---
+        // ─────────────────────────────────────────
+        // 2) مصفوفة المعلمين مع ربط كل معلم بفرعه
+        // ─────────────────────────────────────────
+        $teachersData = [
+            // --- موظفو فرع العواسجة ---
             [
-                'name'              => 'إبراهيم علي الدسوقي',
-                'email'             => 'ibrahim.desouky@teacher.com',
-                'role'              => 'teacher',
-                'password'          => '12345678',
-                'center_id'         => 1,
+                'name'           => 'عبدالفتاح أحمد سعدون',
+                'email'          => 'abdelfattah@teacher.com',
+                'mobile_teacher' => '01033503750',
+                'role'           => 'teacher',
+                'branch_id'      => $awasjaBranch->id,
             ],
             [
-                'name'              => 'حسن بيومي المتولي',
-                'email'             => 'hasan.metwally@teacher.com',
-                'role'              => 'teacher',
-                'password'          => '12345678',
-                'center_id'         => 1,
+                'name'           => 'محمد عليش',
+                'email'          => 'mohamed.alish@teacher.com',
+                'mobile_teacher' => '01011112223',
+                'role'           => 'teacher',
+                'branch_id'      => $awasjaBranch->id,
+            ],
+            // --- موظفو الفرع الرئيسي ---
+            [
+                'name'           => 'سعد أحمد سعد الشعراوي',
+                'email'          => 'saad@teacher.com',
+                'mobile_teacher' => '01032123456',
+                'role'           => 'supervisor',
+                'branch_id'      => $mainBranch->id,
             ],
             [
-                'name'              => 'صلاح الدين الأيوبي جاد',
-                'email'             => 'salah.gad@teacher.com',
-                'role'              => 'supervisor',
-                'password'          => '12345678',
-                'center_id'         => 1,
+                'name'           => 'عبدالبديع أبوالمعاطي',
+                'email'          => 'adbelbadea@teacher.com',
+                'mobile_teacher' => '01066667778',
+                'role'           => 'supervisor',
+                'branch_id'      => $mainBranch->id,
             ],
             [
-                'name'              => 'عبد الرحمن محمد الشافعي',
-                'email'             => 'shafei@teacher.com',
-                'role'              => 'teacher',
-                'password'          => '12345678',
-                'center_id'         => 1,
+                'name'           => 'محمد الطيب',
+                'email'          => 'mohamed.eltayeb@teacher.com',
+                'mobile_teacher' => '01090129012',
+                'role'           => 'teacher',
+                'branch_id'      => $mainBranch->id,
             ],
-            [
-                'name'              => 'يوسف طارق الباز',
-                'email'             => 'youssef.baz@teacher.com',
-                'role'              => 'teacher',
-                'password'          => '12345678',
-                'center_id'         => 1,
-            ],
-            [
-                'name'              => 'بلال عوض القرشي',
-                'email'             => 'belal.qurashi@teacher.com',
-                'role'              => 'teacher',
-                'password'          => '12345678',
-                'center_id'         => 1,
-            ]
         ];
 
-        foreach ($staffMembers as $member) {
-            // 3. إنشاء أو تحديث بيانات المستخدم الأساسية وربطه بفرعه الصحيح
+        // ─────────────────────────────────────────
+        // 3) عملية الإنشاء والحفظ
+        // ─────────────────────────────────────────
+        foreach ($teachersData as $data) {
             $user = User::updateOrCreate(
-                ['email' => $member['email']],
+                ['email' => $data['email']],
                 [
-                    'name'      => $member['name'],
-                    'password'  => Hash::make($member['password']),
-                    'status'    => 'active',
-                    'center_id' => $member['center_id'],
+                    'name'     => $data['name'],
+                    'password' => Hash::make('12345678'),
+                    'status'   => 'active',
                 ]
             );
 
-            // 2. مزامنة الدور (Role) الخاص بالمستخدم من Spatie
-            $user->syncRoles([$member['role']]);
+            if (method_exists($user, 'syncRoles')) {
+                $user->syncRoles([$data['role']]);
+            }
 
-            // 3. إنشاء أو تحديث سجل المعلم (Teacher Record) وربطه بنفس الفرع
             Teacher::updateOrCreate(
                 ['user_id' => $user->id],
                 [
-                    'name'              => $user->name,
-                    'center_id'         => $member['center_id'],
+                    'mobile_teacher' => $data['mobile_teacher'],
+                    'branch_id'      => $data['branch_id'],
                 ]
             );
         }
 
-        $this->command->info('✅ تم تحديث وتوسيع طاقم العمل وتوزيعهم على فرعي العواسجة والرئيسي بنجاح.');
+        $this->command?->info('✅ تم إنشاء المعلمين وربطهم بحسابات المستخدمين والفروع المحددة بنجاح.');
     }
 }

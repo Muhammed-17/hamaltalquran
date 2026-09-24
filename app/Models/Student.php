@@ -5,12 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Collection;
 use App\Models\Scopes\CenterScope;
+use App\Models\CompetitionParticipant;
 
 class Student extends Model
 {
@@ -121,6 +119,34 @@ class Student extends Model
     public function ibdaDetail(): HasOne
     {
         return $this->hasOne(StudentIbdaDetail::class, 'student_id');
+    }
+
+    public function favoritedBy(): HasMany
+    {
+        return $this->hasMany(FavoriteStudent::class);
+    }
+
+    public function isFavoritedBy(?int $teacherId): bool
+    {
+        return $this->favoritedBy()->where('teacher_id', $teacherId)->exists();
+    }
+
+    public function isFavoritedByCurrentUser(): bool
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        // الأدوار الإدارية العليا تشوف أي طالب مفضّل، بغض النظر مين أضافه
+        if ($user->hasRole(['admin', 'general_manager'])) {
+            return $this->favoritedBy()->exists();
+        }
+
+        $teacherId = app(\App\Services\UserAccessService::class)->teacher($user)?->id;
+
+        return $this->isFavoritedBy($teacherId);
     }
 
     /**

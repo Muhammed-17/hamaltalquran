@@ -85,6 +85,7 @@ $sortIcon = fn($field) => request('sort') === $field
                             </a>
                         </th>
                         <th class="px-6 py-4 text-sm font-bold text-gray-600">المركز</th>
+                        <th class="px-6 py-4 text-sm font-bold text-gray-600">المشرفون</th>
                         <th class="px-6 py-4 text-sm font-bold text-gray-600">العنوان</th>
                         <th class="px-6 py-4 text-sm font-bold text-gray-600 select-none">
                             <a href="{{ $sortLink('established_at') }}" class="flex items-center gap-1 hover:text-gray-800">
@@ -105,6 +106,20 @@ $sortIcon = fn($field) => request('sort') === $field
 
                         <td class="px-6 py-4 text-gray-600">
                             {{ $branch->center?->name ?? '—' }}
+                        </td>
+
+                        <td class="px-6 py-4 text-gray-600">
+                            @if($branch->supervisors->isNotEmpty())
+                            <div class="flex flex-wrap gap-1.5">
+                                @foreach($branch->supervisors as $supervisor)
+                                <span class="inline-flex items-center px-2.5 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-lg">
+                                    {{ $supervisor->user?->name ?? $supervisor->name }}
+                                </span>
+                                @endforeach
+                            </div>
+                            @else
+                            <span class="text-gray-400 text-xs">لا يوجد مشرف</span>
+                            @endif
                         </td>
 
                         <td class="px-6 py-4 text-gray-600">
@@ -145,7 +160,7 @@ $sortIcon = fn($field) => request('sort') === $field
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-12 text-center text-gray-500">
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500">
                             @if(request()->anyFilled(['q', 'center_id']))
                             لا توجد فروع تطابق الفلاتر المحددة.
                             @else

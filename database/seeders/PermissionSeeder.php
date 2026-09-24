@@ -73,10 +73,11 @@ class PermissionSeeder extends Seeder
             // الاشتراكات والمالية (subscriptions)
             // ─────────────────────────────────────────────────────────
             'view subscriptions'          => ['عرض الاشتراكات والمدفوعات', 'subscriptions'],
-            'create subscriptions'         => ['تسجيل دفع اشتراك', 'subscriptions'],
-            'delete subscriptions'         => ['حذف سندات الاشتراكات', 'subscriptions'],
+            'create subscriptions'        => ['تسجيل دفع اشتراك', 'subscriptions'],
+            'delete subscriptions'        => ['حذف سندات الاشتراكات', 'subscriptions'],
             'view subscriptions chart'    => ['عرض رسوم الاشتراكات', 'subscriptions'],
             'notify unpaid subscriptions' => ['إشعار أولياء الأمور بالاشتراكات المتأخرة', 'subscriptions'],
+            'transfer subscriptions'      => ['تحويل الاشتراكات', 'subscriptions'],
             'manage subscription prices'  => ['إدارة وتحديد أسعار الاشتراكات', 'subscriptions'],
             'view subscription prices'    => ['عرض أسعار الاشتراكات', 'subscriptions'],
             'view own subscriptions'      => ['عرض مدفوعات الأبناء الشخصية', 'subscriptions'],
@@ -124,10 +125,11 @@ class PermissionSeeder extends Seeder
             // ─────────────────────────────────────────────────────────
             // اختبارات السور (surah tests)
             // ─────────────────────────────────────────────────────────
-            'view surah tests' => ['عرض الاختبارات', 'surah tests'],
-            'create surah tests' => ['إنشاء اختبارات', 'surah tests'],
-            'update surah tests' => ['تعديل الاختبارات', 'surah tests'],
-            'delete surah tests' => ['حذف الاختبارات', 'surah tests'],
+            'view surah tests'            => ['عرض الاختبارات', 'surah tests'],
+            'create surah tests'          => ['إنشاء اختبارات', 'surah tests'],
+            'update surah tests'          => ['تعديل الاختبارات', 'surah tests'],
+            'delete surah tests'          => ['حذف الاختبارات', 'surah tests'],
+            'edit surah test percentages' => ['تعديل نسبة الاختبارات', 'surah tests'],
 
             // ─────────────────────────────────────────────────────────
             // المسابقات (competitions)
@@ -216,6 +218,7 @@ class PermissionSeeder extends Seeder
                 'create subscriptions',
                 'delete subscriptions',
                 'notify unpaid subscriptions',
+                'transfer subscriptions',
                 'manage subscription prices',
                 'view subscription prices',
                 'view subscriptions chart',
@@ -249,6 +252,7 @@ class PermissionSeeder extends Seeder
                 'create surah tests',
                 'update surah tests',
                 'delete surah tests',
+                'edit surah test percentages',
 
                 // competitions & questions
                 'view competitions',
@@ -304,6 +308,7 @@ class PermissionSeeder extends Seeder
                 'view subscriptions',
                 'create subscriptions',
                 'delete subscriptions',
+                'transfer subscriptions',
                 'notify unpaid subscriptions',
                 'view subscriptions chart',
                 // group session plans
@@ -364,6 +369,7 @@ class PermissionSeeder extends Seeder
                 'create subscriptions',
                 'delete subscriptions',
                 'notify unpaid subscriptions',
+                'transfer subscriptions',
                 'view subscriptions chart',
                 // collection rounds
                 'create collection rounds',
@@ -420,6 +426,7 @@ class PermissionSeeder extends Seeder
                 'view subscriptions',
                 'create subscriptions',
                 'delete subscriptions',
+                'transfer subscriptions',
                 // collection rounds
                 'create collection rounds',
                 'view collection rounds',

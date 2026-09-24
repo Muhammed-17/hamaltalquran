@@ -26,42 +26,34 @@ class TeacherController extends Controller
         $this->authorize('viewAny', Teacher::class);
 
         $user    = Auth::user();
-        $teacher = $this->access->teacher($user);
 
         $query = Teacher::query()
             ->join('users', 'teachers.user_id', '=', 'users.id')
-            ->select('teachers.*', 'users.email as user_email', 'users.status as user_status', 'users.last_seen_at')
-            ->with(['user.roles', 'center']);
+            ->select('teachers.*', 'users.name as user_name', 'users.email as user_email', 'users.status as user_status', 'users.last_seen_at')
+            ->with(['user.roles', 'branch.center']);
 
         if (!$user->hasRole(['admin', 'general_manager'])) {
             $query->where('users.status', 'active');
-        }
-
-        if (!$user->hasRole(['admin', 'general_manager'])) {
-            if ($teacher) {
-                $query->where(
-                    fn($q) =>
-                    $q->where('teachers.center_id', $teacher->center_id)
-                        ->orWhereHas('circles.branch', fn($cq) =>
-                        $cq->where('center_id', $teacher->center_id))
-                );
-            } else {
-                $query->whereRaw('1 = 0');
-            }
         }
 
         // بحث بالاسم أو البريد
         if ($request->filled('q')) {
             $term = $request->q;
             $query->where(function ($qq) use ($term) {
-                $qq->where('teachers.name', 'like', "%{$term}%")
+                $qq->where('users.name', 'like', "%{$term}%")
                     ->orWhere('users.email', 'like', "%{$term}%");
             });
         }
 
         // فلتر الفرع (بالاسم زي ما الفرونت كان بيبعته)
+
         if ($request->filled('center_id') && $user->hasRole(['admin', 'general_manager'])) {
-            $query->whereHas('center', fn($cq) => $cq->where('name', $request->center_id));
+            $query->whereHas('branch.center', fn($cq) => $cq->where('name', $request->center_id));
+        }
+
+        // فلتر الفرع
+        if ($request->filled('branch_id')) {
+            $query->where('teachers.branch_id', $request->branch_id);
         }
 
         // فلتر الدور
@@ -96,8 +88,14 @@ class TeacherController extends Controller
                 break;
 
             case 'center':
-                $query->leftJoin('centers', 'teachers.center_id', '=', 'centers.id')
+                $query->leftJoin('branches', 'teachers.branch_id', '=', 'branches.id')
+                    ->leftJoin('centers', 'branches.center_id', '=', 'centers.id')
                     ->orderBy('centers.name', $sortOrder);
+                break;
+
+            case 'branch':
+                $query->leftJoin('branches', 'teachers.branch_id', '=', 'branches.id')
+                    ->orderBy('branches.name', $sortOrder);
                 break;
 
             default:
@@ -107,9 +105,10 @@ class TeacherController extends Controller
 
         $teachers = $query->paginate(20)->withQueryString();
         $centers  = $this->access->accessibleCenters($user)->get();
+        $branches = $this->access->accessibleBranches($user)->with('center')->get();
         $roles    = Role::orderBy('name')->get();
 
-        return view('teachers.index', compact('teachers', 'centers', 'roles'));
+        return view('teachers.index', compact('teachers', 'centers', 'branches', 'roles'));
     }
 
     // ─────────────────────────────────────────
@@ -117,12 +116,11 @@ class TeacherController extends Controller
     {
         $this->authorize('create', Teacher::class);
 
-        $user    = Auth::user();
-        $centers = $this->access->accessibleCenters($user)->get();
+        $user     = Auth::user();
+        $branches = $this->access->accessibleBranches($user)->get();
+        $roles    = $this->getAllowedRolesForCreate($user);
 
-        $roles = $this->getAllowedRolesForCreate($user);
-
-        return view('teachers.create', compact('centers', 'roles'));
+        return view('teachers.create', compact('branches', 'roles'));
     }
 
     // ─────────────────────────────────────────
@@ -139,15 +137,13 @@ class TeacherController extends Controller
                 'name'              => $request->name,
                 'email'             => $request->email,
                 'password'          => Hash::make($request->password),
-                'center_id'         => $request->center_id,
             ]);
 
             $user->syncRoles($request->roles ?? []);
 
             Teacher::create([
                 'user_id'           => $user->id,
-                'name'              => $request->name,
-                'center_id'         => $request->center_id,
+                'branch_id'         => $request->branch_id,
             ]);
         });
 
@@ -164,7 +160,7 @@ class TeacherController extends Controller
         $query = Teacher::withoutGlobalScope(\App\Models\Scopes\CenterScope::class)
             ->with([
                 'user.roles',
-                'center',
+                'branch.center',
                 'circles' => fn($q) => $q->withoutGlobalScope(\App\Models\Scopes\CenterScope::class),
             ]);
 
@@ -173,10 +169,11 @@ class TeacherController extends Controller
             $query->where('user_id', $user->id);
         }
         // المدير: فقط فرعه
-        elseif ($record && $user->hasRole('manager')) {
-            $query->where(function ($q) use ($record) {
-                $q->where('center_id', $record->center_id)
-                    ->orWhereHas('circles.branch', fn($cq) => $cq->where('center_id', $record->center_id));
+        elseif ($record && $record->branch && $user->hasRole('manager')) {
+            $centerId = $record->branch->center_id;
+            $query->where(function ($q) use ($centerId) {
+                $q->whereHas('branch', fn($bq) => $bq->where('center_id', $centerId))
+                    ->orWhereHas('circles.branch', fn($cq) => $cq->where('center_id', $centerId));
             });
         }
 
@@ -193,7 +190,7 @@ class TeacherController extends Controller
         $this->authorize('update', $teacher);
 
         $user    = Auth::user();
-        $centers = $this->access->accessibleCenters($user)->get();
+        $branches = $this->access->accessibleBranches($user)->get();
 
         $teacher->load('user.roles');
 
@@ -202,7 +199,7 @@ class TeacherController extends Controller
 
         $currentRoles = $teacher->user->roles->pluck('name')->toArray();
 
-        return view('teachers.edit', compact('teacher', 'centers', 'roles', 'currentRoles'));
+        return view('teachers.edit', compact('teacher', 'branches', 'roles', 'currentRoles'));
     }
 
     // ─────────────────────────────────────────
@@ -214,17 +211,13 @@ class TeacherController extends Controller
 
             // 1. تحديث بيانات المعلم
             $teacher->update([
-                'name'              => $request->name,
-                'center_id'         => $request->center_id,
-
+                'branch_id'         => $request->branch_id,
             ]);
 
             // 2. تجهيز بيانات المستخدم
             $data = [
                 'name'              => $request->name,
                 'email'             => $request->email,
-                'center_id'         => $request->center_id,
-
             ];
 
             // ✅ تغيير كلمة المرور

@@ -1,5 +1,8 @@
 import './bootstrap';
 import './confirm-delete.js';
+import { initFavorites } from './confirm-favorite';
+
+window.initFavorites = initFavorites;
 
 import Chart from 'chart.js/auto';
 import Alpine from 'alpinejs';

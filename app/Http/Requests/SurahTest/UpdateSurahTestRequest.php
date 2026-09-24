@@ -83,9 +83,49 @@ class UpdateSurahTestRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'results.required' => 'يجب إدخال نتيجة طالب واحد على الأقل.',
+            'teacher_id.required'  => 'يرجى اختيار المعلم.',
+            'teacher_id.exists'    => 'المعلم المختار غير موجود.',
+
+            'circle_id.required'   => 'يرجى اختيار الحلقة.',
+            'circle_id.exists'     => 'الحلقة المختارة غير موجودة.',
+
+            'student_id.required_if' => 'يرجى اختيار الطالب.',
+            'student_id.exists'      => 'الطالب المختار غير موجود.',
+
+            'surah_id.required'    => 'يرجى اختيار السورة.',
+            'surah_id.exists'      => 'السورة المختارة غير موجودة.',
+
+            'test_date.required'   => 'يرجى تحديد تاريخ الاختبار.',
+            'test_date.date'       => 'تاريخ الاختبار غير صالح.',
+
+            'notes.string'         => 'صيغة الملاحظات غير صحيحة.',
+
+            'results.required'     => 'يجب إدخال نتيجة طالب واحد على الأقل.',
+            'results.array'        => 'صيغة النتائج غير صحيحة.',
+            'results.min'          => 'يجب إدخال نتيجة طالب واحد على الأقل.',
+
+            'results.*.id.required' => 'معرف النتيجة مفقود.',
+            'results.*.id.integer'  => 'معرف النتيجة غير صالح.',
+
+            'results.*.prompt_errors.required' => 'يرجى إدخال عدد أخطاء الفتح.',
+            'results.*.prompt_errors.integer'  => 'عدد أخطاء الفتح يجب أن يكون رقمًا صحيحًا.',
+            'results.*.prompt_errors.min'      => 'عدد أخطاء الفتح لا يمكن أن يكون أقل من صفر.',
+
+            'results.*.tashkeel_errors.required' => 'يرجى إدخال عدد الأخطاء التشكيلية.',
+            'results.*.tashkeel_errors.integer'  => 'عدد الأخطاء التشكيلية يجب أن يكون رقمًا صحيحًا.',
+            'results.*.tashkeel_errors.min'      => 'عدد الأخطاء التشكيلية لا يمكن أن يكون أقل من صفر.',
+
+            'results.*.percentage.required' => 'يرجى إدخال النسبة.',
+            'results.*.percentage.integer'  => 'النسبة يجب أن تكون رقمًا صحيحًا.',
+            'results.*.percentage.min'      => 'النسبة لا يمكن أن تكون أقل من صفر.',
+            'results.*.percentage.max'      => 'النسبة لا يمكن أن تتجاوز 100.',
+
+            'results.*.level.string' => 'صيغة التقدير غير صحيحة.',
+            'results.*.level.in'     => 'التقدير المختار غير صالح.',
+
+            'results.*.notes.string' => 'صيغة ملاحظات النتيجة غير صحيحة.',
         ];
-    }
+}
 
     /**
      * تحقق إضافي بعد الفاليديشن الأساسية.

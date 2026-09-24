@@ -45,8 +45,9 @@ class SubscriptionPolicy
             && $this->canAccessSubscription($user, $subscription);
     }
 
+
+
     private function canAccessSubscription(User $user, Subscription $subscription): bool
-        private function canAccessSubscription(User $user, Subscription $subscription): bool
     {
         if ($user->hasAnyRole(['admin', 'general_manager'])) return true;
 

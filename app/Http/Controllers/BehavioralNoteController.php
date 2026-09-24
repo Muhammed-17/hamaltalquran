@@ -50,8 +50,12 @@ class BehavioralNoteController extends Controller
             ))
             ->when($request->student_id, fn($q) => $q->where('student_id', $request->student_id))
             ->when($request->center_id, fn($q) => $q->whereHas(
+                'circle.branch',                                        // ← عدّلها: 'circle' → 'circle.branch'
+                fn($bq) => $bq->where('center_id', $request->center_id)
+            ))
+            ->when($request->branch_id, fn($q) => $q->whereHas(          // ← فلتر الفرع الجديد
                 'circle',
-                fn($cq) => $cq->where('center_id', $request->center_id)
+                fn($cq) => $cq->where('branch_id', $request->branch_id)
             ))
             ->when($request->circle_id, fn($q) => $q->where('circle_id', $request->circle_id))
             ->when($request->teacher_id, fn($q) => $q->where('teacher_id', $request->teacher_id))
@@ -61,16 +65,17 @@ class BehavioralNoteController extends Controller
             ->orderBy('incident_at', 'desc')
             ->paginate($request->per_page ?? 15);
 
-        // نفس بيانات الفلاتر المستخدمة في صفحة الحلقات (للأدمن والمدير العام)
         $centers  = $user->hasAnyRole(['admin', 'general_manager']) ? Center::orderBy('name')->get() : collect();
+        $branches = $user->hasAnyRole(['supervisor', 'manager', 'general_manager', 'admin'])          // ← جديد
+            ? $this->userAccessService->accessibleBranches($user)->get()
+            : collect();
         $circles  = $user->hasAnyRole(['supervisor', 'manager', 'general_manager', 'admin']) ? $this->userAccessService->accessibleCircles($user)->get() : collect();
         $teachers = $user->hasAnyRole(['supervisor', 'manager', 'general_manager', 'admin'])
             ? $this->userAccessService->accessibleTeachers($user)->get()->reject(fn($t) => optional($t->user)->hasRole('admin'))->values()
             : collect();
 
-        return view('behavioral_notes.index', compact('behavioralNotes', 'centers', 'circles', 'teachers'));
+        return view('behavioral_notes.index', compact('behavioralNotes', 'centers', 'branches', 'circles', 'teachers'));   // ← أضف 'branches'
     }
-
     /**
      * Show the form for creating a new resource.
      */

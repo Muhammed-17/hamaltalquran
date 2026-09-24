@@ -7,16 +7,19 @@ $selectClass = 'w-full appearance-none rounded-xl border-0 bg-gray-50 pl-10 pr-4
 $inputClass = 'w-full rounded-xl border-0 bg-gray-50 px-4 py-3 text-sm text-gray-700 focus:ring-2 focus:ring-[#0a5c36]/40';
 $readonlyClass = 'w-full rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600';
 
-// كلاسات صندوق الحقل داخل كارت الطالب
 $fieldBoxClass = 'w-full rounded-xl border border-gray-100 bg-gray-50 text-center py-2 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0a5c36]/40';
 $fieldLabelClass = 'text-[11px] font-semibold text-gray-400 mt-1.5 text-center';
 
-// قائمة التقديرات — من StudentSurahTestResult::LEVELS (مصدر واحد لكل الفورمات)
 $levels = \App\Models\StudentSurahTestResult::LEVELS;
 
-// مصدر بيانات الكروت: التعديل يجيب النتائج من قاعدة البيانات،
-// الإنشاء يبدأ بقائمة فاضية (هتتملى بعدين عبر Ajax)
 $results = $isEdit ? $surahTest->results : collect();
+
+// صلاحية تعديل النسبة والتقدير يدويًا — لازم الكنترولر يبعتها
+$canEditPercentage = $canEditPercentage ?? false;
+
+// كلاس إضافي يتحط على حقل النسبة لو المستخدم مالوش صلاحية
+$percentageFieldClass = $canEditPercentage ? '' : 'bg-gray-100! cursor-not-allowed!';
+$levelFieldStyle = $canEditPercentage ? '' : 'pointer-events:none; background-color:#f3f4f6; opacity:0.7; cursor:not-allowed;';
 @endphp
 
 <div class="bg-white rounded-2xl border border-gray-100 p-6 md:p-8 space-y-6">
@@ -112,7 +115,7 @@ $results = $isEdit ? $surahTest->results : collect();
 
     <div id="group-results-list" class="space-y-4">
         @forelse($results as $index => $result)
-        <div class="bg-white rounded-2xl border border-gray-100 p-4 md:p-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div class="js-result-card bg-white rounded-2xl border border-gray-100 p-4 md:p-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
             @if($isEdit)
             <input type="hidden" name="results[{{ $index }}][id]" value="{{ $result->id }}">
             @endif
@@ -137,7 +140,7 @@ $results = $isEdit ? $surahTest->results : collect();
                     <p class="{{ $fieldLabelClass }}">الفتح</p>
                     <input type="number" min="0" name="results[{{ $index }}][prompt_errors]"
                         value="{{ old("results.{$index}.prompt_errors", $result->prompt_errors) }}"
-                        class="{{ $fieldBoxClass }}">
+                        class="js-prompt-errors {{ $fieldBoxClass }}">
                     @error("results.{$index}.prompt_errors")
                     <p class="text-[10px] text-red-600 mt-1 text-center">{{ $message }}</p>
                     @enderror
@@ -146,7 +149,7 @@ $results = $isEdit ? $surahTest->results : collect();
                     <p class="{{ $fieldLabelClass }}">التشكيل</p>
                     <input type="number" min="0" name="results[{{ $index }}][tashkeel_errors]"
                         value="{{ old("results.{$index}.tashkeel_errors", $result->tashkeel_errors) }}"
-                        class="{{ $fieldBoxClass }}">
+                        class="js-tashkeel-errors {{ $fieldBoxClass }}">
                     @error("results.{$index}.tashkeel_errors")
                     <p class="text-[10px] text-red-600 mt-1 text-center">{{ $message }}</p>
                     @enderror
@@ -155,14 +158,16 @@ $results = $isEdit ? $surahTest->results : collect();
                     <p class="{{ $fieldLabelClass }}">النسبة %</p>
                     <input type="number" min="0" max="100" name="results[{{ $index }}][percentage]"
                         value="{{ old("results.{$index}.percentage", $result->percentage) }}"
-                        class="{{ $fieldBoxClass }}">
+                        class="js-percentage {{ $fieldBoxClass }} {{ $percentageFieldClass }}"
+                        @if(!$canEditPercentage) readonly @endif>
                     @error("results.{$index}.percentage")
                     <p class="text-[10px] text-red-600 mt-1 text-center">{{ $message }}</p>
                     @enderror
                 </div>
                 <div class="w-30">
                     <p class="{{ $fieldLabelClass }}">التقدير</p>
-                    <select name="results[{{ $index }}][level]" class="{{ $fieldBoxClass }}">
+                    <select name="results[{{ $index }}][level]" class="js-level {{ $fieldBoxClass }}"
+                        @if(!$canEditPercentage) style="{{ $levelFieldStyle }}" tabindex="-1" @endif>
                         <option value="">--</option>
                         @foreach($levels as $lvl)
                         <option value="{{ $lvl }}" {{ old("results.{$index}.level", $result->level) == $lvl ? 'selected' : '' }}>
@@ -200,7 +205,7 @@ $results = $isEdit ? $surahTest->results : collect();
 <!-- نفس البنية والكلاسات والـ Tailwind بالظبط زي الكارت اللي فوق -->
 <!-- ═══════════════════════════════════════════════════════════ -->
 <template id="student-card-template">
-    <div class="bg-white rounded-2xl border border-gray-100 p-4 md:p-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+    <div class="js-result-card bg-white rounded-2xl border border-gray-100 p-4 md:p-5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
         <input type="hidden" data-field="student_id" value="">
 
         <div class="flex items-center gap-3">
@@ -218,19 +223,22 @@ $results = $isEdit ? $surahTest->results : collect();
         <div class="flex flex-wrap items-start gap-3 justify-end">
             <div class="w-23">
                 <p class="{{ $fieldLabelClass }}">الفتح</p>
-                <input type="number" min="0" value="0" data-field="prompt_errors" class="{{ $fieldBoxClass }}">
+                <input type="number" min="0" value="0" data-field="prompt_errors" class="js-prompt-errors {{ $fieldBoxClass }}">
             </div>
             <div class="w-23">
                 <p class="{{ $fieldLabelClass }}">التشكيل</p>
-                <input type="number" min="0" value="0" data-field="tashkeel_errors" class="{{ $fieldBoxClass }}">
+                <input type="number" min="0" value="0" data-field="tashkeel_errors" class="js-tashkeel-errors {{ $fieldBoxClass }}">
             </div>
             <div class="w-23">
                 <p class="{{ $fieldLabelClass }}">النسبة %</p>
-                <input type="number" min="0" max="100" value="100" data-field="percentage" class="{{ $fieldBoxClass }}">
+                <input type="number" min="0" max="100" value="100" data-field="percentage"
+                    class="js-percentage {{ $fieldBoxClass }} {{ $percentageFieldClass }}"
+                    @if(!$canEditPercentage) readonly @endif>
             </div>
             <div class="w-30">
                 <p class="{{ $fieldLabelClass }}">التقدير</p>
-                <select data-field="level" class="{{ $fieldBoxClass }}">
+                <select data-field="level" class="js-level {{ $fieldBoxClass }}"
+                    @if(!$canEditPercentage) style="{{ $levelFieldStyle }}" tabindex="-1" @endif>
                     <option value="">--</option>
                     @foreach($levels as $lvl)
                     <option value="{{ $lvl }}">{{ $lvl }}</option>
@@ -245,3 +253,48 @@ $results = $isEdit ? $surahTest->results : collect();
     </div>
 </template>
 @endif
+<script>
+    // حساب النسبة والتقدير تلقائيًا بناءً على أخطاء الفتح والتشكيل
+    document.addEventListener('input', function(e) {
+        if (!e.target.matches('.js-prompt-errors, .js-tashkeel-errors')) return;
+
+        const card = e.target.closest('.js-result-card');
+        if (!card) return;
+
+        calculateCardResult(card);
+    });
+
+    function calculateCardResult(card) {
+        const promptInput = card.querySelector('.js-prompt-errors');
+        const tashkeelInput = card.querySelector('.js-tashkeel-errors');
+        const percentageInput = card.querySelector('.js-percentage');
+        const levelSelect = card.querySelector('.js-level');
+
+        const promptErrors = parseFloat(promptInput?.value) || 0;
+        const tashkeelErrors = parseFloat(tashkeelInput?.value) || 0;
+
+        // الفتح = خصم نقطة كاملة لكل خطأ، التشكيل = خصم نص نقطة لكل خطأ
+        let percentage = 100 - (promptErrors * 1) - (tashkeelErrors * 0.5);
+        percentage = Math.max(0, Math.min(100, percentage));
+
+        if (percentageInput) {
+            percentageInput.value = percentage;
+        }
+
+        if (levelSelect) {
+            const level = getLevelFromPercentage(percentage);
+            const optionExists = Array.from(levelSelect.options).some(o => o.value === level);
+            if (optionExists) {
+                levelSelect.value = level;
+            }
+        }
+    }
+
+    function getLevelFromPercentage(percentage) {
+        if (percentage >= 95) return 'ممتاز';
+        if (percentage >= 90) return 'جيد جداً';
+        if (percentage >= 85) return 'جيد';
+        if (percentage >= 80) return 'مقبول';
+        return 'إعادة';
+    }
+</script>

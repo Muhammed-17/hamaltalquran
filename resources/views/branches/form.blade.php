@@ -48,7 +48,7 @@ $isEdit = isset($branch) && $branch->exists;
         </div>
 
         <div class="space-y-2">
-            <label for="established_at" class="block text-sm font-bold text-gray-700">تاريخ الإنشاء</label>
+            <label for="established_at" class="block text-sm font-bold text-gray-700">تاريخ الإنشاء <span class="text-red-500">*</span></label>
             <input id="established_at" type="date" name="established_at" autocomplete="off"
                 value="{{ old('established_at', isset($branch->established_at) ? $branch->established_at->format('Y-m-d') : '') }}"
                 class="w-full px-4 py-3 bg-gray-50 border border-gray-200 focus:bg-white focus:ring-2 focus:ring-emerald-100 focus:border-[#0a5c36] rounded-2xl outline-none transition-all">
@@ -82,10 +82,17 @@ $isEdit = isset($branch) && $branch->exists;
                     <input type="checkbox" name="supervisor_ids[]" value="{{ $supervisor->id }}"
                         class="w-4 h-4 text-[#0a5c36] border-gray-300 rounded focus:ring-emerald-200"
                         {{ in_array((string) $supervisor->id, $selectedSupervisorIds, true) ? 'checked' : '' }}>
-                    <span class="text-sm text-gray-700">{{ $supervisor->user?->name ?? $supervisor->name }} ({{ $roleLabel }})</span>
+                    <span class="text-sm text-gray-700">
+                        {{ $supervisor->user?->name ?? $supervisor->name }} ({{ $roleLabel }})
+                        @if($supervisor->branch)
+                        <span class="text-xs text-gray-400">— {{ $supervisor->branch->name }}</span>
+                        @endif
+                    </span>
                 </label>
                 @empty
-                <p class="text-sm text-gray-400 col-span-2">لا يوجد معلمون متاحون.</p>
+                <p class="text-sm text-red-500 col-span-2">
+                    لا يوجد معلمون مؤهلون (مشرف / مدير فرع / مدير عام) لتعيينهم — يجب إضافة معلم بأحد هذه الأدوار أولاً قبل إنشاء الفرع.
+                </p>
                 @endforelse
             </div>
             @error('supervisor_ids') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror

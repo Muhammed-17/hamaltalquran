@@ -39,6 +39,15 @@ $hasFilters = request()->anyFilled([
                     </svg>
                     مراجعة مستثناة
                 </a>
+
+                <a href="{{ route('favorites.index') }}"
+                    class="w-full md:w-auto px-6 py-3 bg-yellow-500/90 hover:bg-yellow-400 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all border border-white/20 active:scale-95">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                    المفضل
+                </a>
+
                 <a href="{{ route('students.create') }}"
                     class="w-full md:w-auto px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-emerald-500/20 active:scale-95">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -284,6 +293,19 @@ $hasFilters = request()->anyFilled([
                                     </svg>
                                 </a>
                                 @endcan
+
+                                @php
+                                $isFavorited = $student->isFavoritedByCurrentUser();
+                                @endphp
+                                <button type="button"
+                                    onclick="openFavoriteModal({{ $student->id }}, {{ $isFavorited ? 'true' : 'false' }})"
+                                    class="{{ $isFavorited ? 'text-yellow-500' : 'text-gray-300' }} hover:text-yellow-500 transition">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                                        fill="{{ $isFavorited ? 'currentColor' : 'none' }}" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                    </svg>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -304,7 +326,18 @@ $hasFilters = request()->anyFilled([
             {{-- ─── الترقيم الموحّد (نفس مكوّن Guardians) ─── --}}
             <x-pagination :paginator="$students" />
         </div>
-
     </div>
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            initFavorites({
+                admin: @json(auth()->user()->hasRole('admin')),
+                teachers: @json($teachers->map(fn($t) => ['id' => $t -> id, 'name' => $t -> user -> name ?? ('معلم #'.$t -> id)])),
+                token: @json(csrf_token()),
+                baseUrl: @json(url('/students')),
+            });
+        });
+    </script>
+    @endpush
 
 </x-layouts.markaz-layout>

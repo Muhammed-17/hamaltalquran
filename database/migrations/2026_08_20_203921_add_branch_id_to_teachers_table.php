@@ -13,8 +13,7 @@ return new class extends Migration
     {
         Schema::table('teachers', function (Blueprint $table) {
             // nullable لأنها مطلوبة للمشرف/المعلم فقط، مش للمدير (manager)
-            $table->foreignId('branch_id')->nullable()->after('center_id')
-                ->constrained('branches')->nullOnDelete();
+            $table->foreignId('branch_id')->nullable()->constrained('branches')->nullOnDelete();
         });
     }
 

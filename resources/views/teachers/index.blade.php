@@ -6,6 +6,19 @@ $roleColors = [
 'admin' => 'bg-purple-50 text-purple-700 border border-purple-200',
 'general_manager' => 'bg-purple-50 text-purple-700 border border-purple-200',
 ];
+$sortLink = function (string $column, string $label) {
+$currentSort = request('sort_by', 'id');
+$currentOrder = request('sort_order', 'asc');
+$nextOrder = ($currentSort === $column && $currentOrder === 'asc') ? 'desc' : 'asc';
+$isActive = $currentSort === $column;
+
+$url = request()->fullUrlWithQuery(['sort_by' => $column, 'sort_order' => $nextOrder]);
+
+return '<a href="' . $url . '" class="flex items-center gap-1 hover:text-gray-700 ' . ($isActive ? 'text-[#0a5c36] font-bold' : '') . '">'
+    . $label
+    . ($isActive ? ($currentOrder === 'asc' ? ' ▲' : ' ▼') : '')
+    . '</a>';
+};
 @endphp
 
 <x-layouts.markaz-layout>
@@ -18,7 +31,7 @@ $roleColors = [
                 <h1 class="text-3xl font-black mb-2">إدارة المعلمين</h1>
                 @if(auth()->user()->hasRole(['admin', 'general_manager']))
                 <p class="text-emerald-100/80 text-sm font-medium">
-                    @if(request()->anyFilled(['q', 'center_id', 'role', 'status']))
+                    @if(request()->anyFilled(['q', 'center_id', 'branch_id', 'role', 'status']))
                     {{ $teachers->total() }} نتيجة
                     @else
                     {{ $teachers->total() }} معلم مسجل في النظام
@@ -46,8 +59,23 @@ $roleColors = [
 
         {{-- Filters --}}
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-            <form method="GET" action="{{ route('teachers.index') }}" class="flex flex-wrap gap-3 items-end">
+            <form method="GET" action="{{ route('teachers.index') }}" class="flex flex-wrap gap-3 items-end"
+                x-data="{
+        allBranches: {{ $branches->map(fn($b) => ['value' => (string)$b->id, 'label' => $b->name, 'center_name' => $b->center?->name])->values()->toJson() }},
+        onCenterChange(e) {
+            if (e.detail.name !== 'center_id') return;
 
+            const centerName = e.detail.value;
+            const filtered = centerName
+                ? this.allBranches.filter(b => b.center_name === centerName)
+                : this.allBranches;
+
+            window.dispatchEvent(new CustomEvent('update-options', {
+                detail: { name: 'branch_id', options: filtered, preserveSelection: false }
+            }));
+        }
+    }"
+                @searchable-change.window="onCenterChange($event)">
                 {{-- بحث --}}
                 <div class="flex-1 min-w-50">
                     <label class="block text-xs font-bold text-gray-500 mb-1">بحث بالاسم أو البريد</label>
@@ -61,17 +89,26 @@ $roleColors = [
                     </div>
                 </div>
 
-                {{-- فلتر الفرع --}}
+                {{-- فلتر المركز --}}
                 @if(auth()->user()->hasRole(['admin', 'general_manager']))
                 <div class="min-w-45 flex-1 sm:flex-none">
-                    <label class="block text-xs font-bold text-gray-500 mb-1">الفرع</label>
-                    <select name="center_id"
-                        class="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-[#0a5c36] transition-all appearance-none">
-                        <option value="">-- كل الفروع --</option>
-                        @foreach($centers as $center)
-                        <option value="{{ $center->name }}" @selected(request('center_id')===$center->name)>{{ $center->name }}</option>
-                        @endforeach
-                    </select>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">المركز</label>
+                    <x-searchable-select
+                        name="center_id"
+                        :options="$centers->map(fn($center) => ['value' => $center->name, 'label' => $center->name])->values()"
+                        placeholder="-- كل المراكز --"
+                        searchPlaceholder="ابحث عن مركز..."
+                        :defaultValue="request('center_id', '')" />
+                </div>
+                {{-- فلتر المقر --}}
+                <div class="min-w-45 flex-1 sm:flex-none">
+                    <label class="block text-xs font-bold text-gray-500 mb-1">المقر</label>
+                    <x-searchable-select
+                        name="branch_id"
+                        :options="$branches->map(fn($branch) => ['value' => $branch->id, 'label' => $branch->name])->values()"
+                        placeholder="-- كل المقرات --"
+                        searchPlaceholder="ابحث عن مقر..."
+                        :defaultValue="request('branch_id', '')" />
                 </div>
                 @endif
 
@@ -109,7 +146,7 @@ $roleColors = [
                 </button>
 
                 {{-- إعادة تعيين --}}
-                @if(request()->anyFilled(['q', 'center_id', 'role', 'status']))
+                @if(request()->anyFilled(['q', 'center_id', 'branch_id', 'role', 'status']))
                 <a href="{{ route('teachers.index') }}"
                     class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl text-sm transition-all">
                     مسح
@@ -124,13 +161,14 @@ $roleColors = [
             <table class="w-full text-right min-w-250">
                 <thead class="bg-gray-50 text-gray-500 text-sm">
                     <tr>
-                        <th class="py-4 px-6 font-medium rounded-tr-xl">#</th>
+                        <th class="py-4 px-6 font-medium rounded-tr-xl">{!! $sortLink('id', '#') !!}</th>
                         <th class="py-4 px-6 font-medium">اسم المعلم</th>
                         <th class="py-4 px-6 font-medium">البريد الإلكتروني</th>
-                        <th class="py-4 px-6 font-medium">الفرع</th>
-                        <th class="py-4 px-6 font-medium">الأدوار</th>
-                        <th class="py-4 px-6 font-medium">الاتصال</th>
-                        <th class="py-4 px-6 font-medium">الحالة</th>
+                        <th class="py-4 px-6 font-medium">{!! $sortLink('center', 'المركز') !!}</th>
+                        <th class="py-4 px-6 font-medium">{!! $sortLink('branch', 'المقر') !!}</th>
+                        <th class="py-4 px-6 font-medium">{!! $sortLink('role', 'الأدوار') !!}</th>
+                        <th class="py-4 px-6 font-medium">{!! $sortLink('online', 'الاتصال') !!}</th>
+                        <th class="py-4 px-6 font-medium">{!! $sortLink('status', 'الحالة') !!}</th>
                         <th class="py-4 px-6 font-medium rounded-tl-xl"></th>
                     </tr>
                 </thead>
@@ -147,8 +185,15 @@ $roleColors = [
                         <td class="py-4 px-6 font-medium text-gray-800">{{ $teacher->name }}</td>
                         <td class="py-4 px-6 text-gray-600 text-sm">{{ $teacher->user_email ?? '—' }}</td>
                         <td class="py-4 px-6 text-sm">
-                            @if($teacher->center)
-                            <span class="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-semibold">{{ $teacher->center->name }}</span>
+                            @if($teacher->branch?->center)
+                            <span class="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-semibold">{{ $teacher->branch->center->name }}</span>
+                            @else
+                            <span class="text-gray-400">—</span>
+                            @endif
+                        </td>
+                        <td class="py-4 px-6 text-sm">
+                            @if($teacher->branch)
+                            <span class="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold">{{ $teacher->branch->name }}</span>
                             @else
                             <span class="text-gray-400">—</span>
                             @endif
@@ -222,8 +267,8 @@ $roleColors = [
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="py-12 text-center text-gray-400 font-medium">
-                            @if(request()->anyFilled(['q', 'center_id', 'role', 'status']))
+                        <td colspan="9" class="py-12 text-center text-gray-400 font-medium">
+                            @if(request()->anyFilled(['q', 'center_id', 'branch_id', 'role', 'status']))
                             لا توجد نتائج مطابقة للفلاتر المحددة.
                             @else
                             لا يوجد معلمون مسجلون حالياً.
@@ -252,8 +297,7 @@ $roleColors = [
             Swal.fire({
                 title: `${actionText} حساب ${name}؟`,
                 text: isActive ?
-                    'سيتم إيقاف حساب هذا المعلم ولن يتمكن من الدخول للنظام.' :
-                    'سيتم إعادة تفعيل حساب هذا المعلم.',
+                    'سيتم إيقاف حساب هذا المعلم ولن يتمكن من الدخول للنظام.' : 'سيتم إعادة تفعيل حساب هذا المعلم.',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: actionColor,
