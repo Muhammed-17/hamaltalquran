@@ -10,8 +10,9 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libzip-dev \
     libcurl4-openssl-dev \
+    libpq-dev \
     pkg-config \
-    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip \
+    && docker-php-ext-install pdo_pgsql pgsql mbstring exif pcntl bcmath gd zip \
     && rm -rf /var/lib/apt/lists/*
 
 # تثبيت Node.js لبناء الفرونت إند
@@ -37,6 +38,6 @@ COPY docker/nginx.conf /etc/nginx/sites-available/default
 COPY docker/start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
 
-EXPOSE 80
+EXPOSE 10000
 
 CMD ["/usr/local/bin/start.sh"]
