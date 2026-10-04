@@ -2,7 +2,7 @@
 set -e
 
 # Render injects PORT env var - nginx must listen on it
-PORT="${PORT:-80}"
+PORT="${PORT:-8080}"
 sed -i "s/listen 80;/listen ${PORT};/" /etc/nginx/sites-available/default
 
 cd /var/www/html
