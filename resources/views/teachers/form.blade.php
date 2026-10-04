@@ -117,6 +117,7 @@ $currentRoles = old('roles', $isEdit ? $teacher->user->roles->pluck('name')->toA
         </label>
         <div class="grid grid-cols-2 gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
             @foreach($roles as $role)
+            @continue(in_array($role->name, ['مختبر']) || in_array($role->display_name, ['مختبر']))
             <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-100 cursor-pointer hover:border-[#0a5c36]/50 transition-all">
                 <input type="radio" name="roles[]" value="{{ $role->name }}"
                     {{ in_array($role->name, $currentRoles) ? 'checked' : '' }}

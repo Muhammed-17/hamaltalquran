@@ -341,7 +341,7 @@
                                 </svg>
                             </div>
 
-                            <h2 class="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">للدعم المادي</h2>
+                            <h2 class="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">للدعم المادي</h2>;
                             <p class="text-lg md:text-xl text-emerald-100 mb-10 leading-relaxed max-w-2xl mx-auto">
                                 ساهم في دعم مركز حملة القرآن وكن جزءاً من بناء جيل قرآني متميز
                             </p>
