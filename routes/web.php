@@ -5,11 +5,19 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\WelcomeController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GuardianSearchController;
+use App\Http\Controllers\CronController;
 
 // ================================================================
 // Public Routes
 // ================================================================
 Route::get('/', [WelcomeController::class, 'index'])->name('home');
+
+// ================================================================
+// Cron Endpoints (محمية بـ token سري، تُستدعى من cron-job.org)
+// ================================================================
+Route::get('/cron/{task}', [CronController::class, 'run'])
+    ->middleware('throttle:10,1')
+    ->name('cron.run');
 
 // ================================================================
 // Dashboard Routes
