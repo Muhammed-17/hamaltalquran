@@ -1,0 +1,11 @@
+FROM ghcr.io/dimitri/pgloader:latest
+
+USER root
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY supabase-ca.crt /usr/local/share/ca-certificates/supabase-ca.crt
+
+RUN update-ca-certificates

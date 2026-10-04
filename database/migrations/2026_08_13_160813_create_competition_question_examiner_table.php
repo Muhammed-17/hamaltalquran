@@ -50,7 +50,7 @@ return new class extends Migration
 
             // 1) أضف الـ Unique الجديد أولاً (يبدأ بنفس عمود competition_level_id
             //    فهيفضل يدعم الـ FK بتاعه بدل القديم)
-            if (! collect(DB::select("SHOW INDEX FROM competition_questions WHERE Key_name = ?", ['cp_questions_level_name_unique']))->isNotEmpty()) {
+            if (! $this->indexExists('competition_questions', 'cp_questions_level_name_unique')) {
                 Schema::table('competition_questions', function (Blueprint $table) {
                     $table->unique(
                         ['competition_level_id', 'name'],
@@ -60,15 +60,14 @@ return new class extends Migration
             }
 
             // 2) دلوقتي آمن نحذف الـ Unique القديم (مش هيتعارض مع FK)
-            if (collect(DB::select("SHOW INDEX FROM competition_questions WHERE Key_name = 'cp_questions_level_examiner_name_unique'"))->isNotEmpty()) {
+            if ($this->indexExists('competition_questions', 'cp_questions_level_examiner_name_unique')) {
                 Schema::table('competition_questions', function (Blueprint $table) {
                     $table->dropUnique('cp_questions_level_examiner_name_unique');
                 });
             }
 
-            // 3) احذف الـ foreign key الأول (لازم قبل أي محاولة لحذف الـ index/العمود
-            //    لأن MySQL بيرفض حذف index مرتبط بـ FK constraint - error 1553)
-            if (collect(DB::select("SHOW INDEX FROM competition_questions WHERE Key_name = 'competition_questions_competition_examiner_id_foreign'"))->isNotEmpty()) {
+            // 3) احذف الـ foreign key الأول (MySQL بيرفض حذف index مرتبط بـ FK - error 1553)
+            if ($this->foreignKeyExists('competition_questions', 'competition_questions_competition_examiner_id_foreign')) {
                 Schema::table('competition_questions', function (Blueprint $table) {
                     $table->dropForeign('competition_questions_competition_examiner_id_foreign');
                 });
@@ -80,6 +79,7 @@ return new class extends Migration
             });
         }
     }
+
     public function down(): void
     {
         if (! Schema::hasColumn('competition_questions', 'competition_examiner_id')) {
@@ -121,5 +121,56 @@ return new class extends Migration
         }
 
         Schema::dropIfExists('competition_question_examiner');
+    }
+
+    /**
+     * هل الـ index (أو الـ unique) موجود؟ يعمل مع MySQL و PostgreSQL و SQLite.
+     */
+    private function indexExists(string $table, string $index): bool
+    {
+        $driver = DB::getDriverName();
+
+        if ($driver === 'pgsql') {
+            return ! empty(DB::select(
+                'SELECT 1 FROM pg_indexes WHERE schemaname = current_schema() AND tablename = ? AND indexname = ?',
+                [$table, $index]
+            ));
+        }
+
+        if ($driver === 'sqlite') {
+            return collect(DB::select("PRAGMA index_list('{$table}')"))
+                ->contains(fn($row) => $row->name === $index);
+        }
+
+        // MySQL / MariaDB
+        return ! empty(DB::select("SHOW INDEX FROM `{$table}` WHERE Key_name = ?", [$index]));
+    }
+
+    /**
+     * هل الـ foreign key موجود؟ يعمل مع MySQL و PostgreSQL.
+     * (SQLite: Laravel يعيد بناء الجدول عند حذف العمود، فنرجع false.)
+     */
+    private function foreignKeyExists(string $table, string $constraint): bool
+    {
+        $driver = DB::getDriverName();
+
+        if ($driver === 'pgsql') {
+            return ! empty(DB::select(
+                "SELECT 1 FROM pg_constraint WHERE conname = ? AND conrelid = ?::regclass AND contype = 'f'",
+                [$constraint, $table]
+            ));
+        }
+
+        if ($driver === 'sqlite') {
+            return false;
+        }
+
+        // MySQL / MariaDB
+        return ! empty(DB::select(
+            "SELECT 1 FROM information_schema.TABLE_CONSTRAINTS
+             WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = ?
+               AND CONSTRAINT_NAME = ? AND CONSTRAINT_TYPE = 'FOREIGN KEY'",
+            [$table, $constraint]
+        ));
     }
 };

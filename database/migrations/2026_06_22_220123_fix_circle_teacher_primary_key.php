@@ -46,6 +46,20 @@ return new class extends Migration
 
             // 5. إنشاء فهرس على teacher_id
             DB::statement('CREATE INDEX circle_teacher_teacher_id_idx ON circle_teacher (teacher_id)');
+        } elseif ($driver === 'pgsql') {
+            // ✅ PostgreSQL (Supabase)
+
+            // التأكد من عدم وجود قيم NULL في role (لأنه سيصبح جزءًا من PK)
+            DB::statement("UPDATE circle_teacher SET role = 'teacher' WHERE role IS NULL");
+
+            // حذف PRIMARY KEY القديم (الاسم الافتراضي في PostgreSQL: <table>_pkey)
+            DB::statement('ALTER TABLE circle_teacher DROP CONSTRAINT IF EXISTS circle_teacher_pkey');
+
+            // إضافة PRIMARY KEY الجديد
+            DB::statement('ALTER TABLE circle_teacher ADD PRIMARY KEY (circle_id, teacher_id, role)');
+
+            // فهرس على teacher_id (الـ PK الجديد يغطي circle_id بالفعل)
+            DB::statement('CREATE INDEX IF NOT EXISTS circle_teacher_teacher_id_idx ON circle_teacher (teacher_id)');
         } else {
             // ✅ MySQL/MariaDB: ALTER TABLE العادي
 
@@ -100,6 +114,10 @@ return new class extends Migration
 
             // إنشاء فهرس على teacher_id
             DB::statement('CREATE INDEX circle_teacher_teacher_id_idx ON circle_teacher (teacher_id)');
+        } elseif ($driver === 'pgsql') {
+            // ✅ PostgreSQL (Supabase)
+            DB::statement('ALTER TABLE circle_teacher DROP CONSTRAINT IF EXISTS circle_teacher_pkey');
+            DB::statement('ALTER TABLE circle_teacher ADD PRIMARY KEY (circle_id, teacher_id)');
         } else {
             // ✅ MySQL/MariaDB
             DB::statement('ALTER TABLE circle_teacher ADD INDEX circle_teacher_circle_id_idx (circle_id)');
