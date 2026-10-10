@@ -215,6 +215,7 @@ class AttendanceController extends Controller
                 'student_id' => $data['student_id'],
                 'date'       => $date,
                 'status'     => $data['status'],
+                'card'       => (int) ($data['card'] ?? 0),   // ← جديد
                 'notes'      => !empty($data['notes']) ? $data['notes'] : null,
                 'user_id'    => $userId,
                 'created_at' => $now,
@@ -224,11 +225,10 @@ class AttendanceController extends Controller
             ->toArray();
 
         if (!empty($records)) {
-            // ✅ upsert: إدراج جديد أو تحديث الموجود فعليًا (وليس تجاهله)
             Attendance::upsert(
                 $records,
-                ['student_id', 'date'],           // الأعمدة المحدِّدة للتكرار (Unique Key)
-                ['status', 'notes', 'user_id', 'updated_at'] // الأعمدة التي تُحدَّث عند التكرار
+                ['student_id', 'date'],
+                ['status', 'card', 'notes', 'user_id', 'updated_at']
             );
         }
         return redirect()->route('attendance.index')
@@ -312,6 +312,7 @@ class AttendanceController extends Controller
 
         $attendance->update([
             'status' => $validated['status'],
+            'card'   => (int) ($validated['card'] ?? 0),
             'notes'  => $validated['notes'] ?? null,
             'date'   => $validated['date'],
         ]);
@@ -324,6 +325,11 @@ class AttendanceController extends Controller
     private function hasAttendanceChanges(Attendance $attendance, array $validated): bool
     {
         if ($attendance->status !== $validated['status']) {
+            return true;
+        }
+
+        // ← جديد
+        if ((int) $attendance->card !== (int) ($validated['card'] ?? 0)) {
             return true;
         }
 

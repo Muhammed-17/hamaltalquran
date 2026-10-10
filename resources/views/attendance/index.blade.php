@@ -184,7 +184,8 @@
                         <th class="px-8 py-5">اسم الطالب</th>
                         <th class="px-8 py-5 min-w-40">الحلقة</th>
                         <th class="px-8 py-5">الحالة</th>
-                        <th class="px-8 py-5">ملاحظات</th> {{-- مضافة من الملف الثاني --}}
+                        <th class="px-8 py-5 text-center">كروت</th>
+                        <th class="px-8 py-5">ملاحظات</th>
                         <th class="px-8 py-5">المسجل</th>
                         @canany(['update', 'delete'], App\Models\Attendance::class)
                         <th class="px-8 py-5 text-center">الإجراءات</th>
@@ -238,7 +239,10 @@
                             </span>
                             @endif
                         </td>
-                        {{-- عمود الملاحظات (مضاف من الملف الثاني) --}}
+                        <td class="px-8 py-6 text-center font-bold text-gray-700">
+                            {{ $record->card ?? 0 }}
+                        </td>
+                        {{-- عمود الملاحظات --}}
                         <td class="px-8 py-6 text-gray-500 font-medium max-w-xs truncate">
                             {{ $record->notes ?: '-' }}
                         </td>

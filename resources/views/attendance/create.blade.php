@@ -4,13 +4,16 @@
             $students->map(function ($s) use ($attendanceData) {
                 $status = $attendanceData[$s->id]->status ?? 'not_recorded';
                 $notes  = $attendanceData[$s->id]->notes ?? '';
+                $card   = $attendanceData[$s->id]->card ?? 0;
                 return [
                     'id' => $s->id,
                     'name' => $s->name,
                     'status' => $status,
                     'notes' => $notes,
-                    'original_status' => $status, // ✅ نسخة أصلية للمقارنة قبل الحفظ
-                    'original_notes' => $notes,   // ✅ نسخة أصلية للمقارنة قبل الحفظ
+                    'card' => $card,
+                    'original_status' => $status,
+                    'original_notes' => $notes,
+                    'original_card' => $card,
                 ];
             }),
         ) }},
@@ -46,9 +49,8 @@
 
     // ✅ إرسال الطلاب الجدد (لم يكن لهم سجل سابق) أو الذين تغيّرت حالتهم/ملاحظاتهم فقط
     const changed = touched.filter(s =>
-        s.original_status === 'not_recorded' ||
-        s.status !== s.original_status ||
-        (s.notes ?? '') !== (s.original_notes ?? '')
+    s.original_status === 'not_recorded' || s.status !== s.original_status || (s.notes ?? '') !== (s.original_notes ?? '') ||
+    Number(s.card ?? 0) !== Number(s.original_card ?? 0)
     );
 
     if (changed.length === 0) {
@@ -86,6 +88,11 @@
     });
 
     form.submit();
+    const cardInput = document.createElement('input');
+    cardInput.type = 'hidden';
+    cardInput.name = `attendance[${i}][card]`;
+    cardInput.value = Number(s.card ?? 0);
+    form.appendChild(cardInput);
 },
 
         get totalCount() { return this.students.length },
@@ -410,18 +417,26 @@
                             </div>
                         </div>
 
-                        <!-- ✅ Row 2: Notes -->
+                        <!-- ✅ Row 2: Notes + Card -->
                         <div x-show="s.status !== 'not_recorded'" x-transition class="w-full">
-                            <div class="flex items-center gap-3 bg-gray-50 rounded-2xl p-3">
-                                <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                </svg>
-                                <input
-                                    type="text"
-                                    x-model="s.notes"
-                                    placeholder="ملاحظات (اختياري)..."
-                                    class="w-full bg-transparent border-none focus:ring-0 text-sm text-gray-700 placeholder-gray-400 font-medium">
+                            <div class="flex flex-col md:flex-row gap-3">
+                                <div class="flex items-center gap-3 bg-gray-50 rounded-2xl p-3 flex-1">
+                                    <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    <input type="text" x-model="s.notes" placeholder="ملاحظات (اختياري)..."
+                                        class="w-full bg-transparent border-none focus:ring-0 text-sm text-gray-700 placeholder-gray-400 font-medium">
+                                </div>
+
+                                <div class="flex items-center gap-3 bg-gray-50 rounded-2xl p-3 md:w-44">
+                                    <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                                    </svg>
+                                    <input type="number" min="0" step="1" x-model.number="s.card" placeholder="Card"
+                                        class="w-full bg-transparent border-none focus:ring-0 text-sm text-gray-700 placeholder-gray-400 font-medium">
+                                </div>
                             </div>
                         </div>
                     </div>

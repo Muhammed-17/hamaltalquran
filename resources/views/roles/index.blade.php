@@ -153,14 +153,19 @@ $protectedRoles = ['admin', 'general_manager', 'manager', 'supervisor', 'teacher
 
             <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
 
-                {{-- رأس الدور --}}
-                <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-50">
-                    <h3 class="text-base font-black text-gray-800">
-                        صلاحيات دور:
-                        <span class="text-emerald-600">{{ $role->display_name ?? $role->name }}</span>
-                        @if($role->display_name && $role->display_name !== $role->name)
-                        <span class="text-xs text-gray-400 font-normal ml-1">({{ $role->name }})</span>
-                        @endif
+                {{-- رأس الدور (اضغط لإظهار/إخفاء الصلاحيات) --}}
+                <div
+                    onclick="toggleRole({{ $role->id }})"
+                    class="flex justify-between items-center cursor-pointer select-none">
+                    <h3 class="text-base font-black text-gray-800 flex items-center gap-2">
+                        <span id="role-arrow-{{ $role->id }}" class="text-gray-400 transition-transform duration-200">◀</span>
+                        <span>
+                            صلاحيات دور:
+                            <span class="text-emerald-600">{{ $role->display_name ?? $role->name }}</span>
+                            @if($role->display_name && $role->display_name !== $role->name)
+                            <span class="text-xs text-gray-400 font-normal ml-1">({{ $role->name }})</span>
+                            @endif
+                        </span>
                     </h3>
 
                     <div class="flex items-center gap-2">
@@ -175,7 +180,8 @@ $protectedRoles = ['admin', 'general_manager', 'manager', 'supervisor', 'teacher
                     </div>
                 </div>
 
-                {{-- فورم تحديث الصلاحيات --}}
+                {{-- محتوى الصلاحيات (مخفي افتراضياً) --}}
+                <div id="role-body-{{ $role->id }}" class="hidden mt-4 pt-3 border-t border-gray-50">
                 <form action="{{ route('admin.roles.permissions.update', $role->id) }}" method="POST">
                     @csrf
                     @method('PUT')
@@ -260,6 +266,7 @@ $protectedRoles = ['admin', 'general_manager', 'manager', 'supervisor', 'teacher
 
                     </div>
                 </form>
+                </div>
 
                 {{-- فورم الحذف المخفية — فقط للأدوار غير المحمية --}}
                 @if(!$isProtected)
@@ -287,6 +294,18 @@ $protectedRoles = ['admin', 'general_manager', 'manager', 'supervisor', 'teacher
 
     @push('scripts')
     <script>
+        // ─── إظهار / إخفاء صلاحيات الدور ─────────────
+        function toggleRole(id) {
+            const body  = document.getElementById('role-body-' + id);
+            const arrow = document.getElementById('role-arrow-' + id);
+            if (!body || !arrow) return;
+
+            body.classList.toggle('hidden');
+            arrow.style.transform = body.classList.contains('hidden')
+                ? 'rotate(0deg)'
+                : 'rotate(-90deg)';
+        }
+
         // ─── حذف الدور ───────────────────────────────
         function confirmDelete(roleId, roleName) {
             Swal.fire({
@@ -323,5 +342,5 @@ $protectedRoles = ['admin', 'general_manager', 'manager', 'supervisor', 'teacher
             btn.textContent = allChecked ? 'تحديد الكل' : 'إلغاء التحديد';
         }
     </script>
-    @endpush
+@endpush
 </x-layouts.markaz-layout>

@@ -10,11 +10,12 @@ class Attendance extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['student_id', 'date', 'status', 'notes', 'user_id'];
+    protected $fillable = ['student_id', 'date', 'status', 'card', 'notes', 'user_id'];
 
     protected $casts = [
         'date' => 'date',
         'deleted_at' => 'datetime',
+        'card' => 'integer',
     ];
 
     protected static function booted(): void

@@ -39,21 +39,21 @@
                 <!-- Status -->
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">حالة الحضور</label>
-                    
+
                     @php
-                        $statuses = [
-                            'present' => ['حاضر', 'emerald'], 
-                            'absent' => ['غائب', 'red'], 
-                            'late' => ['متأخر', 'amber'], 
-                            'excused' => ['بعذر', 'blue']
-                        ];
-                        $selectedStatus = old('status') !== null ? old('status') : ($attendance->status ?? 'present');
+                    $statuses = [
+                    'present' => ['حاضر', 'emerald'],
+                    'absent' => ['غائب', 'red'],
+                    'late' => ['متأخر', 'amber'],
+                    'excused' => ['بعذر', 'blue']
+                    ];
+                    $selectedStatus = old('status') !== null ? old('status') : ($attendance->status ?? 'present');
                     @endphp
-                    
+
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                         @foreach($statuses as $value => [$label, $color])
                         @php
-                            $isChecked = $selectedStatus == $value;
+                        $isChecked = $selectedStatus == $value;
                         @endphp
                         <label class="cursor-pointer relative block">
                             <input type="radio" name="status" value="{{ $value }}"
@@ -67,6 +67,17 @@
                         @endforeach
                     </div>
                     @error('status')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Card -->
+                <div class="mb-4">
+                    <label for="card" class="block text-sm font-medium text-gray-700 mb-1">كروت</label>
+                    <input type="number" name="card" id="card" min="0" step="1"
+                        value="{{ old('card', $attendance->card ?? 0) }}"
+                        class="w-full rounded-lg border-gray-300 focus:border-emerald-500 focus:ring-emerald-500">
+                    @error('card')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
