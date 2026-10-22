@@ -15,7 +15,7 @@ class Attendance extends Model
     protected $casts = [
         'date' => 'date',
         'deleted_at' => 'datetime',
-        'card' => 'integer',
+        // 'card' => 'integer',
     ];
 
     protected static function booted(): void

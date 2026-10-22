@@ -73,7 +73,7 @@
 
                 <!-- Card -->
                 <div class="mb-4">
-                    <label for="card" class="block text-sm font-medium text-gray-700 mb-1">كروت</label>
+                    <label for="card" class="block text-sm font-medium text-gray-700 mb-1">الأوسمة</label>
                     <input type="number" name="card" id="card" min="0" step="1"
                         value="{{ old('card', $attendance->card ?? 0) }}"
                         class="w-full rounded-lg border-gray-300 focus:border-emerald-500 focus:ring-emerald-500">

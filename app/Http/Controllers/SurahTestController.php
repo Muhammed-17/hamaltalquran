@@ -520,10 +520,7 @@ class SurahTestController extends Controller
 
         DB::beginTransaction();
         try {
-            // Explicit cleanup in addition to any DB-level cascade,
-            // to stay safe regardless of migration configuration.
-            $surahTest->results()->delete();
-            $surahTest->delete();
+            $surahTest->delete(); // الـ cascade هيحذف النتائج المرتبطة تلقائيًا
 
             DB::commit();
 
@@ -536,7 +533,6 @@ class SurahTestController extends Controller
                 ->with('error', 'حدث خطأ أثناء الحذف: ' . $e->getMessage());
         }
     }
-
     // =============================================================
     // AJAX: Students for a circle (used by the create page JS)
     // =============================================================

@@ -64,6 +64,7 @@ class AttendanceController extends Controller
             ->get()
             ->groupBy('month');
 
+
         // ✅ O(N) — Aggregation في DB بدلاً من O(N²) في PHP
         $circleStats = DB::table('attendances')
             ->join('students', 'attendances.student_id', '=', 'students.id')

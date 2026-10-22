@@ -93,7 +93,6 @@ class DashboardController extends Controller
                     : 0;
 
                 // ─── نمو الطلاب: جدد + متوقفين ─────────────────────
-                // ─── نمو الطلاب: جدد + متوقفين ─────────────────────
                 $rangeStart = now()->subMonths(5)->startOfMonth();
                 $rangeEnd   = now()->endOfMonth();
 

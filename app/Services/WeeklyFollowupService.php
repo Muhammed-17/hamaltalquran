@@ -154,18 +154,22 @@ class WeeklyFollowupService
         return $followup;
     }
 
+    // public function deleteFollowupWithRelations(StudentWeeklyFollowup $followup): void
+    // {
+    //     $followup->newMemorizations()->delete();
+    //     $followup->revisions()->delete();
+    //     $followup->oldMemorizations()->delete();
+    //     $followup->discipline()->delete();
+    //     $followup->tajweedAssessment()->delete();
+    //     $followup->foundationLevel()->delete();
+    //     $followup->educationalLessonAssessment()->delete();
+    //     $followup->activities()->delete();
+    //     $followup->recommendation()->delete();
+    //     $followup->delete();
+    // }
     public function deleteFollowupWithRelations(StudentWeeklyFollowup $followup): void
     {
-        $followup->newMemorizations()->delete();
-        $followup->revisions()->delete();
-        $followup->oldMemorizations()->delete();
-        $followup->discipline()->delete();
-        $followup->tajweedAssessment()->delete();
-        $followup->foundationLevel()->delete();
-        $followup->educationalLessonAssessment()->delete();
-        $followup->activities()->delete();
-        $followup->recommendation()->delete();
-        $followup->delete();
+        $followup->delete(); // الـ cascade هيحذف كل العلاقات التسعة تلقائيًا
     }
 
     // ═══════════════════════════════════════════════════════════════

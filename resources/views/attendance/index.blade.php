@@ -184,7 +184,7 @@
                         <th class="px-8 py-5">اسم الطالب</th>
                         <th class="px-8 py-5 min-w-40">الحلقة</th>
                         <th class="px-8 py-5">الحالة</th>
-                        <th class="px-8 py-5 text-center">كروت</th>
+                        <th class="px-8 py-5 text-center">الأوسمة</th>
                         <th class="px-8 py-5">ملاحظات</th>
                         <th class="px-8 py-5">المسجل</th>
                         @canany(['update', 'delete'], App\Models\Attendance::class)
