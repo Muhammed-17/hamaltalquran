@@ -17,7 +17,7 @@ class AdminUserSeeder extends Seeder
             ['email' => 'markaz@gmail.com'],
             [
                 'name' => 'مركز حملة القرآن',
-                'password' => bcrypt('172021m'),
+                'password' => bcrypt(env('ADMIN_INITIAL_PASSWORD') ?? throw new \RuntimeException('Set ADMIN_INITIAL_PASSWORD in .env')),
                 'status' => 'active',
             ]
         );
