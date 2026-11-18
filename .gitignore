@@ -65,6 +65,4 @@ node_modules
 !/storage/framework/sessions/.gitignore
 
 # IDE Helper files (Development only)
-/_ide_helper.php
-/_ide_helper_models.php
-/.phpstorm.meta.php
+/remember_when_load_in_hostinger.md
