@@ -166,16 +166,10 @@ class SubscriptionController extends Controller
             $totalActiveStudents = $activeStudentIds->count();
 
             $aggregatedStats = (clone $statsBaseQuery)
-                //             ->selectRaw("
-                //     SUM(CASE WHEN month = ? AND status = 'مدفوع' THEN amount ELSE 0 END) as due_month_revenue,
-                //     SUM(CASE WHEN month != ? AND status = 'مدفوع' AND TO_CHAR(paid_at, 'YYYY-MM') = ? THEN amount ELSE 0 END) as collected_for_other_months,
-                //     SUM(CASE WHEN status = 'مدفوع' AND paid_at IS NOT NULL AND TO_CHAR(paid_at, 'YYYY-MM') = ? THEN 1 ELSE 0 END) as paid_month_count
-                // ", [$monthStart, $monthStart, $statsMonth, $statsMonth])
-                //             ->first();
                 ->selectRaw("
         SUM(CASE WHEN month = ? AND status = 'مدفوع' THEN amount ELSE 0 END) as due_month_revenue,
-        SUM(CASE WHEN month != ? AND status = 'مدفوع' AND TO_CHAR(paid_at, 'YYYY-MM') = ? THEN amount ELSE 0 END) as collected_for_other_months,
-        SUM(CASE WHEN status = 'مدفوع' AND paid_at IS NOT NULL AND TO_CHAR(paid_at, 'YYYY-MM') = ? THEN 1 ELSE 0 END) as paid_month_count        
+        SUM(CASE WHEN month != ? AND status = 'مدفوع' AND DATE_FORMAT(paid_at, '%Y-%m') = ? THEN amount ELSE 0 END) as collected_for_other_months,
+        SUM(CASE WHEN status = 'مدفوع' AND paid_at IS NOT NULL AND DATE_FORMAT(paid_at, '%Y-%m') = ? THEN 1 ELSE 0 END) as paid_month_count        
     ", [$monthStart, $monthStart, $statsMonth, $statsMonth])
                 ->first();
 
@@ -232,7 +226,7 @@ class SubscriptionController extends Controller
             if ($user->can('view subscriptions chart')) {
 
                 $monthlyRevenue = (clone $statsBaseQuery)
-                    ->selectRaw("TO_CHAR(paid_at, 'YYYY-MM') as month_label, SUM(amount) as total")
+                    ->selectRaw("DATE_FORMAT(paid_at, '%Y-%m') as month_label, SUM(amount) as total")
                     ->where('status', 'مدفوع')
                     ->whereNotNull('paid_at')
                     ->groupBy('month_label')
@@ -250,14 +244,14 @@ class SubscriptionController extends Controller
                 $paidCountsByMonth = (clone $statsBaseQuery)
                     ->whereIn('month', $last6MonthsStarts->map(fn($d) => $d->format('Y-m-d')))
                     ->where('status', 'مدفوع')
-                    ->selectRaw("TO_CHAR(month, 'YYYY-MM') as month_label, COUNT(*) as cnt")
+                    ->selectRaw("DATE_FORMAT(month, '%Y-%m') as month_label, COUNT(*) as cnt")
                     ->groupBy('month_label')
                     ->pluck('cnt', 'month_label');
 
                 $exemptCountsByMonth = (clone $statsBaseQuery)
                     ->whereIn('month', $last6MonthsStarts->map(fn($d) => $d->format('Y-m-d')))
                     ->where('status', 'معفي')
-                    ->selectRaw("TO_CHAR(month, 'YYYY-MM') as month_label, COUNT(*) as cnt")
+                    ->selectRaw("DATE_FORMAT(month, '%Y-%m') as month_label, COUNT(*) as cnt")
                     ->groupBy('month_label')
                     ->pluck('cnt', 'month_label');
 
