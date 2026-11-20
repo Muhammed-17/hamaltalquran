@@ -63,6 +63,7 @@ class PermissionSeeder extends Seeder
             // الحضور والغياب (attendance)
             // ─────────────────────────────────────────────────────────
             'view attendance'             => ['عرض سجلات الحضور', 'attendance'],
+            'view all teachers'           => ['عرض كل المعلمين (فلتر المسجل)', 'attendance'],
             'create attendance'           => ['تسجيل حضور وغياب', 'attendance'],
             'edit attendance'             => ['تعديل الحضور والغياب', 'attendance'],
             'delete attendance'           => ['حذف الحضور والغياب', 'attendance'],
@@ -210,6 +211,7 @@ class PermissionSeeder extends Seeder
                 'manage student status',
                 // attendance
                 'view attendance',
+                'view all teachers',
                 'create attendance',
                 'edit attendance',
                 'delete attendance',
@@ -302,6 +304,7 @@ class PermissionSeeder extends Seeder
                 'manage student status',
                 // attendance
                 'view attendance',
+                'view all teachers',
                 'create attendance',
                 'edit attendance',
                 'delete attendance',
@@ -363,6 +366,7 @@ class PermissionSeeder extends Seeder
                 'manage student status',
                 // attendance
                 'view attendance',
+                'view all teachers',
                 'create attendance',
                 'edit attendance',
                 'delete attendance',
@@ -424,6 +428,7 @@ class PermissionSeeder extends Seeder
                 'assign student to circle',
                 // attendance
                 'view attendance',
+                'view all teachers',
                 'create attendance',
                 'edit attendance',
                 // subscriptions

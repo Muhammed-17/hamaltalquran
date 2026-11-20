@@ -123,7 +123,7 @@
                     @endcan
 
                     {{-- حذف خطة الحلقة الجماعية --}}
-                    @can('delete student construction details')
+                    @can('delete students')
                     <form method="POST" action="{{ route('student-construction-details.destroy', $groupPlan) }}"
                         onsubmit="confirmDelete(event, { name: 'خطة الحلقة', type: 'الخطة' })"
                         class="inline">

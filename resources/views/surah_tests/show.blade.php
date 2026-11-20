@@ -37,7 +37,7 @@ $levelColors = [
             </div>
 
             <div class="flex items-center gap-2">
-                @can('edit surah tests')
+                @can('update surah tests')
                 <a href="{{ route('surah-tests.edit', $surahTest) }}"
                     class="inline-flex items-center gap-2 rounded-xl bg-[#0a5c36] text-white text-sm font-bold px-4 py-2.5 hover:bg-[#0a5c36]/90 transition">
                     تعديل النتائج

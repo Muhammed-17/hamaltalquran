@@ -190,7 +190,7 @@ class SurahTestController extends Controller
     public function create(Request $request): View
     {
         $this->authorize('create', SurahTest::class);
-        $canEditPercentage = auth()->user()->can('edit surah test percentage');
+        $canEditPercentage = auth()->user()->can('edit surah test percentages');
 
         $user   = Auth::user();
         $access = app(UserAccessService::class);
@@ -317,7 +317,7 @@ class SurahTestController extends Controller
     public function edit(SurahTest $surahTest): View
     {
         $this->authorize('update', $surahTest);
-        $canEditPercentage = auth()->user()->can('edit surah test percentage');
+        $canEditPercentage = auth()->user()->can('edit surah test percentages');
 
         $access = app(UserAccessService::class);
 

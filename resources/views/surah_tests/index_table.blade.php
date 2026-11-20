@@ -149,7 +149,7 @@
                             <a href="{{ route('surah-tests.show', $test) }}"
                                 class="text-[#0a5c36] hover:underline text-xs font-medium">عرض</a>
                             @endcan
-                            @can('edit surah tests')
+                            @can('update surah tests')
                             <a href="{{ route('surah-tests.edit', $test) }}"
                                 class="text-blue-600 hover:underline text-xs font-medium">تعديل</a>
                             @endcan

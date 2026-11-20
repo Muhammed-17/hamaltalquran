@@ -126,7 +126,7 @@
                                     @if($result->surahTest)
                                     <a href="{{ route('surah-tests.show', ['surah_test' => $result->surahTest, 'student_id' => $result->student_id]) }}"
                                         class="text-[#0a5c36] hover:underline text-xs font-medium">عرض</a>
-                                    @can('edit surah tests')
+                                    @can('update surah tests')
                                     <a href="{{ route('surah-tests.edit', $result->surahTest) }}"
                                         class="text-blue-600 hover:underline text-xs font-medium">تعديل</a>
                                     @endcan
