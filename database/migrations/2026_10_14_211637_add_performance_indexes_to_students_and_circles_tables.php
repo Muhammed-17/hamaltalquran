@@ -25,11 +25,7 @@ return new class extends Migration
 
     private function addIndexSafely(string $table, array $columns, string $indexName): void
     {
-        $exists = DB::select("
-            SELECT 1 FROM pg_indexes WHERE tablename = ? AND indexname = ?
-        ", [$table, $indexName]);
-
-        if (empty($exists)) {
+        if (! Schema::hasIndex($table, $indexName)) {
             Schema::table($table, function (Blueprint $blueprint) use ($columns, $indexName) {
                 $blueprint->index($columns, $indexName);
             });

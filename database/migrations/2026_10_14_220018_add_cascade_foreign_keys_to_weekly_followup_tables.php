@@ -33,11 +33,10 @@ return new class extends Migration
     {
         $constraintName = "{$table}_weekly_followup_id_foreign";
 
-        $exists = DB::select("
-            SELECT 1 FROM pg_constraint WHERE conname = ?
-        ", [$constraintName]);
+        $exists = collect(Schema::getForeignKeys($table))
+            ->contains(fn($fk) => $fk['name'] === $constraintName);
 
-        if (empty($exists)) {
+        if (! $exists) {
             Schema::table($table, function (Blueprint $blueprint) {
                 $blueprint->foreign('weekly_followup_id')
                     ->references('id')->on('student_weekly_followups')
