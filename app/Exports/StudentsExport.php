@@ -2,6 +2,8 @@
 
 namespace App\Exports;
 
+use App\Support\SqlExpressions;
+
 use App\Models\Student;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Concerns\FromQuery;
@@ -57,11 +59,11 @@ class StudentsExport implements FromQuery, WithHeadings, WithMapping, WithStyles
             ->when($f['school_grade'] ?? null,       fn($q, $v) => $q->where('school_grade', $v))
             ->when($f['decision'] ?? null,           fn($q, $v) => $q->where('decision', $v))
             ->when($f['age_min'] ?? null, fn($q, $v) => $q->whereRaw(
-                'TIMESTAMPDIFF(YEAR, date_of_birth, CURDATE()) >= ?',
+                SqlExpressions::ageYears('date_of_birth') . ' >= ?',
                 [max(1, min(99, (int) $v))]
             ))
             ->when($f['age_max'] ?? null, fn($q, $v) => $q->whereRaw(
-                'TIMESTAMPDIFF(YEAR, date_of_birth, CURDATE()) <= ?',
+                SqlExpressions::ageYears('date_of_birth') . ' <= ?',
                 [max(1, min(99, (int) $v))]
             ));
 

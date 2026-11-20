@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SqlExpressions;
+
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Student\StoreStudentRequest;
 use App\Http\Requests\Student\UpdateStudentRequest;
@@ -132,11 +134,11 @@ class StudentController extends Controller
             ->when($request->gender,            fn($q, $v) => $q->where('gender', $v))
             ->when($request->decision,          fn($q, $v) => $q->where('decision', $v))
             ->when($request->age_min, fn($q, $v) => $q->whereRaw(
-                'TIMESTAMPDIFF(YEAR, date_of_birth, CURDATE()) >= ?',
+                SqlExpressions::ageYears('date_of_birth') . ' >= ?',
                 [max(1, min(99, (int) $v))]
             ))
             ->when($request->age_max, fn($q, $v) => $q->whereRaw(
-                'TIMESTAMPDIFF(YEAR, date_of_birth, CURDATE()) <= ?',
+                SqlExpressions::ageYears('date_of_birth') . ' <= ?',
                 [max(1, min(99, (int) $v))]
             ));
 
@@ -145,7 +147,7 @@ class StudentController extends Controller
         $sortDir      = $request->dir === 'desc' ? 'desc' : 'asc';
 
         if ($sortField === 'age') {
-            $query->orderByRaw("TIMESTAMPDIFF(YEAR, date_of_birth, CURDATE()) $sortDir");
+            $query->orderByRaw(SqlExpressions::ageYears('date_of_birth') . " $sortDir");
         } elseif ($sortField === 'circle_name') {
             $query->leftJoin('circles', 'students.circle_id', '=', 'circles.id')
                 ->orderBy('circles.name', $sortDir)

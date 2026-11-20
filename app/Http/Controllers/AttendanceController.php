@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SqlExpressions;
+
 use App\Http\Requests\Attendance\StoreAttendanceRequest;
 use App\Http\Requests\Attendance\UpdateAttendanceRequest;
 use App\Models\Attendance;
@@ -57,7 +59,7 @@ class AttendanceController extends Controller
             ->get();
 
         $monthlyStats = (clone $query)
-            ->selectRaw("DATE_FORMAT(date, '%Y-%m') as month, status, count(*) as count")
+            ->selectRaw(SqlExpressions::monthKey('date') . " as month, status, count(*) as count")
             ->where('date', '>=', now()->subMonths(12))
             ->groupBy('month', 'status')
             ->orderBy('month')

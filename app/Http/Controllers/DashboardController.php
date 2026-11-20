@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\SqlExpressions;
+
 use App\Models\Center;
 use App\Models\Circle;
 use App\Models\Student;
@@ -99,7 +101,7 @@ class DashboardController extends Controller
                 $newStudentsByMonth = (clone $studentQuery)
                     ->where('status', '!=', 'متوقف')
                     ->whereBetween('created_at', [$rangeStart, $rangeEnd])
-                    ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month_label, COUNT(*) as cnt")
+                    ->selectRaw(SqlExpressions::monthKey('created_at') . " as month_label, COUNT(*) as cnt")
                     ->groupBy('month_label')
                     ->pluck('cnt', 'month_label');
 
@@ -107,7 +109,7 @@ class DashboardController extends Controller
                     ->where('status', 'متوقف')
                     ->whereColumn('updated_at', '!=', 'created_at')
                     ->whereBetween('updated_at', [$rangeStart, $rangeEnd])
-                    ->selectRaw("DATE_FORMAT(updated_at, '%Y-%m') as month_label, COUNT(*) as cnt")
+                    ->selectRaw(SqlExpressions::monthKey('updated_at') . " as month_label, COUNT(*) as cnt")
                     ->groupBy('month_label')
                     ->pluck('cnt', 'month_label');
 
