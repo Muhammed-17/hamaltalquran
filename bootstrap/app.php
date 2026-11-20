@@ -66,7 +66,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
             $fallback = match (true) {
                 !$user                            => route('login'),
-                $user->hasRole('guardian')        => route('guardian.dashboard'),
+                $user->hasRole('guardian')        => route('guardian.dashboard.own'),
                 $user->hasRole('admin')           => route('dashboard'),
                 $user->hasRole('general_manager') => route('students.index'),
                 $user->hasRole('manager')         => route('students.index'),
@@ -104,10 +104,17 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // ================================================================
         // ✅ 404 — صفحة/route غير موجودة (بما فيها Model Not Found)
+        // صفحة 404 حقيقية بحالة 404 بدل التحويل الصامت للرئيسية،
+        // حتى لا تُخفى الروابط الخاطئة ولا تُفهرس كصفحة رئيسية.
+        // معالج 403 أعلاه يبقى كما هو (تحويل بدون رسالة) — الفرق مقصود.
         // ================================================================
         $exceptions->render(
-            function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e, $request) use ($handle403) {
-                return $handle403($request);
+            function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e, $request) {
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => 'الصفحة غير موجودة'], 404);
+                }
+
+                return response()->view('errors.404', [], 404);
             }
         );
 

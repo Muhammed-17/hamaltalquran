@@ -53,7 +53,7 @@ class ExaminerDashboardController extends Controller
             }])
             ->get();
 
-        return view('examiner.dashboard', [
+        return view('examiner_accounts.dashboard', [
             'examiner'              => $examiner,
             'competitionsCount'     => $competitions->count(),
             'levelsCount'           => $levelIds->count(),

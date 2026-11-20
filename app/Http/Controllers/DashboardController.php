@@ -21,7 +21,7 @@ class DashboardController extends Controller
     {
         /** @var User $user */
         if (Auth::user()->hasRole('guardian')) {
-            return redirect()->route('guardian.dashboard');
+            return redirect()->route('guardian.dashboard.own');
         }
 
         $user = Auth::user();

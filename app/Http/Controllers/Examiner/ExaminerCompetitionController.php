@@ -31,7 +31,7 @@ class ExaminerCompetitionController extends Controller
             }])
             ->paginate(12);
 
-        return view('examiner.competitions.index', compact('competitions'));
+        return view('examiner_accounts.competitions.index', compact('competitions'));
     }
 
     /**
@@ -70,6 +70,6 @@ class ExaminerCompetitionController extends Controller
                 ];
             });
 
-        return view('examiner.competitions.levels', compact('competition', 'levels'));
+        return view('examiner_accounts.competitions.levels', compact('competition', 'levels'));
     }
 }

@@ -31,7 +31,7 @@ class EnsureNotGuardian
                 return redirect()->to($previous);
             }
 
-            return redirect()->route('guardian.dashboard');
+            return redirect()->route('guardian.dashboard.own');
         }
 
         return $next($request);
