@@ -29,9 +29,10 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
 
-        // حساب بلا أي دور: لا وجهة آمنة له داخل النظام — يُسجَّل خروجه
-        // بدل إدخاله في حلقة تحويلات بين /dashboard و /login
-        if ($user->roles->isEmpty()) {
+        // حساب بلا دور معروف للنظام (بلا دور أصلًا أو دور غير معروف):
+        // لا وجهة آمنة له داخل النظام — يُسجَّل خروجه بدل إدخاله في
+        // حلقة تحويلات بين /dashboard و /login
+        if (!$user->hasAnyRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher', 'guardian', 'examiner'])) {
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();

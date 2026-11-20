@@ -53,9 +53,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([], 403);
             }
 
-            // ✅ مستخدم مسجل بلا أي دور (حُذف دوره أثناء الجلسة): خروج آمن بدل اللوب
+            // ✅ مستخدم مسجل بلا دور معروف للنظام (بلا دور أصلًا، أو دور غير
+            // معروف، أو حُذف دوره أثناء الجلسة): لا وجهة آمنة له — خروج نظيف
             $authUser = Auth::user();
-            if ($authUser && $authUser->roles->isEmpty()) {
+            if ($authUser && !$authUser->hasAnyRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher', 'guardian', 'examiner'])) {
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
@@ -63,11 +64,18 @@ return Application::configure(basePath: dirname(__DIR__))
                 return redirect()->route('login');
             }
 
+            // ✅ كشف سلسلة 403 متتالية: لو حدث 403 آخر خلال ثوانٍ من سابقه
+            // فالصفحة السابقة نفسها ممنوعة على هذا الحساب (لا وجهة آمنة له) —
+            // لا نرتد إليها حتى لا ندخل في تبادل لا نهائي بين صفحتين ممنوعتين
+            $nowTs = now()->timestamp;
+            $inForbiddenChain = ($nowTs - (int) $request->session()->get('last_403_at', 0)) <= 5;
+            $request->session()->put('last_403_at', $nowTs);
+
             $previous = url()->previous();
             $current  = url()->current();
 
-            // ✅ يرجع لآخر صفحة لو مختلفة عن الحالية
-            if ($previous && $previous !== $current) {
+            // ✅ يرجع لآخر صفحة لو مختلفة عن الحالية ولسنا في سلسلة ممنوعات
+            if (!$inForbiddenChain && $previous && $previous !== $current) {
                 return redirect()->to($previous);
             }
 
@@ -83,11 +91,21 @@ return Application::configure(basePath: dirname(__DIR__))
                 $user->hasRole('supervisor')      => route('students.index'),
                 $user->hasRole('teacher')         => route('students.index'),
                 $user->hasRole('examiner')        => route('examiner.dashboard'),
-                default                           => route('login'),
+                // لا يصل هنا مستخدم مسجل بدور غير معروف (يُخرَج أعلاه) —
+                // أبقيناها على الملف الشخصي احتياطًا بدل route('login')
+                // التي تعيد المستخدم المسجل إلى الداخل فتتولد حلقة
+                default                           => route('profile.edit'),
             };
 
-            // ✅ منع redirect loop
+            // ✅ منع redirect loop: الوجهة الاحتياطية هي نفس الصفحة الممنوعة —
+            // خروج آمن للمستخدم المسجل بدل إرساله لصفحة الدخول وهو مسجل
             if (url()->current() === $fallback) {
+                if ($user) {
+                    Auth::logout();
+                    $request->session()->invalidate();
+                    $request->session()->regenerateToken();
+                }
+
                 return redirect()->route('login');
             }
 
@@ -109,6 +127,19 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(
             function (\Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException $e, $request) use ($handle403) {
                 return $handle403($request);
+            }
+        );
+
+        // ================================================================
+        // abort(403) المباشر داخل الكنترولرز (abort / abort_if):
+        // هذه تنتج HttpException عامة بحالة 403 لا AccessDeniedHttpException،
+        // فبدون هذا المعالج تظهر صفحة 403 خام ولا يصلها منطق التحويل أصلًا
+        // ================================================================
+        $exceptions->render(
+            function (\Symfony\Component\HttpKernel\Exception\HttpException $e, $request) use ($handle403) {
+                if ($e->getStatusCode() === 403) {
+                    return $handle403($request);
+                }
             }
         );
 
