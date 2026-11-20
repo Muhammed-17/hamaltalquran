@@ -27,7 +27,7 @@ class CompetitionAnswerController extends Controller
             ->latest()
             ->paginate(12);
 
-        return view('admin.competitions.index', compact('competitions'));
+        return view('competitions.results.index', compact('competitions'));
     }
 
     /**

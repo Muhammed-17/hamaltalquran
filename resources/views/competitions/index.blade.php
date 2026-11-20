@@ -95,7 +95,7 @@ $statusMap = [
                         <td class="px-6 py-4 text-left">
                             <div class="flex items-center justify-end gap-3 flex-wrap">
                                 @can('view competitions')
-                                <a href="{{ route('competitions.levels', $competition) }}"
+                                <a href="{{ route('competitions.overview.levels', $competition) }}"
                                     class="text-[#0a5c36] hover:text-[#084d2d] transition" title="المستويات">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -120,7 +120,7 @@ $statusMap = [
                                     </svg>
                                 </a>
                                 @endcan
-                                
+
                                 @can('examine competition participants')
                                 <a href="{{ route('competitions.overview.levels', $competition) }}"
                                     class="text-sky-500 hover:text-sky-700 transition" title="عرض الأختبار">
