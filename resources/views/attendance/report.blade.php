@@ -1,4 +1,4 @@
-<x-markaz-layout>
+<x-layouts.markaz-layout>
     <x-slot name="title">تقرير الحضور والغياب</x-slot>
 
     <div class="max-w-7xl mx-auto py-8 px-4">
@@ -159,4 +159,4 @@
             }
         });
     </script>
-</x-markaz-layout>
+</x-layouts.markaz-layout>

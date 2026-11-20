@@ -1,4 +1,4 @@
-<x-markaz-layout>
+<x-layouts.markaz-layout>
     <x-slot name="title">تعديل سجل الحضور</x-slot>
 
     <div class="max-w-2xl mx-auto py-8 px-4">
@@ -124,4 +124,4 @@
             }
         }
     </script>
-</x-markaz-layout>
+</x-layouts.markaz-layout>
