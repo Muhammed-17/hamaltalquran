@@ -30,6 +30,20 @@ return new class extends Migration
                 }
             }
 
+            // ✅ SQLite: حذف العمود وحده يفشل طالما الـ FK موجود
+            // (unknown column "center_id" in foreign key definition)،
+            // فلازم نحذف الـ FK الأول — بالعمود، لأن قيود SQLite بلا أسماء.
+            if (DB::getDriverName() === 'sqlite') {
+                $hasFk = collect(DB::select("PRAGMA foreign_key_list('circles')"))
+                    ->contains(fn($row) => $row->from === 'center_id');
+
+                if ($hasFk) {
+                    Schema::table('circles', function (Blueprint $table) {
+                        $table->dropForeign(['center_id']);
+                    });
+                }
+            }
+
             Schema::table('circles', function (Blueprint $table) {
                 $table->dropColumn('center_id');
             });

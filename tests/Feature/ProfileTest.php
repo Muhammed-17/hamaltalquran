@@ -65,44 +65,23 @@ test('email verification status is unchanged when the email address is unchanged
     $this->assertNotNull($user->refresh()->email_verified_at);
 });
 
-test('user can delete their account', function () {
-    $role = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-    Permission::firstOrCreate(['name' => 'edit profile', 'guard_name' => 'web']);
-    $role->givePermissionTo('edit profile');
-
+// لا توجد ميزة حذف الحساب ذاتيًا في النظام: صفحة البروفايل للعرض والتعديل فقط
+// (GET/PATCH)، ولا يوجد route لحذف الحساب — الحسابات تديرها الإدارة.
+test('user cannot delete their own account', function () {
     $user = User::factory()->create();
-    $user->assignRole('admin');
 
     $response = \Pest\Laravel\actingAs($user)
         ->delete('/profile', [
             'password' => 'password',
         ]);
 
-    $response
-        ->assertSessionHasNoErrors()
-        ->assertRedirect('/');
-
-    expect(auth()->check())->toBeFalse();
-    $this->assertNull($user->fresh());
+    $response->assertStatus(405);
+    expect(auth()->check())->toBeTrue();
+    $this->assertDatabaseHas('users', ['id' => $user->id]);
 });
 
-test('correct password must be provided to delete account', function () {
-    $role = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-    Permission::firstOrCreate(['name' => 'edit profile', 'guard_name' => 'web']);
-    $role->givePermissionTo('edit profile');
+test('guests cannot view the profile page', function () {
+    $response = $this->get('/profile');
 
-    $user = User::factory()->create();
-    $user->assignRole('admin');
-
-    $response = \Pest\Laravel\actingAs($user)
-        ->from('/profile')
-        ->delete('/profile', [
-            'password' => 'wrong-password',
-        ]);
-
-    $response
-        ->assertSessionHasErrorsIn('userDeletion', 'password')
-        ->assertRedirect('/profile');
-
-    $this->assertNotNull($user->fresh());
+    $response->assertRedirect('/login');
 });

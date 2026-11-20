@@ -4,7 +4,7 @@ namespace App\Http\Requests\Competition;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreCompetitionRequest extends FormRequest
+class UpdateCompetitionRequest extends FormRequest
 {
     public function authorize(): bool
     {

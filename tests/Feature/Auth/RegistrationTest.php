@@ -1,12 +1,16 @@
 <?php
 
-test('registration screen can be rendered', function () {
+// لا يوجد تسجيل عام في النظام: الحسابات تُنشأ من داخل لوحة الإدارة فقط،
+// ولا يوجد route باسم /register أصلًا. هذه الاختبارات توثّق هذا السلوك المقصود.
+
+test('registration screen is not available', function () {
     $response = $this->get('/register');
 
-    $response->assertStatus(200);
+    $response->assertNotFound();
+    $this->assertGuest();
 });
 
-test('new users can register', function () {
+test('guests cannot register themselves', function () {
     $response = $this->post('/register', [
         'name' => 'Test User',
         'email' => 'test@example.com',
@@ -14,6 +18,7 @@ test('new users can register', function () {
         'password_confirmation' => 'password',
     ]);
 
-    $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $response->assertNotFound();
+    $this->assertGuest();
+    $this->assertDatabaseMissing('users', ['email' => 'test@example.com']);
 });

@@ -4,6 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 return new class extends Migration
 {
@@ -69,7 +70,13 @@ return new class extends Migration
             // 3) احذف الـ foreign key الأول (MySQL بيرفض حذف index مرتبط بـ FK - error 1553)
             if ($this->foreignKeyExists('competition_questions', 'competition_questions_competition_examiner_id_foreign')) {
                 Schema::table('competition_questions', function (Blueprint $table) {
-                    $table->dropForeign('competition_questions_competition_examiner_id_foreign');
+                    if (DB::getDriverName() === 'sqlite') {
+                        // SQLite لا يدعم حذف الـ FK بالاسم (قيوده بلا أسماء) —
+                        // يُحذف بتحديد العمود، وLaravel يعيد بناء الجدول بدونه.
+                        $table->dropForeign(['competition_examiner_id']);
+                    } else {
+                        $table->dropForeign('competition_questions_competition_examiner_id_foreign');
+                    }
                 });
             }
 
@@ -147,8 +154,9 @@ return new class extends Migration
     }
 
     /**
-     * هل الـ foreign key موجود؟ يعمل مع MySQL و PostgreSQL.
-     * (SQLite: Laravel يعيد بناء الجدول عند حذف العمود، فنرجع false.)
+     * هل الـ foreign key موجود؟ يعمل مع MySQL و PostgreSQL و SQLite.
+     * (SQLite لا يُسمّي قيود الـ FK، فنستنتج اسم العمود من اسم القيد
+     * الافتراضي {table}_{column}_foreign ونتحقق عبر PRAGMA foreign_key_list.)
      */
     private function foreignKeyExists(string $table, string $constraint): bool
     {
@@ -162,14 +170,17 @@ return new class extends Migration
         }
 
         if ($driver === 'sqlite') {
-            return false;
+            $column = Str::between($constraint, $table . '_', '_foreign');
+
+            return collect(DB::select("PRAGMA foreign_key_list('{$table}')"))
+                ->contains(fn($row) => $row->from === $column);
         }
 
         // MySQL / MariaDB
         return ! empty(DB::select(
             "SELECT 1 FROM information_schema.TABLE_CONSTRAINTS
-             WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = ?
-               AND CONSTRAINT_NAME = ? AND CONSTRAINT_TYPE = 'FOREIGN KEY'",
+            WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = ?
+            AND CONSTRAINT_NAME = ? AND CONSTRAINT_TYPE = 'FOREIGN KEY'",
             [$table, $constraint]
         ));
     }
