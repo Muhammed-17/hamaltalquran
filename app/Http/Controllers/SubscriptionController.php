@@ -796,7 +796,7 @@ class SubscriptionController extends Controller
 
         $unpaidMonthsCount = $student->unpaidMonths?->unpaid_months_count ?? 0;
 
-        $message = $validated['message'] ? strip_tags($validated['message']) : null;
+        $message = !empty($validated['message']) ? strip_tags($validated['message']) : null;
 
         $guardian->notify(new UnpaidSubscriptionNotification($student, $unpaidMonthsCount, $message));
 

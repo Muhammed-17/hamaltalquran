@@ -673,7 +673,7 @@ class AttendanceController extends Controller
             ->where('date', '>=', now()->subDays(30))
             ->count();
 
-        $message = $validated['message'] ? strip_tags($validated['message']) : null;
+        $message = !empty($validated['message']) ? strip_tags($validated['message']) : null;
 
         $guardian->notify(new SequentialAbsenceNotification($student, $absenceDays, $message));
 
