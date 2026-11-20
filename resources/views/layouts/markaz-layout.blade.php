@@ -10,11 +10,10 @@
 
     <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}?v=1.1">
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <link href="{{ asset('css/cairo.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
+    <link href="{{ asset('vendor/tom-select/tom-select.css') }}" rel="stylesheet">
+    <script src="{{ asset('vendor/tom-select/tom-select.complete.min.js') }}"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
@@ -397,7 +396,7 @@
     </script>
 
     {{-- ✅ احتفظ به — يحمّل SweetAlert2 --}}
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ asset('vendor/sweetalert2/sweetalert2.all.min.js') }}"></script>
 
     {{-- ✅ ملفاتك المخصصة --}}
     @vite(['resources/js/confirm-logout.js', 'resources/js/confirm-delete.js', 'resources/js/confirm-success.js', 'resources/js/confirm-round.js'])

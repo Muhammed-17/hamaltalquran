@@ -70,8 +70,14 @@
                     {{-- الصورة --}}
                     <div class="relative">
                         <div class="w-32 h-32 lg:w-40 lg:h-40 rounded-3xl bg-emerald-100 flex items-center justify-center overflow-hidden border-4 border-white shadow-xl">
-                            <img src="https://ui-avatars.com/api/?name={{ urlencode($student->name) }}&background={{ $student->gender === 'ذكر' ? '10b981' : 'f43f5e' }}&color=fff&size=256"
-                                alt="Avatar" class="w-full h-full object-cover">
+                            {{-- أفاتار محلي بالأحرف الأولى بدل خدمة ui-avatars الخارجية --}}
+                            @php
+                                $nameParts = preg_split('/\s+/', trim($student->name));
+                                $initials = mb_substr($nameParts[0], 0, 1) . (count($nameParts) > 1 ? mb_substr(end($nameParts), 0, 1) : '');
+                            @endphp
+                            <div class="w-full h-full flex items-center justify-center" style="background-color: #{{ $student->gender === 'ذكر' ? '10b981' : 'f43f5e' }}">
+                                <span class="text-white font-black text-5xl lg:text-6xl">{{ $initials }}</span>
+                            </div>
                         </div>
                         <div class="absolute -bottom-2 -left-2 bg-emerald-500 text-white p-1.5 rounded-xl shadow-lg border-2 border-white">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
