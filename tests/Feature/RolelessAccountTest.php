@@ -30,6 +30,21 @@ test('role-less user is logged out at login instead of looping', function () {
     $this->assertGuest();
 });
 
+test('user with an unlisted role is logged out at login instead of looping', function () {
+    \Spatie\Permission\Models\Role::create(['name' => 'auditor', 'guard_name' => 'web']);
+    $user = User::factory()->create(['status' => 'active']);
+    $user->assignRole('auditor');
+
+    $response = $this->post('/login', [
+        'email'    => $user->email,
+        'password' => 'password',
+    ]);
+
+    $response->assertRedirect(route('login'));
+    $response->assertSessionHasErrors('email');
+    $this->assertGuest();
+});
+
 test('user whose role is removed mid-session is safely logged out on 403', function () {
     $user = User::factory()->create(['status' => 'active']);
     // بلا دور: أي صفحة محمية بصلاحية تطلق معالج 403
