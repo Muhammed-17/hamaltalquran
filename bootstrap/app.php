@@ -53,6 +53,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([], 403);
             }
 
+            // ✅ مستخدم مسجل بلا أي دور (حُذف دوره أثناء الجلسة): خروج آمن بدل اللوب
+            $authUser = Auth::user();
+            if ($authUser && $authUser->roles->isEmpty()) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return redirect()->route('login');
+            }
+
             $previous = url()->previous();
             $current  = url()->current();
 

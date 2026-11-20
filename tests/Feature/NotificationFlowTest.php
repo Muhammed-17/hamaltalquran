@@ -42,13 +42,19 @@ beforeEach(function () {
     $circle = Circle::create(['branch_id' => $branch->id, 'name' => 'حلقة الإشعارات', 'type' => 'بنين', 'level' => 'مبتدئ']);
 
     $this->student1 = Student::create([
-        'name' => 'طالب مُنبَّه', 'gender' => 'ذكر', 'status' => 'مقيد',
-        'circle_id' => $circle->id, 'guardian_id' => $this->guardian1->id,
+        'name' => 'طالب مُنبَّه',
+        'gender' => 'ذكر',
+        'status' => 'مقيد',
+        'circle_id' => $circle->id,
+        'guardian_id' => $this->guardian1->id,
         'center_id' => $center->id,
     ]);
     $this->student2 = Student::create([
-        'name' => 'طالب هادئ', 'gender' => 'ذكر', 'status' => 'مقيد',
-        'circle_id' => $circle->id, 'guardian_id' => $this->guardian2->id,
+        'name' => 'طالب هادئ',
+        'gender' => 'ذكر',
+        'status' => 'مقيد',
+        'circle_id' => $circle->id,
+        'guardian_id' => $this->guardian2->id,
         'center_id' => $center->id,
     ]);
 });
@@ -120,6 +126,14 @@ test('unpaid subscriptions command notifies guardians with unpaid months', funct
     expect($this->guardian1->notifications()->count())->toBe(1)
         ->and($this->guardian1->notifications()->first()->type)->toBe(UnpaidSubscriptionNotification::class)
         ->and($this->guardian2->notifications()->count())->toBe(0);
+});
+
+test('manual unpaid notify is rejected when the student has no unpaid months', function () {
+    $this->actingAs($this->admin)
+        ->postJson(route('subscriptions.notify-unpaid', $this->student1))
+        ->assertStatus(422);
+
+    expect($this->guardian1->notifications()->count())->toBe(0);
 });
 
 test('manual unpaid notify reaches the guardian', function () {

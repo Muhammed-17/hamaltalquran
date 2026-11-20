@@ -14,7 +14,7 @@ Route::middleware(['auth', 'verified', 'permission:view surah tests'])->group(fu
     Route::get('/surah-tests/repeat-students', [SurahTestController::class, 'repeatStudents'])
         ->name('surah-tests.repeat-students');
 
-    Route::get('/surah-tests/{surah_test}', [SurahTestController::class, 'show'])->name('surah-tests.show');
+    Route::get('/surah-tests/{surah_test}', [SurahTestController::class, 'show'])->whereNumber('surah_test')->name('surah-tests.show');
 
     Route::get('/circles/{circle}/students', [SurahTestController::class, 'studentsForCircle'])
         ->name('circles.students');

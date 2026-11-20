@@ -796,6 +796,10 @@ class SubscriptionController extends Controller
 
         $unpaidMonthsCount = $student->unpaidMonths?->unpaid_months_count ?? 0;
 
+        if ($unpaidMonthsCount === 0) {
+            return response()->json(['message' => 'لا توجد شهور غير مدفوعة لهذا الطالب.'], 422);
+        }
+
         $message = !empty($validated['message']) ? strip_tags($validated['message']) : null;
 
         $guardian->notify(new UnpaidSubscriptionNotification($student, $unpaidMonthsCount, $message));

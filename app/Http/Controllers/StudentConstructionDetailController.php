@@ -123,7 +123,8 @@ class StudentConstructionDetailController extends Controller
                 ->with('success', 'تم إنشاء خطة البناء للطالب بنجاح.');
         }
 
-        abort(400, 'يجب تحديد حلقة أو طالب.');
+        return redirect()->route('circles.index')
+            ->with('error', 'يجب تحديد حلقة أو طالب لإنشاء خطة بناء.');
     }
 
     /**

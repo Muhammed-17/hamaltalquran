@@ -29,6 +29,17 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
 
+        // حساب بلا أي دور: لا وجهة آمنة له داخل النظام — يُسجَّل خروجه
+        // بدل إدخاله في حلقة تحويلات بين /dashboard و /login
+        if ($user->roles->isEmpty()) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')
+                ->withErrors(['email' => 'هذا الحساب غير مفعّل بعد — لم يتم تعيين دور له. يرجى مراجعة إدارة المركز.']);
+        }
+
         if ($user->hasRole('guardian')) {
             return redirect()->route('guardian.dashboard.own');
         }
