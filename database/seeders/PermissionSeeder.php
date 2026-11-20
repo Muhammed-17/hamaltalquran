@@ -74,6 +74,7 @@ class PermissionSeeder extends Seeder
             // ─────────────────────────────────────────────────────────
             'view subscriptions'          => ['عرض الاشتراكات والمدفوعات', 'subscriptions'],
             'create subscriptions'        => ['تسجيل دفع اشتراك', 'subscriptions'],
+            'edit subscriptions'          => ['تعديل الاشتراكات', 'subscriptions'],
             'delete subscriptions'        => ['حذف سندات الاشتراكات', 'subscriptions'],
             'view subscriptions chart'    => ['عرض رسوم الاشتراكات', 'subscriptions'],
             'notify unpaid subscriptions' => ['إشعار أولياء الأمور بالاشتراكات المتأخرة', 'subscriptions'],
@@ -216,6 +217,7 @@ class PermissionSeeder extends Seeder
                 // subscriptions
                 'view subscriptions',
                 'create subscriptions',
+                'edit subscriptions',
                 'delete subscriptions',
                 'notify unpaid subscriptions',
                 'transfer subscriptions',
@@ -307,6 +309,7 @@ class PermissionSeeder extends Seeder
                 // subscriptions
                 'view subscriptions',
                 'create subscriptions',
+                'edit subscriptions',
                 'delete subscriptions',
                 'transfer subscriptions',
                 'notify unpaid subscriptions',
@@ -367,6 +370,7 @@ class PermissionSeeder extends Seeder
                 // subscriptions
                 'view subscriptions',
                 'create subscriptions',
+                'edit subscriptions',
                 'delete subscriptions',
                 'notify unpaid subscriptions',
                 'transfer subscriptions',
@@ -425,6 +429,7 @@ class PermissionSeeder extends Seeder
                 // subscriptions
                 'view subscriptions',
                 'create subscriptions',
+                'edit subscriptions',
                 'delete subscriptions',
                 'transfer subscriptions',
                 // collection rounds
@@ -471,6 +476,7 @@ class PermissionSeeder extends Seeder
                 // subscriptions
                 'view subscriptions',
                 'create subscriptions',
+                'edit subscriptions',
                 'delete subscriptions',
                 // group session plans
                 'view group session plans',

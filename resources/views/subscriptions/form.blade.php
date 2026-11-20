@@ -150,7 +150,7 @@
                         placeholder="اختر الحلقة..."
                         search-placeholder="ابحث عن حلقة..."
                         :options="$circleOptions"
-                        default-value="" />
+                        :default-value="old('circle_id', $subscription->circle_id ?? '')" />
                     <x-input-error :messages="$errors->get('circle_id')" class="mt-2" />
                 </div>
 
@@ -164,7 +164,7 @@
                         placeholder="اختر الطالب..."
                         search-placeholder="ابحث عن طالب..."
                         :options="[]"
-                        default-value="" />
+                        :default-value="old('student_id', $subscription->student_id ?? '')" />
 
                     <p x-show="selectedCircle && filteredStudents.length === 0"
                         class="text-emerald-600 text-sm font-bold mt-2 flex items-center gap-1">

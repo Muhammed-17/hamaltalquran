@@ -56,7 +56,7 @@
         <!-- Monthly Chart -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
             <h2 class="text-lg font-semibold text-gray-900 mb-4">إحصائيات الأشهر</h2>
-            <div class="h-64" id="monthlyChart"></div>
+            <div class="h-64"><canvas id="monthlyChart"></canvas></div>
         </div>
 
         <!-- Daily Stats -->
@@ -135,7 +135,7 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ asset('vendor/chartjs/chart.umd.min.js') }}"></script>
     <script>
         const ctx = document.getElementById('monthlyChart');
         const monthlyData = @json($monthlyStats);

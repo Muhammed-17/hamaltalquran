@@ -72,7 +72,10 @@ class StudentConstructionDetailController extends Controller
             return view('student_construction_details.create', compact('student', 'surahs'));
         }
 
-        abort(400, 'يجب تحديد حلقة أو طالب.');
+        // إعادة توجيه ودّية بدل خطأ 400: إنشاء الخطة يبدأ دائمًا من حلقة أو طالب،
+        // فنوجّه المستخدم لقائمة الحلقات مع رسالة تشرح الخطوة التالية.
+        return redirect()->route('circles.index')
+            ->with('error', 'لإنشاء خطة بناء اختر حلقة أولًا من قائمتها، أو افتح صفحة طالب.');
     }
 
     /**

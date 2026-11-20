@@ -54,6 +54,10 @@ class SupervisorSeeder extends Seeder
                     'branch_id' => $defaultBranch->id,
                 ]
             );
+
+            // إسناد دور المشرف: بدونه يقع الحساب في حلقة إعادة توجيه عند الدخول
+            // (لا يطابق أي فرع توجيه حسب الدور، فيهبط على /dashboard المحمي بـ role:admin)
+            $user->assignRole('supervisor');
         }
 
         $this->command->info('تم إنشاء حسابات المشرفين: ' . count($rows));
