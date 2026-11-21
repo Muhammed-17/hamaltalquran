@@ -30,8 +30,12 @@ class UserPolicy
         return $modelTeacher && $record->branch?->center_id !== null && $modelTeacher->branch?->center_id === $record->branch?->center_id;
     }
 
-    public function create(UserModel $user): bool
+    public function create(UserModel $user, ?string $role = null): bool
     {
+        if ($role === 'guardian') {
+            return $user->can('manage guardians');
+        }
+
         return $user->can('create users');
     }
 
