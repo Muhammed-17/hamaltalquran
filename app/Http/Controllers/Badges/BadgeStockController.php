@@ -25,7 +25,10 @@ class BadgeStockController extends Controller
             'types' => $types,
             'adminBalances' => $balances->adminBalances(),
             'recentMovements' => $recentMovements,
-            'teachers' => $access->selectableTeachers(auth()->user()),
+            // قائمة أصحاب العهدة لنموذج الإرجاع: الإدارة ترى كل الطاقم، وغيرها يرى نطاقه
+            'teachers' => auth()->user()->hasRole(['admin', 'general_manager'])
+                ? $access->selectableRecipients(auth()->user())
+                : $access->selectableTeachers(auth()->user()),
         ]);
     }
 

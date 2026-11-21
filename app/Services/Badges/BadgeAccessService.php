@@ -66,6 +66,130 @@ class BadgeAccessService
             ->exists();
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | سلسلة العهدة الهرمية
+    | الرتب: مدير النظام 5 ← مدير عام 4 ← مدير فرع 3 ← مشرف 2 ← معلم 1
+    | التسليم لتحت فقط (رتبة أقل حتمًا) وداخل نطاق المُسلِّم، والخصم من
+    | عهدة المُسلِّم — إلا مدير النظام فيسلّم من المخزون المركزي.
+    |--------------------------------------------------------------------------
+    */
+
+    /** رتبة العهدة للمستخدم (0 = ليس من طاقم العهدة) */
+    public function custodyRank(User $user): int
+    {
+        return match (true) {
+            $user->hasRole('admin') => 5,
+            $user->hasRole('general_manager') => 4,
+            $user->hasRole('manager') => 3,
+            $user->hasRole('supervisor') => 2,
+            $user->hasRole('teacher') => 1,
+            default => 0,
+        };
+    }
+
+    public function custodyRoleLabel(User $user): string
+    {
+        return match ($this->custodyRank($user)) {
+            5 => 'مدير النظام',
+            4 => 'مدير عام',
+            3 => 'مدير فرع',
+            2 => 'مشرف',
+            1 => 'معلم',
+            default => '—',
+        };
+    }
+
+    /** هل يستطيع المُسلِّم تسليم هذا المستلم؟ (رتبة أقل + داخل النطاق) */
+    public function canHandoverTo(User $giver, User $recipient): bool
+    {
+        $giverRank = $this->custodyRank($giver);
+        $recipientRank = $this->custodyRank($recipient);
+
+        if ($recipientRank === 0 || $giverRank <= $recipientRank) {
+            return false;
+        }
+
+        return $this->recipientInScope($giver, $recipient);
+    }
+
+    /** نطاق المستلم بالنسبة للمُسلِّم حسب دور المُسلِّم */
+    public function recipientInScope(User $giver, User $recipient): bool
+    {
+        if ($giver->hasRole(['admin', 'general_manager'])) {
+            return true;
+        }
+
+        if ($giver->hasRole('manager')) {
+            $giverCenter = $this->userCenterId($giver);
+            $recipientCenter = $this->userCenterId($recipient);
+
+            return $giverCenter !== null && $recipientCenter === $giverCenter;
+        }
+
+        if ($giver->hasRole('supervisor')) {
+            // معلمو الحلقات التي يشرف عليها فقط
+            return $this->access->accessibleTeachers($giver)
+                ->where('user_id', $recipient->id)
+                ->exists();
+        }
+
+        return false;
+    }
+
+    /** مركز المستخدم (من سجل معلمه) — أساس نطاق مدير الفرع والمستلمين */
+    public function userCenterId(User $user): ?int
+    {
+        return $user->teacher?->branch?->center_id;
+    }
+
+    /** قائمة المستلمين المسموح للمستخدم التسليم لهم (رتبة أقل + نطاقه) */
+    public function selectableRecipients(User $giver)
+    {
+        if ($giver->hasRole(['admin', 'general_manager'])) {
+            $candidates = User::with('roles')->where('status', 'active')->orderBy('name')->get();
+        } elseif ($giver->hasRole('manager')) {
+            $centerId = $this->userCenterId($giver);
+            if (!$centerId) {
+                return collect();
+            }
+            $userIds = Teacher::whereHas('branch', fn ($b) => $b->where('center_id', $centerId))->pluck('user_id');
+            $candidates = User::with('roles')->whereIn('id', $userIds)->where('status', 'active')->orderBy('name')->get();
+        } elseif ($giver->hasRole('supervisor')) {
+            $userIds = $this->access->accessibleTeachers($giver)->pluck('user_id');
+            $candidates = User::with('roles')->whereIn('id', $userIds)->where('status', 'active')->orderBy('name')->get();
+        } else {
+            return collect();
+        }
+
+        $giverRank = $this->custodyRank($giver);
+
+        return $candidates->filter(fn (User $u) => $u->id !== $giver->id
+            && $this->custodyRank($u) > 0
+            && $this->custodyRank($u) < $giverRank)->values();
+    }
+
+    /**
+     * هل هذا المستخدم (أي رتبة) مسؤول عن توزيع حلقة؟
+     * مدير النظام/العام: أي حلقة. مدير الفرع: حلقات مركزه.
+     * المشرف/المعلم: بالمسؤولية المباشرة (يعلّمها أو يشرف على فرعها).
+     */
+    public function staffResponsibleForCircle(User $user, int $circleId): bool
+    {
+        if ($user->hasRole(['admin', 'general_manager'])) {
+            return true;
+        }
+
+        if ($user->hasRole('manager')) {
+            $circle = Circle::find($circleId);
+
+            return $circle?->branch?->center_id
+                && $this->access->accessibleCenters($user)->whereKey($circle->branch->center_id)->exists();
+        }
+
+        return $this->teacherResponsibleForCircle($user->id, $circleId);
+    }
+
     /** قائمة المعلمين (مستخدمين) القابلين للاختيار في النماذج حسب نطاق المستخدم */
     public function selectableTeachers(User $user)
     {

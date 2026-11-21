@@ -20,10 +20,12 @@ class BadgeTeacherHandoverController extends Controller
         $this->authorize('viewAny', BadgeTeacherHandover::class);
 
         $user = $request->user();
-        $teacherIds = $access->selectableTeachers($user)->pluck('id');
+        $visibleIds = $access->selectableRecipients($user)->pluck('id')->push($user->id);
 
-        $handovers = BadgeTeacherHandover::with(['teacher', 'badgeType', 'creator'])
-            ->when(!$user->hasRole(['admin', 'general_manager']), fn ($q) => $q->whereIn('teacher_id', $teacherIds))
+        $handovers = BadgeTeacherHandover::with(['teacher', 'badgeType', 'creator', 'sourceUser'])
+            ->when(!$user->hasRole(['admin', 'general_manager']), fn ($q) => $q->where(fn ($w) => $w
+                ->whereIn('teacher_id', $visibleIds)
+                ->orWhere('source_user_id', $user->id)))
             ->when($request->filled('teacher_id'), fn ($q) => $q->where('teacher_id', $request->teacher_id))
             ->when($request->filled('badge_type_id'), fn ($q) => $q->where('badge_type_id', $request->badge_type_id))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
@@ -33,7 +35,8 @@ class BadgeTeacherHandoverController extends Controller
 
         return view('badges.handovers.index', [
             'handovers' => $handovers,
-            'teachers' => $access->selectableTeachers($user),
+            // فلتر المستلمين: من يستطيع تسليمهم + نفسه (كمستلم)
+            'teachers' => $access->selectableRecipients($user)->push($user),
             'types' => BadgeType::orderBy('name')->get(),
         ]);
     }
@@ -42,10 +45,17 @@ class BadgeTeacherHandoverController extends Controller
     {
         $this->authorize('create', BadgeTeacherHandover::class);
 
+        $user = auth()->user();
+        $isAdmin = $user->hasRole('admin');
+
         return view('badges.handovers.create', [
-            'teachers' => $access->selectableTeachers(auth()->user()),
+            // المستلمون المسموحون لهذا المُسلِّم (رتبة أقل + نطاقه)
+            'teachers' => $access->selectableRecipients($user),
             'types' => BadgeType::active()->orderBy('name')->get(),
-            'adminBalances' => $balances->adminBalances(),
+            // الأدمن يسلّم من رصيد الإدارة، وغيره من رصيد عهدته
+            'adminBalances' => $isAdmin ? $balances->adminBalances() : $balances->teacherBalances($user->id),
+            'balanceLabel' => $isAdmin ? 'رصيد الإدارة' : 'رصيد عهدتك',
+            'access' => $access,
         ]);
     }
 

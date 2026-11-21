@@ -15,7 +15,12 @@ class BadgeTeacherHandoverService
         private BadgeLogService $logger,
     ) {}
 
-    /** تسليم أوسمة من الإدارة لمعلم: خصم من الإدارة وإضافة لعهدة المعلم في معاملة واحدة */
+    /**
+     * تسليم أوسمة لمستخدم طاقم (معلم/مشرف/مدير فرع/مدير عام):
+     * - مدير النظام يسلّم من المخزون المركزي (source_user_id = null)
+     * - أي مُسلِّم آخر يسلّم من عهدته الشخصية فقط — لا رصيد، لا تسليم
+     * الرتبة والنطاق يتحقق منهما طلب الإدخال (BadgeAccessService::canHandoverTo)
+     */
     public function handover(User $teacher, BadgeType $type, int $quantity, string $date, User $actor, ?string $notes = null): BadgeTeacherHandover
     {
         return DB::transaction(function () use ($teacher, $type, $quantity, $date, $actor, $notes) {
@@ -25,22 +30,32 @@ class BadgeTeacherHandoverService
                 throw ValidationException::withMessages(['quantity' => 'الكمية يجب أن تكون أكبر من صفر.']);
             }
 
-            $adminBalance = $this->balances->adminBalance($type->id);
-            if ($quantity > $adminBalance) {
-                throw ValidationException::withMessages(['quantity' => "الكمية أكبر من رصيد الإدارة الحالي ({$adminBalance})."]);
+            $fromCustody = !$actor->hasRole('admin');
+
+            if ($fromCustody) {
+                $giverBalance = $this->balances->teacherBalance($actor->id, $type->id);
+                if ($quantity > $giverBalance) {
+                    throw ValidationException::withMessages(['quantity' => "الكمية أكبر من رصيد عهدتك الحالي ({$giverBalance}) — لا يمكنك التسليم إلا مما في عهدتك."]);
+                }
+            } else {
+                $adminBalance = $this->balances->adminBalance($type->id);
+                if ($quantity > $adminBalance) {
+                    throw ValidationException::withMessages(['quantity' => "الكمية أكبر من رصيد الإدارة الحالي ({$adminBalance})."]);
+                }
             }
 
             $handover = BadgeTeacherHandover::create([
-                'teacher_id'    => $teacher->id,
-                'badge_type_id' => $type->id,
-                'quantity'      => $quantity,
-                'handover_date' => $date,
-                'notes'         => $notes,
-                'status'        => 'active',
-                'created_by'    => $actor->id,
+                'teacher_id'     => $teacher->id,
+                'source_user_id' => $fromCustody ? $actor->id : null,
+                'badge_type_id'  => $type->id,
+                'quantity'       => $quantity,
+                'handover_date'  => $date,
+                'notes'          => $notes,
+                'status'         => 'active',
+                'created_by'     => $actor->id,
             ]);
 
-            $this->logger->log('handover.created', $handover, newValues: $handover->only(['teacher_id', 'badge_type_id', 'quantity']), user: $actor);
+            $this->logger->log('handover.created', $handover, newValues: $handover->only(['teacher_id', 'source_user_id', 'badge_type_id', 'quantity']), user: $actor);
 
             return $handover;
         });

@@ -19,9 +19,10 @@ class BadgeReportController extends Controller
         $types = BadgeType::orderBy('name')->get();
         $adminBalances = $balances->adminBalances();
 
-        // أرصدة المعلمين لكل نوع
+        // أرصدة عهد الطاقم لكل نوع (مستلمون ومُسلِّمون وموزّعون)
         $teacherIds = collect()
             ->merge(BadgeTeacherHandover::pluck('teacher_id'))
+            ->merge(BadgeTeacherHandover::whereNotNull('source_user_id')->pluck('source_user_id'))
             ->merge(BadgeDistribution::pluck('teacher_id'))
             ->unique();
         $teachers = User::whereIn('id', $teacherIds)->orderBy('name')->get(['id', 'name']);

@@ -21,7 +21,8 @@ class StoreBadgeEntitlementRequest extends FormRequest
         return [
             'student_id'       => ['required', Rule::exists('students', 'id')],
             'circle_id'        => ['required', Rule::exists('circles', 'id')],
-            'teacher_id'       => ['required', Rule::exists('teachers', 'user_id')],
+            // المسؤول عن التوزيع أي مستخدم طاقم (معلم/مشرف/مدير) — المسؤولية في withValidator
+            'teacher_id'       => ['required', Rule::exists('users', 'id')],
             'badge_type_id'    => ['required', Rule::exists('badge_types', 'id')->where('is_active', true)],
             'quantity'         => ['required', 'integer', 'min:1'],
             'entitlement_date' => ['required', 'date'],
@@ -64,9 +65,10 @@ class StoreBadgeEntitlementRequest extends FormRequest
                 $v->errors()->add('circle_id', 'الحلقة المحددة خارج نطاق وصولك.');
             }
 
-            // المعلم مسؤول عن الحلقة (معلمها أو مشرف فرعها)
-            if (!$access->teacherResponsibleForCircle($teacherId, $circleId)) {
-                $v->errors()->add('teacher_id', 'المعلم المحدد ليس مسؤولًا عن هذه الحلقة.');
+            // المسؤول مسؤول عن الحلقة حسب دوره (معلمها/مشرف فرعها/مدير مركزها/الإدارة)
+            $staff = \App\Models\User::find($teacherId);
+            if (!$staff || !$access->staffResponsibleForCircle($staff, $circleId)) {
+                $v->errors()->add('teacher_id', 'المسؤول المحدد ليس مسؤولًا عن هذه الحلقة.');
             }
         });
     }

@@ -13,9 +13,9 @@
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6" dir="rtl">
         <form method="GET" class="flex flex-col lg:flex-row gap-4 items-end">
             <div class="w-full lg:w-56">
-                <label class="block text-xs font-bold text-gray-400 mb-1.5">المعلم</label>
+                <label class="block text-xs font-bold text-gray-400 mb-1.5">المستلم</label>
                 <select name="teacher_id" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                    <option value="">كل المعلمين</option>
+                    <option value="">كل المستلمين</option>
                     @foreach ($teachers as $t)<option value="{{ $t->id }}" @selected(request('teacher_id') == $t->id)>{{ $t->name }}</option>@endforeach
                 </select>
             </div>
@@ -42,7 +42,7 @@
         <table class="w-full text-right">
             <thead class="bg-gray-50 border-b border-gray-100">
                 <tr>
-                    <th class="px-6 py-4 text-sm font-bold text-gray-600">المعلم</th>
+                    <th class="px-6 py-4 text-sm font-bold text-gray-600">المستلم</th>
                     <th class="px-6 py-4 text-sm font-bold text-gray-600">النوع</th>
                     <th class="px-6 py-4 text-sm font-bold text-gray-600">الكمية</th>
                     <th class="px-6 py-4 text-sm font-bold text-gray-600">تاريخ التسليم</th>
@@ -53,7 +53,7 @@
             <tbody class="divide-y divide-gray-100">
                 @forelse ($handovers as $h)
                     <tr>
-                        <td class="px-6 py-4 text-sm font-bold">{{ $h->teacher->name }}</td>
+                        <td class="px-6 py-4 text-sm font-bold">{{ $h->teacher->name }}<div class="text-[11px] font-normal text-gray-400">من: {{ $h->sourceUser?->name ?? 'الإدارة المركزية' }}</div></td>
                         <td class="px-6 py-4 text-sm">{{ $h->badgeType->name }}</td>
                         <td class="px-6 py-4 text-sm font-black">{{ $h->quantity }}</td>
                         <td class="px-6 py-4 text-sm">{{ $h->handover_date->format('Y-m-d') }}</td>
@@ -66,7 +66,7 @@
                                 <a href="{{ route('badges.handovers.show', $h) }}" class="text-[#0a5c36] font-bold hover:underline">عرض</a>
                                 @can('cancel', $h)
                                     @if ($h->status === 'active')
-                                        <form method="POST" action="{{ route('badges.handovers.cancel', $h) }}" onsubmit="return confirm('إلغاء هذا التسليم؟ سيُخصم من عهدة المعلم.')">
+                                        <form method="POST" action="{{ route('badges.handovers.cancel', $h) }}" onsubmit="return confirm('إلغاء هذا التسليم؟ سيُخصم من عهدة المستلم.')">
                                             @csrf
                                             <button class="text-red-600 font-bold hover:underline">إلغاء</button>
                                         </form>

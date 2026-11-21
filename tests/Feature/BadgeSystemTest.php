@@ -151,6 +151,120 @@ test('handover create: multiple types in one submission, atomic on over-balance'
     expect(\App\Models\Badges\BadgeTeacherHandover::count())->toBe(2);
 });
 
+test('custody chain: every rank hands over only from its own balance, downward and in scope', function () {
+    // فاعلون إضافيون: مدير عام، مدير فرع أ، مشرف على فرع أ
+    $gm = User::factory()->create(['status' => 'active']);
+    $gm->assignRole('general_manager');
+
+    $managerA = User::factory()->create(['status' => 'active']);
+    $managerA->assignRole('manager');
+    Teacher::create(['user_id' => $managerA->id, 'branch_id' => $this->branchA->id]);
+
+    $supervisor = User::factory()->create(['status' => 'active']);
+    $supervisor->assignRole('supervisor');
+    $supervisorTeacher = Teacher::create(['user_id' => $supervisor->id, 'branch_id' => $this->branchA->id]);
+    DB::table('branch_teacher')->insert(['branch_id' => $this->branchA->id, 'teacher_id' => $supervisorTeacher->id, 'created_at' => now(), 'updated_at' => now()]);
+
+    $bal = fn (User $u) => $this->balances->teacherBalance($u->id, $this->type->id);
+
+    $this->stock->recordMovement($this->type, 1000, $this->admin);
+
+    // الأدمن ← مدير عام 400 (من المركزي)
+    $this->handoverService->handover($gm, $this->type, 400, '2026-11-02', $this->admin);
+    expect($this->balances->adminBalance($this->type->id))->toBe(600)
+        ->and($bal($gm))->toBe(400);
+
+    // مدير عام ← مدير فرع 150 (من عهدة المدير العام — المركزي لا يتغير)
+    $this->handoverService->handover($managerA, $this->type, 150, '2026-11-03', $gm);
+    expect($bal($gm))->toBe(250)
+        ->and($bal($managerA))->toBe(150)
+        ->and($this->balances->adminBalance($this->type->id))->toBe(600);
+
+    // مدير فرع ← مشرف 60، مشرف ← معلم 25
+    $this->handoverService->handover($supervisor, $this->type, 60, '2026-11-04', $managerA);
+    $this->handoverService->handover($this->teacherUser, $this->type, 25, '2026-11-05', $supervisor);
+    expect($bal($managerA))->toBe(90)
+        ->and($bal($supervisor))->toBe(35)
+        ->and($bal($this->teacherUser))->toBe(25)
+        ->and($this->balances->adminBalance($this->type->id))->toBe(600);
+
+    // مدير عام بلا رصيد لا يستطيع التسليم
+    $gm2 = User::factory()->create(['status' => 'active']);
+    $gm2->assignRole('general_manager');
+    try {
+        $this->handoverService->handover($this->teacherUser, $this->type, 1, '2026-11-06', $gm2);
+        $this->fail('handover without custody balance must fail');
+    } catch (ValidationException) {
+        expect(true)->toBeTrue();
+    }
+
+    // تجاوز رصيد العهدة مرفوض
+    try {
+        $this->handoverService->handover($this->teacherUser, $this->type, 999, '2026-11-06', $supervisor);
+        $this->fail('handover above custody balance must fail');
+    } catch (ValidationException) {
+        expect(true)->toBeTrue();
+    }
+
+    // رتبة أعلى كمستلم مرفوضة عبر النموذج (مشرف ← مدير فرع)
+    $this->actingAs($supervisor)->post(route('badges.handovers.store'), [
+        'teacher_id' => $managerA->id,
+        'quantities' => [$this->type->id => 5],
+        'handover_date' => '2026-11-07',
+    ])->assertSessionHasErrors('teacher_id');
+
+    // خارج النطاق مرفوض (مدير فرع أ ← مدير فرع ب: رتبة مساوية ومركز آخر)
+    $this->actingAs($managerA)->post(route('badges.handovers.store'), [
+        'teacher_id' => $this->managerB->id,
+        'quantities' => [$this->type->id => 5],
+        'handover_date' => '2026-11-07',
+    ])->assertSessionHasErrors('teacher_id');
+
+    // المعلم لا يملك إنشاء تسليم أصلًا (لا يُسجَّل أي تسليم)
+    $handoversBefore = \App\Models\Badges\BadgeTeacherHandover::count();
+    $this->actingAs($this->teacherUser)->post(route('badges.handovers.store'), [
+        'teacher_id' => $this->student1->id,
+        'quantities' => [$this->type->id => 5],
+        'handover_date' => '2026-11-07',
+    ]);
+    expect(\App\Models\Badges\BadgeTeacherHandover::count())->toBe($handoversBefore);
+
+    // مشرف يسلّم معلم حلقاته عبر النموذج بنجاح
+    $this->actingAs($supervisor)->post(route('badges.handovers.store'), [
+        'teacher_id' => $this->teacherUser->id,
+        'quantities' => [$this->type->id => 5],
+        'handover_date' => '2026-11-08',
+    ])->assertRedirect(route('badges.handovers.index'));
+    expect($bal($supervisor))->toBe(30)
+        ->and($bal($this->teacherUser))->toBe(30);
+
+    // المشرف يوزّع على طالب في حلقة يشرف عليها من عهدته
+    $entSup = $this->entitlementService->create([
+        'student_id' => $this->student1->id, 'circle_id' => $this->circleA->id,
+        'teacher_id' => $supervisor->id, 'badge_type_id' => $this->type->id,
+        'quantity' => 5, 'entitlement_date' => '2026-11-09',
+    ], $this->admin);
+    $this->distributionService->distribute($entSup, 5, '2026-11-10', $supervisor);
+    expect($bal($supervisor))->toBe(25)
+        ->and($this->balances->studentBalance($this->student1->id, $this->type->id))->toBe(5);
+
+    // مدير الفرع يوزّع بنفسه: استحقاق باسمه عبر النموذج (مسؤول بحكم مركزه) ثم توزيع
+    $this->actingAs($managerA)->post(route('badges.entitlements.store'), [
+        'student_id' => $this->student2->id, 'circle_id' => $this->circleA->id,
+        'teacher_id' => $managerA->id, 'badge_type_id' => $this->type->id,
+        'quantity' => 10, 'entitlement_date' => '2026-11-09',
+    ])->assertSessionHasNoErrors();
+    $entMgr = BadgeEntitlement::where('teacher_id', $managerA->id)->firstOrFail();
+    $this->distributionService->distribute($entMgr, 10, '2026-11-10', $managerA);
+    expect($bal($managerA))->toBe(80)
+        ->and($this->balances->studentBalance($this->student2->id, $this->type->id))->toBe(10);
+
+    // المشرف يرجّع من عهدته للإدارة فيزيد المركزي
+    $this->stock->returnFromTeacher($supervisor, $this->type, 5, $supervisor);
+    expect($bal($supervisor))->toBe(20)
+        ->and($this->balances->adminBalance($this->type->id))->toBe(605);
+});
+
 test('entitlement without teacher balance is saved and opens a shortage automatically', function () {
     $entitlement = $this->entitlementService->create([
         'student_id' => $this->student1->id, 'circle_id' => $this->circleA->id,

@@ -83,7 +83,7 @@ return [
 
         'manager' => [
             'badges.types.view',
-            'badges.stock.view', 'badges.stock.history',
+            'badges.stock.view', 'badges.stock.history', 'badges.stock.return',
             'badges.handovers.view', 'badges.handovers.create', 'badges.handovers.cancel',
             'badges.entitlements.view', 'badges.entitlements.create', 'badges.entitlements.update', 'badges.entitlements.cancel',
             'badges.distributions.view', 'badges.distributions.create', 'badges.distributions.cancel',
@@ -94,8 +94,8 @@ return [
 
         'supervisor' => [
             'badges.types.view',
-            'badges.stock.view',
-            'badges.handovers.view',
+            'badges.stock.view', 'badges.stock.return',
+            'badges.handovers.view', 'badges.handovers.create', 'badges.handovers.cancel',
             'badges.entitlements.view', 'badges.entitlements.create', 'badges.entitlements.update', 'badges.entitlements.cancel',
             'badges.distributions.view', 'badges.distributions.create', 'badges.distributions.cancel',
             'badges.shortages.view', 'badges.shortages.resolve',
@@ -105,6 +105,7 @@ return [
 
         'teacher' => [
             'badges.types.view',
+            'badges.stock.return',
             'badges.handovers.view',
             'badges.entitlements.view', 'badges.entitlements.create',
             'badges.distributions.view', 'badges.distributions.create',

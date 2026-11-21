@@ -19,7 +19,8 @@ class StoreBadgeTeacherHandoverRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'teacher_id'    => ['required', Rule::exists('teachers', 'user_id')],
+            // المستلم أي مستخدم طاقم (معلم/مشرف/مدير فرع/مدير عام) — الرتبة والنطاق في withValidator
+            'teacher_id'    => ['required', Rule::exists('users', 'id')],
             // كميات كل الأنواع دفعة واحدة: quantities[نوع] = الكمية (صفر/فارغ = لا تسليم لهذا النوع)
             'quantities'    => ['required', 'array'],
             'quantities.*'  => ['nullable', 'integer', 'min:0'],
@@ -31,8 +32,8 @@ class StoreBadgeTeacherHandoverRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'teacher_id.required'    => 'يجب اختيار المعلم.',
-            'teacher_id.exists'      => 'المعلم المحدد غير موجود.',
+            'teacher_id.required'    => 'يجب اختيار المستلم.',
+            'teacher_id.exists'      => 'المستلم المحدد غير موجود.',
             'quantities.required'    => 'أدخل كميات الأوسمة المطلوب تسليمها.',
             'quantities.*.integer'   => 'الكمية يجب أن تكون رقمًا صحيحًا.',
             'quantities.*.min'       => 'الكمية لا يمكن أن تكون سالبة.',
@@ -47,9 +48,11 @@ class StoreBadgeTeacherHandoverRequest extends FormRequest
                 return;
             }
 
-            if ($this->filled('teacher_id')
-                && !app(BadgeAccessService::class)->teacherInScope($this->user(), (int) $this->input('teacher_id'))) {
-                $v->errors()->add('teacher_id', 'المعلم المحدد خارج نطاق وصولك.');
+            if ($this->filled('teacher_id')) {
+                $recipient = \App\Models\User::find((int) $this->input('teacher_id'));
+                if (!$recipient || !app(BadgeAccessService::class)->canHandoverTo($this->user(), $recipient)) {
+                    $v->errors()->add('teacher_id', 'المستلم يجب أن يكون من طاقم الأوسمة، برتبة أقل منك، وداخل نطاقك.');
+                }
             }
 
             $quantities = (array) $this->input('quantities', []);

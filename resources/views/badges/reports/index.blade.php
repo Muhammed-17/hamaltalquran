@@ -39,11 +39,11 @@
     </div>
 
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto mb-8" dir="rtl">
-        <div class="px-6 py-4 font-black">أرصدة المعلمين الحالية</div>
+        <div class="px-6 py-4 font-black">أرصدة عهد الطاقم الحالية</div>
         <table class="w-full text-right">
             <thead class="bg-gray-50 border-b border-gray-100">
                 <tr>
-                    <th class="px-6 py-3 text-sm font-bold text-gray-600">المعلم</th>
+                    <th class="px-6 py-3 text-sm font-bold text-gray-600">صاحب العهدة</th>
                     @foreach ($types as $type)<th class="px-6 py-3 text-sm font-bold text-gray-600">{{ $type->name }}</th>@endforeach
                 </tr>
             </thead>

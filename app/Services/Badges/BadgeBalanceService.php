@@ -11,9 +11,10 @@ use Illuminate\Support\Facades\DB;
 /**
  * المصدر الموحد لحساب أرصدة الأوسمة — لا تُخزَّن الأرصدة في أي جدول.
  *
- * رصيد الإدارة = حركات المخزون (افتتاحي + إضافة + مرتجع + تسويات بإشارتها)
- *               − التسليمات النشطة للمعلمين
- * رصيد المعلم  = التسليمات النشطة − التوزيعات النشطة − المرتجعات للإدارة
+ * رصيد الإدارة = حركات المخزون (بإشارتها) − التسليمات النشطة الصادرة
+ *               من الإدارة المركزية فقط (source_user_id = null)
+ * رصيد العهدة لأي مستخدم = ما استلمه − ما سلّمه لغيره من عهدته
+ *               − التوزيعات النشطة − المرتجعات للإدارة
  *               + المحصَّل فعليًا في جولات معتمدة (عاد لعهدته)
  * رصيد الطالب  = التوزيعات النشطة − المحصَّل فعليًا في جولات معتمدة
  * (الاستحقاقات غير المسلّمة لا تدخل رصيد الطالب، وغير المحصَّل والمفقود
@@ -27,8 +28,11 @@ class BadgeBalanceService
             ->selectRaw("SUM(quantity) as total")
             ->value('total');
 
+        // يُخصم من المركزي فقط ما خرج منه مباشرة — تسليمات العهد بين
+        // المستخدمين تنقل العهدة ولا تمس المخزون المركزي
         $handedOver = (int) BadgeTeacherHandover::active()
             ->where('badge_type_id', $badgeTypeId)
+            ->whereNull('source_user_id')
             ->sum('quantity');
 
         return $movements - $handedOver;
@@ -38,6 +42,12 @@ class BadgeBalanceService
     {
         $received = (int) BadgeTeacherHandover::active()
             ->where('teacher_id', $teacherUserId)
+            ->where('badge_type_id', $badgeTypeId)
+            ->sum('quantity');
+
+        // ما سلّمه هذا المستخدم لغيره من عهدته الشخصية
+        $given = (int) BadgeTeacherHandover::active()
+            ->where('source_user_id', $teacherUserId)
             ->where('badge_type_id', $badgeTypeId)
             ->sum('quantity');
 
@@ -61,7 +71,7 @@ class BadgeBalanceService
                 ->where('teacher_id', $teacherUserId))
             ->sum('collected_quantity');
 
-        return $received - $distributed - $returnedToAdmin + $collectedBack;
+        return $received - $given - $distributed - $returnedToAdmin + $collectedBack;
     }
 
     public function studentBalance(int $studentId, int $badgeTypeId): int
@@ -86,6 +96,7 @@ class BadgeBalanceService
             ->groupBy('badge_type_id')->pluck('total', 'badge_type_id');
 
         $handedOver = BadgeTeacherHandover::active()
+            ->whereNull('source_user_id')
             ->selectRaw('badge_type_id, SUM(quantity) as total')
             ->groupBy('badge_type_id')->pluck('total', 'badge_type_id');
 
@@ -102,6 +113,7 @@ class BadgeBalanceService
     {
         $typeIds = collect()
             ->merge(BadgeTeacherHandover::where('teacher_id', $teacherUserId)->pluck('badge_type_id'))
+            ->merge(BadgeTeacherHandover::where('source_user_id', $teacherUserId)->pluck('badge_type_id'))
             ->merge(BadgeDistribution::where('teacher_id', $teacherUserId)->pluck('badge_type_id'))
             ->unique();
 

@@ -2,17 +2,17 @@
     <div class="w-full max-w-3xl mx-auto" dir="rtl">
         <div class="bg-[#0b3d2c] rounded-3xl p-5 sm:p-6 lg:p-8 text-white shadow-xl mb-6 sm:mb-8">
             <h1 class="text-xl sm:text-2xl lg:text-3xl font-black mb-1.5">تسليم أوسمة لمعلم</h1>
-            <p class="text-emerald-100/80 text-xs sm:text-sm">أدخل كمية كل نوع مطلوب في نفس النموذج — تُخصم الكميات من رصيد الإدارة وتُضاف لعهدة المعلم فورًا</p>
+            <p class="text-emerald-100/80 text-xs sm:text-sm">أدخل كمية كل نوع مطلوب في نفس النموذج — تُخصم الكميات من {{ $balanceLabel }} وتُضاف لعهدة المستلم فورًا</p>
         </div>
 
         <form method="POST" action="{{ route('badges.handovers.store') }}" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6 lg:p-8 w-full">
             @csrf
             <div class="space-y-4 sm:space-y-5">
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1.5">المعلم *</label>
+                    <label class="block text-xs font-bold text-gray-400 mb-1.5">المستلم *</label>
                     <select name="teacher_id" required class="w-full p-3 sm:p-2.5 px-4 border border-gray-200 rounded-xl text-base sm:text-sm bg-white">
-                        <option value="">— اختر المعلم —</option>
-                        @foreach ($teachers as $t)<option value="{{ $t->id }}" @selected(old('teacher_id') == $t->id)>{{ $t->name }}</option>@endforeach
+                        <option value="">— اختر المستلم —</option>
+                        @foreach ($teachers as $t)<option value="{{ $t->id }}" @selected(old('teacher_id') == $t->id)>{{ $t->name }} ({{ $access->custodyRoleLabel($t) }})</option>@endforeach
                     </select>
                     <x-input-error :messages="$errors->get('teacher_id')" class="mt-2" />
                 </div>
@@ -24,7 +24,7 @@
                             <div class="flex items-center justify-between gap-3 p-3 sm:px-4">
                                 <div class="min-w-0">
                                     <div class="text-sm font-bold truncate">{{ $type->name }}</div>
-                                    <div class="text-[11px] text-gray-400">رصيد الإدارة: {{ $adminBalances[$type->id] ?? 0 }}</div>
+                                    <div class="text-[11px] text-gray-400">{{ $balanceLabel }}: {{ $adminBalances[$type->id] ?? 0 }}</div>
                                 </div>
                                 <div class="shrink-0 w-28 sm:w-32">
                                     <input type="number" name="quantities[{{ $type->id }}]" min="0" inputmode="numeric"
@@ -39,7 +39,7 @@
                             <div class="p-4 text-sm text-gray-400 text-center">لا توجد أنواع أوسمة مفعّلة بعد</div>
                         @endforelse
                     </div>
-                    <p class="text-[11px] text-gray-400 mt-1.5">اترك الكمية صفرًا أو فارغة للأنواع غير المطلوبة — يُسجَّل تسليم مستقل لكل نوع له كمية، ولو نوع تجاوز رصيد الإدارة لن يُسجَّل أي تسليم.</p>
+                    <p class="text-[11px] text-gray-400 mt-1.5">اترك الكمية صفرًا أو فارغة للأنواع غير المطلوبة — يُسجَّل تسليم مستقل لكل نوع له كمية، ولو نوع تجاوز الرصيد المتاح لن يُسجَّل أي تسليم.</p>
                     <x-input-error :messages="$errors->get('quantities')" class="mt-2" />
                 </div>
 

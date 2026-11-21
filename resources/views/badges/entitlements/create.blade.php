@@ -39,6 +39,9 @@
                         <label class="block text-xs font-bold text-gray-400 mb-1.5">المعلم المسؤول *</label>
                         <select name="teacher_id" required class="w-full p-3 sm:p-2.5 px-4 border border-gray-200 rounded-xl text-base sm:text-sm bg-white">
                             <option value="">— اختر الحلقة أولًا —</option>
+                            @if (auth()->user()->hasRole(['admin', 'general_manager', 'manager']))
+                                <option value="{{ auth()->id() }}" @selected(old('teacher_id') == auth()->id())>أنا — {{ auth()->user()->name }} (التوزيع من عهدتي)</option>
+                            @endif
                             <template x-for="t in teachers" :key="t.id"><option :value="t.id" x-text="t.name"></option></template>
                         </select>
                         <x-input-error :messages="$errors->get('teacher_id')" class="mt-2" />
