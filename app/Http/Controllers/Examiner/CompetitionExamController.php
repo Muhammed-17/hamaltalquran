@@ -113,6 +113,13 @@ class CompetitionExamController extends Controller
 
         $question = CompetitionQuestion::findOrFail($request->competition_question_id);
 
+        // السؤال يجب أن ينتمي إلى مستوى هذا المشارك نفسه — لا مستوى آخر
+        abort_if(
+            (int) $question->competition_level_id !== (int) $participant->competition_level_id,
+            422,
+            'هذا السؤال لا ينتمي إلى مستوى هذا المشارك.'
+        );
+
         if ($isAdminMode) {
             // احفظ الإجابة تحت المختبر الفعلي المسؤول عن هذا السؤال، وليس تحت الأدمن نفسه
             $competitionExaminer = $question->competitionExaminers()->first();
@@ -120,6 +127,13 @@ class CompetitionExamController extends Controller
             abort_if(!$competitionExaminer, 422, 'هذا السؤال غير مسند لأي مختبر بعد.');
         } else {
             $competitionExaminer = $this->resolveCompetitionExaminer($participant->competitionLevel, $examiner);
+
+            // والمختبر لا يقيّم إلا الأسئلة المطالَب بها باسمه في هذا المستوى
+            $claimed = $question->competitionExaminers()
+                ->where('competition_examiners.id', $competitionExaminer->id)
+                ->exists();
+
+            abort_unless($claimed, 403, 'هذا السؤال غير مسند إليك.');
         }
 
         $answered = (bool) $request->answered;

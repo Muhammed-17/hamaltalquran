@@ -89,6 +89,13 @@ class CompetitionExamAnswerController extends Controller
         $this->authorize('examine competition participants');
         $question = CompetitionQuestion::findOrFail($request->competition_question_id);
 
+        // السؤال يجب أن ينتمي إلى مستوى هذا المشارك نفسه — لا مستوى آخر
+        abort_if(
+            (int) $question->competition_level_id !== (int) $participant->competition_level_id,
+            422,
+            'هذا السؤال لا ينتمي إلى مستوى هذا المشارك.'
+        );
+
         $competitionExaminer = $question->competitionExaminers()->first();
 
         abort_if(!$competitionExaminer, 422, 'هذا السؤال غير مسند لأي مختبر بعد.');

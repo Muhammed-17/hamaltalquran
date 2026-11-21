@@ -25,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
         \App\Models\Recommendation::class => \App\Policies\RecommendationPolicy::class,
         \App\Models\CollectionRound::class => \App\Policies\CollectionRoundPolicy::class,
         \App\Models\Competition::class => \App\Policies\CompetitionPolicy::class,
+        \App\Models\CompetitionParticipant::class => \App\Policies\CompetitionParticipantPolicy::class,
 
     ];
 

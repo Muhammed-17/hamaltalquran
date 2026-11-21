@@ -232,6 +232,26 @@ class SurahTestController extends Controller
                 ->with('error', 'تعذر تحديد المركز التابع له هذا الاختبار (الحلقة غير موجودة).');
         }
 
+        // نطاق الوصول: الحلقة ضمن حلقات المستخدم
+        if (!app(UserAccessService::class)->canAccessCircle($request->user(), (int) $circleId)) {
+            return back()
+                ->withInput()
+                ->with('error', 'الحلقة المختارة خارج نطاق وصولك.');
+        }
+
+        // النتائج لطلاب هذه الحلقة فقط — لا طلاب حلقات أخرى
+        $resultStudentIds = collect($validated['results'])->pluck('student_id')->unique()->all();
+        $hasOutsiders = Student::withoutGlobalScope(CenterScope::class)
+            ->whereIn('id', $resultStudentIds)
+            ->where('circle_id', '!=', $circleId)
+            ->exists();
+
+        if ($hasOutsiders) {
+            return back()
+                ->withInput()
+                ->with('error', 'بعض الطلاب في النتائج لا ينتمون إلى حلقة هذا الاختبار.');
+        }
+
         DB::beginTransaction();
         try {
             $surahTest = SurahTest::create([
@@ -369,6 +389,24 @@ class SurahTestController extends Controller
             return back()
                 ->withInput()
                 ->with('error', 'تعذر تحديد المركز التابع له هذا الاختبار (الحلقة غير موجودة).');
+        }
+
+        // منع نقل الاختبار إلى حلقة خارج نطاق وصول المستخدم
+        if (!app(UserAccessService::class)->canAccessCircle($request->user(), (int) $validated['circle_id'])) {
+            return back()
+                ->withInput()
+                ->with('error', 'الحلقة المختارة خارج نطاق وصولك.');
+        }
+
+        // إعادة تعيين طالب النتيجة الفردية: يجب أن يكون من طلاب حلقة الاختبار
+        if (!empty($validated['student_id'])) {
+            $newStudent = Student::withoutGlobalScope(CenterScope::class)->find($validated['student_id']);
+
+            if ($newStudent && (int) $newStudent->circle_id !== (int) $validated['circle_id']) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'الطالب المختار لا ينتمي إلى حلقة هذا الاختبار.');
+            }
         }
 
         DB::beginTransaction();
