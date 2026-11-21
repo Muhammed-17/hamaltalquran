@@ -36,7 +36,7 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 @foreach($sections as $key => $section)
                 @php
-                $sectionData = $studentWeeklyFollowup->{$section['relation']}->first();
+                $sectionData = $studentWeeklyFollowup->{$section['relation']};
                 $prefix = $section['prefix'];
                 @endphp
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">

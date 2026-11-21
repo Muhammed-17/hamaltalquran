@@ -11,7 +11,6 @@ Route::middleware(['auth', 'verified', 'role:admin'])->group(function () {
     Route::get('/centers/{center}', [CenterController::class, 'show'])->name('centers.show');
     Route::post('/centers/{center}/educational-lessons', [CenterController::class, 'storeEducationalLesson'])->name('centers.educational-lessons.store');
 
-    Route::get('/educational-lessons/{educationalLesson}/edit', [CenterController::class, 'editEducationalLesson'])->name('educational-lessons.edit');
     Route::put('/educational-lessons/{educationalLesson}', [CenterController::class, 'updateEducationalLesson'])->name('educational-lessons.update');
     Route::delete('/educational-lessons/{educationalLesson}', [CenterController::class, 'destroyEducationalLesson'])->name('educational-lessons.destroy');
 });

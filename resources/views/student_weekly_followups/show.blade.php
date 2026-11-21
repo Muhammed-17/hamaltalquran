@@ -36,7 +36,7 @@ $activities = $studentWeeklyFollowup->activities ?? collect();
                     تعديل
                 </a>
                 @endcan
-                <a href="{{ route('student-weekly-followups.index') }}"
+                <a href="{{ route('student-weekly-followups.index-individual') }}"
                     class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">
                     رجوع
                 </a>
@@ -86,7 +86,7 @@ $activities = $studentWeeklyFollowup->activities ?? collect();
 
             @foreach($sections as $key => $section)
             @php
-            $sectionData = $studentWeeklyFollowup->{$section['relation']}->first();
+            $sectionData = $studentWeeklyFollowup->{$section['relation']};
             @endphp
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div class="{{ $section['header'] }} text-white px-5 py-3">

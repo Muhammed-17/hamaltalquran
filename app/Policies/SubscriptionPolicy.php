@@ -51,8 +51,12 @@ class SubscriptionPolicy
     {
         if ($user->hasAnyRole(['admin', 'general_manager'])) return true;
 
-        if (!$subscription->student->circle_id) return false;
+        // الطالب قد يكون خارج نطاق رؤية المستخدم (CenterScope) فتُرجع العلاقة null —
+        // بدون الفحص الآمن ينهار التفويض بخطأ 500 بدل رفض نظيف 403
+        $studentCircleId = $subscription->student?->circle_id;
 
-        return $this->access->canAccessCircle($user, $subscription->student->circle_id);
+        if (!$studentCircleId) return false;
+
+        return $this->access->canAccessCircle($user, $studentCircleId);
     }
 }

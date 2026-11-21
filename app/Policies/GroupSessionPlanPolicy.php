@@ -13,6 +13,8 @@ use App\Services\UserAccessService;
  */
 class GroupSessionPlanPolicy
 {
+    public function __construct(protected UserAccessService $access) {}
+
     /**
      * Determine whether the user can view any models.
      */
@@ -34,12 +36,9 @@ class GroupSessionPlanPolicy
             return true;
         }
 
-        $circleIds = UserAccessService::circleIdsForUser($user);
-
-        return $circleIds->contains($groupSessionPlan->circle_id)
-            || $circleIds->intersect(
-                $groupSessionPlan->student?->circles?->pluck('id') ?? collect()
-            )->isNotEmpty();
+        return $this->access->accessibleCircles($user)
+            ->pluck('id')
+            ->contains($groupSessionPlan->circle_id);
     }
 
     /**
@@ -63,15 +62,10 @@ class GroupSessionPlanPolicy
             return true;
         }
 
-        $plan = $groupSessionPlan->weeklyPlan;
-
-        if ($user->hasRole('supervisor')) {
-            return UserAccessService::circleIdsForUser($user)
-                ->contains($plan->circle_id);
-        }
-
-        // Teacher can only update their own records
-        return $user->teacher?->id === $plan->teacher_id;
+        // الخطة تخص حلقة: التعديل لمن تصل إليه هذه الحلقة من الأدوار المصرّح لها
+        return $this->access->accessibleCircles($user)
+            ->pluck('id')
+            ->contains($groupSessionPlan->circle_id);
     }
 
     /**
