@@ -128,7 +128,18 @@ class StudentWeeklyFollowupController extends Controller
         $this->authorize('create', StudentWeeklyFollowup::class);
 
         $validated = $request->validated();
-        $centerId = $this->formContext->resolveCurrentCenterId();
+
+        $this->ensureCircleAccessible((int) $validated['circle_id']);
+
+        // المركز يُشتق من الحلقة المختارة نفسها (فرعها) — لا من أول حلقة متاحة
+        // للمستخدم — حتى لا تُسند المتابعة لمركز خاطئ أو تنهار العملية حين
+        // لا يملك المستخدم مركزًا افتراضيًا.
+        $centerId = $this->centerIdForCircle((int) $validated['circle_id'])
+            ?? $this->formContext->resolveCurrentCenterId();
+
+        if (!$centerId) {
+            return back()->withInput()->with('error', 'تعذر تحديد مركز الحلقة المختارة.');
+        }
 
         $studentIds = collect($validated['students'])->pluck('student_id')->toArray();
 
@@ -189,6 +200,9 @@ class StudentWeeklyFollowupController extends Controller
         $centerId = $sample->center_id;
 
         $validated = $request->validated();
+
+        // منع نقل الدفعة إلى حلقة خارج نطاق وصول المستخدم عبر تعديل circle_id
+        $this->ensureCircleAccessible((int) $validated['circle_id']);
 
         $studentIds = collect($validated['students'])->pluck('student_id')->toArray();
 
@@ -264,10 +278,17 @@ class StudentWeeklyFollowupController extends Controller
 
         $circleId = $this->resolveCircleId($validated);
 
+        if ($circleId) {
+            $this->ensureCircleAccessible((int) $circleId);
+        }
+
+        $centerId = $this->centerIdForCircle($circleId)
+            ?? $this->formContext->resolveCurrentCenterId();
+
         DB::beginTransaction();
         try {
             $planData = [
-                'center_id'        => $this->formContext->resolveCurrentCenterId(),
+                'center_id'        => $centerId,
                 'circle_id'        => $circleId,
                 'teacher_id'       => $validated['teacher_id'],
                 'week_start'       => $validated['week_start'],
@@ -329,6 +350,10 @@ class StudentWeeklyFollowupController extends Controller
         $validated = $request->validated();
 
         $circleId = $this->resolveCircleId($validated);
+
+        if ($circleId) {
+            $this->ensureCircleAccessible((int) $circleId);
+        }
 
         DB::beginTransaction();
         try {
@@ -523,7 +548,7 @@ class StudentWeeklyFollowupController extends Controller
             DB::commit();
 
             return redirect()
-                ->route('student-weekly-followups.index-individual', $studentId)
+                ->route('student-weekly-followups.index-individual', ['student_id' => $studentId])
                 ->with('success', 'تم حذف المتابعة الأسبوعية بنجاح.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -682,6 +707,38 @@ class StudentWeeklyFollowupController extends Controller
             ->where('center_id', $centerId)
             ->latest()
             ->first();
+    }
+
+    /**
+     * مركز حلقة معينة عبر فرعها — المصدر الأدق لمركز أي متابعة.
+     */
+    private function centerIdForCircle(?int $circleId): ?int
+    {
+        if (!$circleId) {
+            return null;
+        }
+
+        return Circle::with('branch')->find($circleId)?->branch?->center_id;
+    }
+
+    /**
+     * إنشاء/نقل متابعة مقصور على الحلقات داخل نطاق وصول المستخدم
+     * (نفس ما تعرضه له القوائم والفورمات) — الأدمن والمدير العام مستثنيان.
+     */
+    private function ensureCircleAccessible(int $circleId): void
+    {
+        $user = auth()->user();
+
+        if ($user->hasRole(['admin', 'general_manager'])) {
+            return;
+        }
+
+        $accessible = app(\App\Services\UserAccessService::class)
+            ->accessibleCircles($user)
+            ->where('id', $circleId)
+            ->exists();
+
+        abort_unless($accessible, 403);
     }
 
     private function resolveCircleId(array $validated): ?int

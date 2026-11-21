@@ -109,7 +109,7 @@ class FollowupFormContextService
     private function excludedIndividualStudentIds(string $weekStart, ?StudentWeeklyFollowup $excludeFollowup = null): array
     {
         return StudentWeeklyFollowup::where('plan_type', 'individual')
-            ->where('week_start', $weekStart)
+            ->whereDate('week_start', $weekStart)
             ->when($excludeFollowup, fn($q) => $q->where('id', '!=', $excludeFollowup->id))
             ->whereNotNull('student_id')
             ->pluck('student_id')

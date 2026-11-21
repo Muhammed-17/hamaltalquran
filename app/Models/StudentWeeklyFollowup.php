@@ -80,7 +80,9 @@ class StudentWeeklyFollowup extends Model
 
     public function scopeForWeek($query, string $weekStart)
     {
-        return $query->where('week_start', $weekStart);
+        // whereDate لا where: على SQLite تُخزن التواريخ كنصوص datetime
+        // فتفشل مساواة النص الحرفية، بينما على MySQL العمود DATE أصلًا.
+        return $query->whereDate('week_start', $weekStart);
     }
 
     // =====================================================

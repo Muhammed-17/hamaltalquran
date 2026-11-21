@@ -1,0 +1,546 @@
+diff --git a/app/Http/Controllers/StudentWeeklyFollowupController.php b/app/Http/Controllers/StudentWeeklyFollowupController.php
+index e06d31e..8a43978 100644
+--- a/app/Http/Controllers/StudentWeeklyFollowupController.php
++++ b/app/Http/Controllers/StudentWeeklyFollowupController.php
+@@ -128,7 +128,18 @@ public function storeGroup(StoreGroupWeeklyFollowupRequest $request): RedirectRe
+         $this->authorize('create', StudentWeeklyFollowup::class);
+ 
+         $validated = $request->validated();
+-        $centerId = $this->formContext->resolveCurrentCenterId();
++
++        $this->ensureCircleAccessible((int) $validated['circle_id']);
++
++        // المركز يُشتق من الحلقة المختارة نفسها (فرعها) — لا من أول حلقة متاحة
++        // للمستخدم — حتى لا تُسند المتابعة لمركز خاطئ أو تنهار العملية حين
++        // لا يملك المستخدم مركزًا افتراضيًا.
++        $centerId = $this->centerIdForCircle((int) $validated['circle_id'])
++            ?? $this->formContext->resolveCurrentCenterId();
++
++        if (!$centerId) {
++            return back()->withInput()->with('error', 'تعذر تحديد مركز الحلقة المختارة.');
++        }
+ 
+         $studentIds = collect($validated['students'])->pluck('student_id')->toArray();
+ 
+@@ -190,6 +201,9 @@ public function updateGroup(UpdateGroupWeeklyFollowupRequest $request, string $b
+ 
+         $validated = $request->validated();
+ 
++        // منع نقل الدفعة إلى حلقة خارج نطاق وصول المستخدم عبر تعديل circle_id
++        $this->ensureCircleAccessible((int) $validated['circle_id']);
++
+         $studentIds = collect($validated['students'])->pluck('student_id')->toArray();
+ 
+         if ($error = $this->validateGroupStudents($studentIds, $validated['circle_id'], $validated['week_start'], $batchId)) {
+@@ -264,10 +278,17 @@ public function storeIndividual(StoreIndividualWeeklyFollowupRequest $request):
+ 
+         $circleId = $this->resolveCircleId($validated);
+ 
++        if ($circleId) {
++            $this->ensureCircleAccessible((int) $circleId);
++        }
++
++        $centerId = $this->centerIdForCircle($circleId)
++            ?? $this->formContext->resolveCurrentCenterId();
++
+         DB::beginTransaction();
+         try {
+             $planData = [
+-                'center_id'        => $this->formContext->resolveCurrentCenterId(),
++                'center_id'        => $centerId,
+                 'circle_id'        => $circleId,
+                 'teacher_id'       => $validated['teacher_id'],
+                 'week_start'       => $validated['week_start'],
+@@ -330,6 +351,10 @@ public function updateIndividual(UpdateIndividualWeeklyFollowupRequest $request,
+ 
+         $circleId = $this->resolveCircleId($validated);
+ 
++        if ($circleId) {
++            $this->ensureCircleAccessible((int) $circleId);
++        }
++
+         DB::beginTransaction();
+         try {
+             $planData = [
+@@ -523,7 +548,7 @@ public function destroy(StudentWeeklyFollowup $studentWeeklyFollowup): RedirectR
+             DB::commit();
+ 
+             return redirect()
+-                ->route('student-weekly-followups.index-individual', $studentId)
++                ->route('student-weekly-followups.index-individual', ['student_id' => $studentId])
+                 ->with('success', 'تم حذف المتابعة الأسبوعية بنجاح.');
+         } catch (\Exception $e) {
+             DB::rollBack();
+@@ -684,6 +709,38 @@ private function latestEducationalLesson(?int $centerId): ?EducationalLesson
+             ->first();
+     }
+ 
++    /**
++     * مركز حلقة معينة عبر فرعها — المصدر الأدق لمركز أي متابعة.
++     */
++    private function centerIdForCircle(?int $circleId): ?int
++    {
++        if (!$circleId) {
++            return null;
++        }
++
++        return Circle::with('branch')->find($circleId)?->branch?->center_id;
++    }
++
++    /**
++     * إنشاء/نقل متابعة مقصور على الحلقات داخل نطاق وصول المستخدم
++     * (نفس ما تعرضه له القوائم والفورمات) — الأدمن والمدير العام مستثنيان.
++     */
++    private function ensureCircleAccessible(int $circleId): void
++    {
++        $user = auth()->user();
++
++        if ($user->hasRole(['admin', 'general_manager'])) {
++            return;
++        }
++
++        $accessible = app(\App\Services\UserAccessService::class)
++            ->accessibleCircles($user)
++            ->where('id', $circleId)
++            ->exists();
++
++        abort_unless($accessible, 403);
++    }
++
+     private function resolveCircleId(array $validated): ?int
+     {
+         if (!empty($validated['circle_id'])) {
+diff --git a/app/Http/Requests/WeeklyFollowup/StoreIndividualWeeklyFollowupRequest.php b/app/Http/Requests/WeeklyFollowup/StoreIndividualWeeklyFollowupRequest.php
+index fbf37ea..32a87e7 100644
+--- a/app/Http/Requests/WeeklyFollowup/StoreIndividualWeeklyFollowupRequest.php
++++ b/app/Http/Requests/WeeklyFollowup/StoreIndividualWeeklyFollowupRequest.php
+@@ -2,7 +2,10 @@
+ 
+ namespace App\Http\Requests\WeeklyFollowup;
+ 
++use App\Models\Scopes\CenterScope;
++use App\Models\StudentWeeklyFollowup;
+ use Illuminate\Foundation\Http\FormRequest;
++use Illuminate\Validation\Validator;
+ 
+ class StoreIndividualWeeklyFollowupRequest extends FormRequest
+ {
+@@ -11,6 +14,30 @@ public function authorize(): bool
+         return true;
+     }
+ 
++    /**
++     * منع تكرار متابعة فردية لنفس الطالب في نفس الأسبوع برسالة واضحة،
++     * بدل أن يصل الطلب إلى قيد قاعدة البيانات ويظهر خطأ SQL خام للمستخدم.
++     * (الفورم يستبعد هؤلاء الطلاب للأسبوع الافتراضي فقط، وتغيير الأسبوع
++     * داخل الفورم يعيد فتح باب التكرار — فهذا هو الحارس الفعلي.)
++     */
++    public function withValidator(Validator $validator): void
++    {
++        $validator->after(function (Validator $validator) {
++            if ($validator->errors()->isNotEmpty() || !$this->filled('student_id') || !$this->filled('week_start')) {
++                return;
++            }
++
++            $exists = StudentWeeklyFollowup::withoutGlobalScope(CenterScope::class)
++                ->where('student_id', $this->input('student_id'))
++                ->whereDate('week_start', $this->input('week_start'))
++                ->exists();
++
++            if ($exists) {
++                $validator->errors()->add('student_id', 'هذا الطالب لديه متابعة مسجلة لهذا الأسبوع بالفعل.');
++            }
++        });
++    }
++
+     public function rules(): array
+     {
+         return [
+diff --git a/app/Http/Requests/WeeklyFollowup/UpdateIndividualWeeklyFollowupRequest.php b/app/Http/Requests/WeeklyFollowup/UpdateIndividualWeeklyFollowupRequest.php
+index abcea70..6763b16 100644
+--- a/app/Http/Requests/WeeklyFollowup/UpdateIndividualWeeklyFollowupRequest.php
++++ b/app/Http/Requests/WeeklyFollowup/UpdateIndividualWeeklyFollowupRequest.php
+@@ -2,7 +2,10 @@
+ 
+ namespace App\Http\Requests\WeeklyFollowup;
+ 
++use App\Models\Scopes\CenterScope;
++use App\Models\StudentWeeklyFollowup;
+ use Illuminate\Foundation\Http\FormRequest;
++use Illuminate\Validation\Validator;
+ 
+ class UpdateIndividualWeeklyFollowupRequest extends FormRequest
+ {
+@@ -11,6 +14,32 @@ public function authorize(): bool
+         return true;
+     }
+ 
++    /**
++     * منع نقل المتابعة إلى طالب/أسبوع يصطدم بمتابعة أخرى موجودة،
++     * برسالة واضحة بدل خطأ قيد قاعدة البيانات الخام.
++     */
++    public function withValidator(Validator $validator): void
++    {
++        $validator->after(function (Validator $validator) {
++            if ($validator->errors()->isNotEmpty() || !$this->filled('student_id') || !$this->filled('week_start')) {
++                return;
++            }
++
++            $current = $this->route('studentWeeklyFollowup');
++            $currentId = $current instanceof StudentWeeklyFollowup ? $current->id : $current;
++
++            $exists = StudentWeeklyFollowup::withoutGlobalScope(CenterScope::class)
++                ->where('student_id', $this->input('student_id'))
++                ->whereDate('week_start', $this->input('week_start'))
++                ->when($currentId, fn($q) => $q->where('id', '!=', $currentId))
++                ->exists();
++
++            if ($exists) {
++                $validator->errors()->add('student_id', 'هذا الطالب لديه متابعة مسجلة لهذا الأسبوع بالفعل.');
++            }
++        });
++    }
++
+     public function rules(): array
+     {
+         return [
+diff --git a/app/Models/StudentWeeklyFollowup.php b/app/Models/StudentWeeklyFollowup.php
+index a932158..56ea919 100644
+--- a/app/Models/StudentWeeklyFollowup.php
++++ b/app/Models/StudentWeeklyFollowup.php
+@@ -80,7 +80,9 @@ public function scopeIndividualPlans($query)
+ 
+     public function scopeForWeek($query, string $weekStart)
+     {
+-        return $query->where('week_start', $weekStart);
++        // whereDate لا where: على SQLite تُخزن التواريخ كنصوص datetime
++        // فتفشل مساواة النص الحرفية، بينما على MySQL العمود DATE أصلًا.
++        return $query->whereDate('week_start', $weekStart);
+     }
+ 
+     // =====================================================
+diff --git a/app/Services/FollowupFormContextService.php b/app/Services/FollowupFormContextService.php
+index 4c3d21a..cac32cc 100644
+--- a/app/Services/FollowupFormContextService.php
++++ b/app/Services/FollowupFormContextService.php
+@@ -109,7 +109,7 @@ public function forIndividual(?StudentWeeklyFollowup $excludeFollowup = null, ?s
+     private function excludedIndividualStudentIds(string $weekStart, ?StudentWeeklyFollowup $excludeFollowup = null): array
+     {
+         return StudentWeeklyFollowup::where('plan_type', 'individual')
+-            ->where('week_start', $weekStart)
++            ->whereDate('week_start', $weekStart)
+             ->when($excludeFollowup, fn($q) => $q->where('id', '!=', $excludeFollowup->id))
+             ->whereNotNull('student_id')
+             ->pluck('student_id')
+diff --git a/app/Services/WeeklyFollowupService.php b/app/Services/WeeklyFollowupService.php
+index 31a48c8..505027b 100644
+--- a/app/Services/WeeklyFollowupService.php
++++ b/app/Services/WeeklyFollowupService.php
+@@ -379,7 +379,7 @@ private function syncSimpleAssessment(StudentWeeklyFollowup $followup, string $r
+     public function getDuplicateStudents(array $studentIds, string $weekStart, ?string $excludeBatchId = null): Collection
+     {
+         $query = StudentWeeklyFollowup::whereIn('student_id', $studentIds)
+-            ->where('week_start', $weekStart);
++            ->whereDate('week_start', $weekStart);
+ 
+         if ($excludeBatchId) {
+             $query->where('batch_id', '!=', $excludeBatchId);
+@@ -758,20 +758,17 @@ public function updateSingleRow(StudentWeeklyFollowup $followup, array $validate
+             $validated['foundation_level_achievement'] ?? null
+         );
+ 
+-        // القسم التعليمي هنا شرطي (لا يُحذف تلقائيًا لو مفيش educational_lesson_id
+-        // لأن الفورم الفردي القديم ما كانش بيبعت educational_lesson_id أصلاً)
+-        if (
+-            $followup->educationalLessonAssessment()->exists()
+-            || !empty($validated['educational_lesson_level'])
+-            || !empty($validated['educational_lesson_notes'])
+-        ) {
+-            $followup->educationalLessonAssessment()->updateOrCreate(
+-                ['weekly_followup_id' => $followup->id],
+-                [
+-                    'level' => $validated['educational_lesson_level'] ?? null,
+-                    'notes' => $validated['educational_lesson_notes'] ?? null,
+-                ]
+-            );
++        // قسم الدرس التربوي: نموذج تعديل الصف الواحد لا يحتوي حقول الدرس أصلًا،
++        // فلا يُعدَّل التقييم المحفوظ إلا إذا أرسل الطلب قيمًا فعلية لحقوله —
++        // وإلا مُحي المستوى والملاحظات المحفوظة بكل تعديل. ولا يُنشأ تقييم
++        // جديد من هذا المسار لأنه لا يحمل educational_lesson_id (عمود إلزامي).
++        $lessonData = array_filter([
++            'level' => $validated['educational_lesson_level'] ?? null,
++            'notes' => $validated['educational_lesson_notes'] ?? null,
++        ], fn($value) => $value !== null);
++
++        if ($lessonData && $lessonAssessment = $followup->educationalLessonAssessment) {
++            $lessonAssessment->update($lessonData);
+         }
+ 
+         $this->recommendationService->generateAndStore($followup);
+diff --git a/tests/Feature/WeeklyFollowupIntegrityTest.php b/tests/Feature/WeeklyFollowupIntegrityTest.php
+new file mode 100644
+index 0000000..1f51f73
+--- /dev/null
++++ b/tests/Feature/WeeklyFollowupIntegrityTest.php
+@@ -0,0 +1,261 @@
++<?php
++
++use App\Models\Branch;
++use App\Models\Center;
++use App\Models\Circle;
++use App\Models\EducationalLesson;
++use App\Models\Recommendation;
++use App\Models\Student;
++use App\Models\StudentActivity;
++use App\Models\StudentWeeklyEducationalLesson;
++use App\Models\StudentWeeklyFollowup;
++use App\Models\Teacher;
++use App\Models\User;
++use Database\Seeders\PermissionSeeder;
++use Database\Seeders\RecommendationTemplateSeeder;
++use Database\Seeders\SurahSeeder;
++
++/*
++|--------------------------------------------------------------------------
++| سلامة نظام المتابعات الأسبوعية (نوفمبر 2026)
++|--------------------------------------------------------------------------
++| - تعديل الصف الواحد كان يمحو مستوى وملاحظات تقييم الدرس التربوي المحفوظة.
++| - تكرار متابعة فردية (طالب + أسبوع) كان يصل لقيد قاعدة البيانات ويعرض
++|   خطأ SQL خامًا — الآن تحقق ودي في طلبي الإنشاء والتعديل الفردي.
++| - مركز المتابعة الجماعية يُشتق من الحلقة المختارة نفسها لا من أول حلقة متاحة.
++| - الإنشاء مقصور على حلقات نطاق وصول المستخدم (حارس في الكنترولر).
++| - مقارنة الأسبوع بـ whereDate (تتوافق مع MySQL وSQLite معًا).
++*/
++beforeEach(function () {
++    $this->seed(PermissionSeeder::class);
++    $this->seed(SurahSeeder::class);
++    $this->seed(RecommendationTemplateSeeder::class);
++
++    $this->admin = User::factory()->create(['status' => 'active']);
++    $this->admin->assignRole('admin');
++
++    $this->center = Center::create(['name' => 'مركز الفحص']);
++    $this->branch = Branch::create(['center_id' => $this->center->id, 'name' => 'فرع الفحص']);
++    $this->circle = Circle::create(['branch_id' => $this->branch->id, 'name' => 'حلقة الفحص', 'type' => 'بنين', 'level' => 'مبتدئ']);
++    $teacherUser = User::factory()->create(['status' => 'active']);
++    $this->teacher = Teacher::create(['user_id' => $teacherUser->id, 'branch_id' => $this->branch->id]);
++    $this->student = Student::create([
++        'name' => 'طالب الفحص', 'gender' => 'ذكر', 'status' => 'مقيد',
++        'circle_id' => $this->circle->id, 'center_id' => $this->center->id,
++    ]);
++    $this->weekStart = now()->startOfWeek()->format('Y-m-d');
++    $this->weekEnd = now()->endOfWeek()->format('Y-m-d');
++});
++
++test('single-row edit preserves the educational lesson assessment', function () {
++    $followup = StudentWeeklyFollowup::create([
++        'plan_type' => 'individual', 'center_id' => $this->center->id, 'circle_id' => $this->circle->id,
++        'student_id' => $this->student->id, 'teacher_id' => $this->teacher->id,
++        'week_start' => $this->weekStart, 'week_end' => $this->weekEnd, 'study_days' => ['Saturday'],
++    ]);
++    $lesson = EducationalLesson::create(['center_id' => $this->center->id, 'title' => 'درس', 'created_by' => $this->admin->id]);
++    StudentWeeklyEducationalLesson::create([
++        'weekly_followup_id' => $followup->id, 'educational_lesson_id' => $lesson->id,
++        'level' => 'جيد', 'notes' => 'ملاحظة الدرس الأصلية',
++    ]);
++
++    // تعديل صف واحد من فورم edit_single (لا يحتوي حقول درس تربوي)
++    $this->actingAs($this->admin)->put(route('student-weekly-followups.update', $followup), [
++        'notes' => 'تعديل بسيط',
++        'discipline_level' => 'ممتاز',
++    ])->assertRedirect();
++
++    $assessment = StudentWeeklyEducationalLesson::where('weekly_followup_id', $followup->id)->first();
++    expect($assessment)->not->toBeNull()
++        ->and($assessment->level)->toBe('جيد')
++        ->and($assessment->notes)->toBe('ملاحظة الدرس الأصلية');
++});
++
++test('duplicate individual followup gets friendly validation instead of a raw SQL error', function () {
++    $payload = [
++        'student_id' => $this->student->id,
++        'teacher_id' => $this->teacher->id,
++        'circle_id' => $this->circle->id,
++        'week_start' => $this->weekStart,
++        'week_end' => $this->weekEnd,
++        'study_days' => ['Saturday'],
++        'discipline_level' => 'جيد',
++    ];
++
++    $this->actingAs($this->admin)->post(route('student-weekly-followups.store-individual'), $payload)
++        ->assertRedirect(route('student-weekly-followups.index-individual'));
++
++    $second = $this->actingAs($this->admin)->post(route('student-weekly-followups.store-individual'), $payload);
++    $second->assertSessionHasErrors('student_id');
++    expect(session('error'))->toBeNull();
++    expect(StudentWeeklyFollowup::count())->toBe(1);
++});
++
++test('deleting a followup removes all related rows', function () {
++    $payload = [
++        'student_id' => $this->student->id,
++        'teacher_id' => $this->teacher->id,
++        'circle_id' => $this->circle->id,
++        'week_start' => $this->weekStart,
++        'week_end' => $this->weekEnd,
++        'study_days' => ['Saturday'],
++        'discipline_level' => 'جيد',
++        'activities' => [[
++            'activity_type' => 'نشاط', 'activity_name' => 'مسابقة',
++            'activity_date' => $this->weekStart, 'notes' => null,
++        ]],
++    ];
++    $this->actingAs($this->admin)->post(route('student-weekly-followups.store-individual'), $payload)
++        ->assertRedirect(route('student-weekly-followups.index-individual'));
++
++    $followup = StudentWeeklyFollowup::firstOrFail();
++    expect(Recommendation::where('weekly_followup_id', $followup->id)->count())->toBe(1)
++        ->and(StudentActivity::where('weekly_followup_id', $followup->id)->count())->toBe(1);
++
++    $this->actingAs($this->admin)->delete(route('student-weekly-followups.destroy', $followup))
++        ->assertRedirect(route('student-weekly-followups.index-individual', ['student_id' => $this->student->id]));
++
++    expect(StudentWeeklyFollowup::count())->toBe(0)
++        ->and(Recommendation::where('weekly_followup_id', $followup->id)->count())->toBe(0)
++        ->and(StudentActivity::where('weekly_followup_id', $followup->id)->count())->toBe(0)
++        ->and(\App\Models\StudentWeeklyDiscipline::where('weekly_followup_id', $followup->id)->count())->toBe(0);
++});
++
++test('group batch lifecycle: create, update removing a student, delete', function () {
++    $groupCircle = Circle::create(['branch_id' => $this->branch->id, 'name' => 'حلقة جماعية', 'type' => 'group', 'level' => 'مبتدئ']);
++    $this->student->update(['circle_id' => $groupCircle->id]);
++    $student2 = Student::create([
++        'name' => 'طالب ثانٍ', 'gender' => 'ذكر', 'status' => 'مقيد',
++        'circle_id' => $groupCircle->id, 'center_id' => $this->center->id,
++    ]);
++
++    $payload = [
++        'circle_id' => $groupCircle->id,
++        'teacher_id' => $this->teacher->id,
++        'week_start' => $this->weekStart,
++        'week_end' => $this->weekEnd,
++        'study_days' => ['Saturday', 'Sunday'],
++        'students' => [
++            ['student_id' => $this->student->id, 'discipline_level' => 'جيد'],
++            ['student_id' => $student2->id, 'discipline_level' => 'مقبول'],
++        ],
++    ];
++
++    $create = $this->actingAs($this->admin)->post(route('student-weekly-followups.store-group'), $payload);
++    $create->assertRedirect();
++    expect(StudentWeeklyFollowup::count())->toBe(2);
++    $batchId = StudentWeeklyFollowup::first()->batch_id;
++    expect(StudentWeeklyFollowup::where('batch_id', $batchId)->count())->toBe(2)
++        ->and(Recommendation::count())->toBe(2);
++
++    // تحديث: إزالة الطالب الثاني وتعديل مستوى الأول
++    $payload['students'] = [
++        ['student_id' => $this->student->id, 'discipline_level' => 'ممتاز'],
++    ];
++    $this->actingAs($this->admin)->put(route('student-weekly-followups.update-group', $batchId), $payload)
++        ->assertRedirect(route('student-weekly-followups.index-group'));
++
++    expect(StudentWeeklyFollowup::count())->toBe(1)
++        ->and(StudentWeeklyFollowup::first()->student_id)->toBe($this->student->id)
++        ->and(Recommendation::count())->toBe(1);
++
++    $this->actingAs($this->admin)->delete(route('student-weekly-followups.destroy-group', $batchId))
++        ->assertRedirect(route('student-weekly-followups.index-group'));
++    expect(StudentWeeklyFollowup::count())->toBe(0)
++        ->and(Recommendation::count())->toBe(0);
++});
++
++test('group followup center is derived from the selected circle', function () {
++    // حلقة جماعية في المركز الأول تُنشأ أولًا (أي fallback قديم كان سيختار مركزها)
++    Circle::create(['branch_id' => $this->branch->id, 'name' => 'حلقة المركز الأول', 'type' => 'group', 'level' => 'مبتدئ']);
++    // مركز ثانٍ بحلقة جماعية خاصة به
++    $center2 = Center::create(['name' => 'المركز الثاني']);
++    $branch2 = Branch::create(['center_id' => $center2->id, 'name' => 'فرع المركز الثاني']);
++    $circle2 = Circle::create(['branch_id' => $branch2->id, 'name' => 'حلقة المركز الثاني', 'type' => 'group', 'level' => 'مبتدئ']);
++    $student = Student::create([
++        'name' => 'طالب المركز الثاني', 'gender' => 'ذكر', 'status' => 'مقيد',
++        'circle_id' => $circle2->id, 'center_id' => $center2->id,
++    ]);
++
++    $this->actingAs($this->admin)->post(route('student-weekly-followups.store-group'), [
++        'circle_id' => $circle2->id,
++        'teacher_id' => $this->teacher->id,
++        'week_start' => $this->weekStart,
++        'week_end' => $this->weekEnd,
++        'study_days' => ['Saturday'],
++        'students' => [
++            ['student_id' => $student->id, 'discipline_level' => 'جيد'],
++        ],
++    ])->assertRedirect();
++
++    $followup = StudentWeeklyFollowup::first();
++    expect($followup)->not->toBeNull()
++        ->and($followup->center_id)->toBe($center2->id);
++});
++
++test('teacher cannot create or move followups outside their circles', function () {
++    // معلم حقيقي مرتبط بحلقة جماعية في الفرع الأول
++    $ownCircle = Circle::create(['branch_id' => $this->branch->id, 'name' => 'حلقة المعلم', 'type' => 'group', 'level' => 'مبتدئ']);
++    $teacherUser = User::factory()->create(['status' => 'active']);
++    $teacherUser->assignRole('teacher');
++    $teacher = Teacher::create(['user_id' => $teacherUser->id, 'branch_id' => $this->branch->id]);
++    \Illuminate\Support\Facades\DB::table('circle_teacher')->insert([
++        'circle_id' => $ownCircle->id, 'teacher_id' => $teacher->id, 'role' => 'main',
++    ]);
++    $ownStudent = Student::create([
++        'name' => 'طالب حلقة المعلم', 'gender' => 'ذكر', 'status' => 'مقيد',
++        'circle_id' => $ownCircle->id, 'center_id' => $this->center->id,
++    ]);
++
++    // حلقة غريبة في فرع/مركز آخر وطالبها
++    $center2 = Center::create(['name' => 'مركز آخر']);
++    $branch2 = Branch::create(['center_id' => $center2->id, 'name' => 'فرع آخر']);
++    $foreignCircle = Circle::create(['branch_id' => $branch2->id, 'name' => 'حلقة غريبة', 'type' => 'group', 'level' => 'مبتدئ']);
++    $foreignStudent = Student::create([
++        'name' => 'طالب غريب', 'gender' => 'ذكر', 'status' => 'مقيد',
++        'circle_id' => $foreignCircle->id, 'center_id' => $center2->id,
++    ]);
++
++    $base = [
++        'teacher_id' => $teacher->id,
++        'week_start' => $this->weekStart,
++        'week_end' => $this->weekEnd,
++        'study_days' => ['Saturday'],
++    ];
++
++    // محاولة جماعية لحلقة غريبة: تُرفض (معالج 403 في التطبيق يحوّل الرفض
++    // إلى إعادة توجيه لصفحة آمنة بدل صفحة 403) ولا شيء يُحفظ
++    $denied = $this->actingAs($teacherUser)->post(route('student-weekly-followups.store-group'), $base + [
++        'circle_id' => $foreignCircle->id,
++        'students' => [['student_id' => $foreignStudent->id, 'discipline_level' => 'جيد']],
++    ]);
++    $denied->assertRedirect();
++    $denied->assertSessionMissing('errors');
++    expect(StudentWeeklyFollowup::count())->toBe(0);
++
++    // محاولة فردية لطالب غريب: تُرفض كذلك
++    $denied2 = $this->actingAs($teacherUser)->post(route('student-weekly-followups.store-individual'), $base + [
++        'student_id' => $foreignStudent->id,
++        'circle_id' => $foreignCircle->id,
++    ]);
++    $denied2->assertRedirect();
++    $denied2->assertSessionMissing('errors');
++    expect(StudentWeeklyFollowup::count())->toBe(0);
++
++    // حلقته هو: ينجح
++    $this->actingAs($teacherUser)->post(route('student-weekly-followups.store-group'), $base + [
++        'circle_id' => $ownCircle->id,
++        'students' => [['student_id' => $ownStudent->id, 'discipline_level' => 'جيد']],
++    ])->assertRedirect();
++    expect(StudentWeeklyFollowup::count())->toBe(1);
++
++    // محاولة نقل الدفعة إلى الحلقة الغريبة عبر التعديل: تُرفض وتبقى الدفعة مكانها
++    $batchId = StudentWeeklyFollowup::first()->batch_id;
++    $move = $this->actingAs($teacherUser)->put(route('student-weekly-followups.update-group', $batchId), $base + [
++        'circle_id' => $foreignCircle->id,
++        'students' => [['student_id' => $foreignStudent->id, 'discipline_level' => 'جيد']],
++    ]);
++    // الرفض هنا يأتي من تحقق الطلب نفسه (قاعدة الحلقة المسموحة) قبل الكنترولر
++    $move->assertRedirect();
++    expect(StudentWeeklyFollowup::first()->circle_id)->toBe($ownCircle->id);
++});

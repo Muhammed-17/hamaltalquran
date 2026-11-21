@@ -2,13 +2,40 @@
 
 namespace App\Http\Requests\WeeklyFollowup;
 
+use App\Models\Scopes\CenterScope;
+use App\Models\StudentWeeklyFollowup;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreIndividualWeeklyFollowupRequest extends FormRequest
 {
     public function authorize(): bool
     {
         return true;
+    }
+
+    /**
+     * منع تكرار متابعة فردية لنفس الطالب في نفس الأسبوع برسالة واضحة،
+     * بدل أن يصل الطلب إلى قيد قاعدة البيانات ويظهر خطأ SQL خام للمستخدم.
+     * (الفورم يستبعد هؤلاء الطلاب للأسبوع الافتراضي فقط، وتغيير الأسبوع
+     * داخل الفورم يعيد فتح باب التكرار — فهذا هو الحارس الفعلي.)
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            if ($validator->errors()->isNotEmpty() || !$this->filled('student_id') || !$this->filled('week_start')) {
+                return;
+            }
+
+            $exists = StudentWeeklyFollowup::withoutGlobalScope(CenterScope::class)
+                ->where('student_id', $this->input('student_id'))
+                ->whereDate('week_start', $this->input('week_start'))
+                ->exists();
+
+            if ($exists) {
+                $validator->errors()->add('student_id', 'هذا الطالب لديه متابعة مسجلة لهذا الأسبوع بالفعل.');
+            }
+        });
     }
 
     public function rules(): array

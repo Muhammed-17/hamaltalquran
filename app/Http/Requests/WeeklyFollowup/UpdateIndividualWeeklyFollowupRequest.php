@@ -2,13 +2,42 @@
 
 namespace App\Http\Requests\WeeklyFollowup;
 
+use App\Models\Scopes\CenterScope;
+use App\Models\StudentWeeklyFollowup;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class UpdateIndividualWeeklyFollowupRequest extends FormRequest
 {
     public function authorize(): bool
     {
         return true;
+    }
+
+    /**
+     * منع نقل المتابعة إلى طالب/أسبوع يصطدم بمتابعة أخرى موجودة،
+     * برسالة واضحة بدل خطأ قيد قاعدة البيانات الخام.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            if ($validator->errors()->isNotEmpty() || !$this->filled('student_id') || !$this->filled('week_start')) {
+                return;
+            }
+
+            $current = $this->route('studentWeeklyFollowup');
+            $currentId = $current instanceof StudentWeeklyFollowup ? $current->id : $current;
+
+            $exists = StudentWeeklyFollowup::withoutGlobalScope(CenterScope::class)
+                ->where('student_id', $this->input('student_id'))
+                ->whereDate('week_start', $this->input('week_start'))
+                ->when($currentId, fn($q) => $q->where('id', '!=', $currentId))
+                ->exists();
+
+            if ($exists) {
+                $validator->errors()->add('student_id', 'هذا الطالب لديه متابعة مسجلة لهذا الأسبوع بالفعل.');
+            }
+        });
     }
 
     public function rules(): array

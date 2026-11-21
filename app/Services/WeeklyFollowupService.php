@@ -379,7 +379,7 @@ class WeeklyFollowupService
     public function getDuplicateStudents(array $studentIds, string $weekStart, ?string $excludeBatchId = null): Collection
     {
         $query = StudentWeeklyFollowup::whereIn('student_id', $studentIds)
-            ->where('week_start', $weekStart);
+            ->whereDate('week_start', $weekStart);
 
         if ($excludeBatchId) {
             $query->where('batch_id', '!=', $excludeBatchId);
@@ -758,20 +758,17 @@ class WeeklyFollowupService
             $validated['foundation_level_achievement'] ?? null
         );
 
-        // القسم التعليمي هنا شرطي (لا يُحذف تلقائيًا لو مفيش educational_lesson_id
-        // لأن الفورم الفردي القديم ما كانش بيبعت educational_lesson_id أصلاً)
-        if (
-            $followup->educationalLessonAssessment()->exists()
-            || !empty($validated['educational_lesson_level'])
-            || !empty($validated['educational_lesson_notes'])
-        ) {
-            $followup->educationalLessonAssessment()->updateOrCreate(
-                ['weekly_followup_id' => $followup->id],
-                [
-                    'level' => $validated['educational_lesson_level'] ?? null,
-                    'notes' => $validated['educational_lesson_notes'] ?? null,
-                ]
-            );
+        // قسم الدرس التربوي: نموذج تعديل الصف الواحد لا يحتوي حقول الدرس أصلًا،
+        // فلا يُعدَّل التقييم المحفوظ إلا إذا أرسل الطلب قيمًا فعلية لحقوله —
+        // وإلا مُحي المستوى والملاحظات المحفوظة بكل تعديل. ولا يُنشأ تقييم
+        // جديد من هذا المسار لأنه لا يحمل educational_lesson_id (عمود إلزامي).
+        $lessonData = array_filter([
+            'level' => $validated['educational_lesson_level'] ?? null,
+            'notes' => $validated['educational_lesson_notes'] ?? null,
+        ], fn($value) => $value !== null);
+
+        if ($lessonData && $lessonAssessment = $followup->educationalLessonAssessment) {
+            $lessonAssessment->update($lessonData);
         }
 
         $this->recommendationService->generateAndStore($followup);
