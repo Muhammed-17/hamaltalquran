@@ -45,28 +45,27 @@
         <div class="px-5 py-4 border-b border-gray-100">
             <h3 class="font-bold text-lg text-gray-800"><i class="fas fa-users ml-2 text-blue-500"></i>جلسات المجموعة</h3>
         </div>
-        @if(isset($sessions) && $sessions->count() > 0)
+        @if($groupSessionPlans->count() > 0)
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-4 py-3 text-right font-semibold text-gray-600">#</th>
-                        <th class="px-4 py-3 text-right font-semibold text-gray-600">الخطة</th>
-                        <th class="px-4 py-3 text-right font-semibold text-gray-600">التاريخ</th>
+                        <th class="px-4 py-3 text-right font-semibold text-gray-600">الجلسة</th>
                         <th class="px-4 py-3 text-right font-semibold text-gray-600">الوقت</th>
-                        <th class="px-4 py-3 text-right font-semibold text-gray-600">المكان</th>
-                        <th class="px-4 py-3 text-right font-semibold text-gray-600">الموضوع</th>
+                        <th class="px-4 py-3 text-right font-semibold text-gray-600">المحتوى المخطط</th>
+                        <th class="px-4 py-3 text-right font-semibold text-gray-600">المحتوى المنفذ</th>
                         <th class="px-4 py-3 text-right font-semibold text-gray-600">الإجراءات</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
-                    @foreach($sessions as $session)
+                    @foreach($groupSessionPlans as $session)
                     <tr class="hover:bg-gray-50/50">
                         <td class="px-4 py-3 text-gray-500">{{ $session->id }}</td>
-                        <td class="px-4 py-3"><small class="text-gray-500">{{ $session->weeklyPlan->week_start ?? '-' }}<br><span class="text-gray-400">{{ $session->weeklyPlan->circle->name ?? '-' }}</span></small></td>
-                        <td class="px-4 py-3"><span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">{{ $session->start_time }} - {{ $session->end_time }}</span></td>
-                        <td class="px-4 py-3 text-gray-600">{{ $session->location ?? '-' }}</td>
-                        <td class="px-4 py-3 text-gray-600">{{ Str::limit($session->topic, 25) ?? '-' }}</td>
+                        <td class="px-4 py-3"><span class="font-medium text-gray-800">{{ $session->session_name }}</span><br><span class="text-gray-400 text-xs">{{ $session->circle?->name ?? '-' }}</span></td>
+                        <td class="px-4 py-3"><span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">{{ $session->start_time?->format('H:i') }} - {{ $session->end_time?->format('H:i') }}</span></td>
+                        <td class="px-4 py-3 text-gray-600">{{ Str::limit($session->planned_content, 40) }}</td>
+                        <td class="px-4 py-3 text-gray-600">{{ $session->completed_content ? Str::limit($session->completed_content, 40) : '-' }}</td>
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-1.5">
                                 @can('view', $session)
@@ -88,7 +87,7 @@
                 </tbody>
             </table>
         </div>
-        <div class="px-5 py-4 border-t border-gray-100">{{ $sessions->links() }}</div>
+        <div class="px-5 py-4 border-t border-gray-100">{{ $groupSessionPlans->links() }}</div>
         @else
         <div class="text-center py-16">
             <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-users text-2xl text-gray-300"></i></div>

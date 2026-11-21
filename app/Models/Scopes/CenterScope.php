@@ -75,8 +75,15 @@ class CenterScope implements Scope
             return;
         }
 
-        if ($table === 'teachers' || $table === 'educational_lessons') {
-            $builder->whereHas('branch', fn($q) => $q->where('center_id', $centerId)); 
+        if ($table === 'teachers') {
+            $builder->whereHas('branch', fn($q) => $q->where('center_id', $centerId));
+            return;
+        }
+
+        if ($table === 'educational_lessons') {
+            // الدروس مرتبطة بالمركز مباشرة (center_id) وليس لها علاقة branch —
+            // whereHas('branch') عليها كان ينهار بـ BadMethodCallException
+            $builder->where('center_id', $centerId);
             return;
         }
 
@@ -99,8 +106,13 @@ class CenterScope implements Scope
             return;
         }
 
-        if ($table === 'teachers' || $table === 'educational_lessons') {
-            $builder->whereHas('branch', fn($q) => $q->where('center_id', $centerId));   
+        if ($table === 'teachers') {
+            $builder->whereHas('branch', fn($q) => $q->where('center_id', $centerId));
+            return;
+        }
+
+        if ($table === 'educational_lessons') {
+            $builder->where('center_id', $centerId);
             return;
         }
 
@@ -116,7 +128,13 @@ class CenterScope implements Scope
                 $builder->whereRaw('1 = 0');
                 return;
             }
-            $builder->whereHas('branch', fn($q) => $q->where('center_id', $centerId));   
+
+            if ($table === 'educational_lessons') {
+                $builder->where('center_id', $centerId);
+                return;
+            }
+
+            $builder->whereHas('branch', fn($q) => $q->where('center_id', $centerId));
             return;
         }
         $circleIds = $access->teacherCircleIds($user);

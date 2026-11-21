@@ -9,7 +9,6 @@ use App\Models\GroupSessionPlan;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use App\Models\Circle;
 
 class GroupSessionPlanController extends Controller
 {
@@ -25,13 +24,21 @@ class GroupSessionPlanController extends Controller
             ->orderBy('start_time')
             ->paginate($request->integer('per_page', 15));
 
-        return view('group_session_plans.index', compact('groupSessionPlans'));
+        // قائمة الحلقات لقائمة التصفية (كانت مفقودة فظهرت القائمة فارغة دائمًا)
+        $circles = app(\App\Services\UserAccessService::class)
+            ->accessibleCircles($request->user())
+            ->get(['id', 'name']);
+
+        return view('group_session_plans.index', compact('groupSessionPlans', 'circles'));
     }
 
     public function create(): View
     {
         $this->authorize('create', GroupSessionPlan::class);
-        $circles = Circle::all(['id', 'name']);
+        // حلقات نطاق وصول المستخدم فقط — لا كل حلقات النظام
+        $circles = app(\App\Services\UserAccessService::class)
+            ->accessibleCircles(auth()->user())
+            ->get(['id', 'name']);
         return view('group_session_plans.create', compact('circles'));
     }
 
@@ -39,7 +46,10 @@ class GroupSessionPlanController extends Controller
     {
         $this->authorize('create', GroupSessionPlan::class);
 
-        $groupSessionPlan = GroupSessionPlan::create($request->validated());
+        $validated = $request->validated();
+        $this->ensureCircleAccessible((int) $validated['circle_id']);
+
+        $groupSessionPlan = GroupSessionPlan::create($validated);
 
         return redirect()
             ->route('circles.show', $groupSessionPlan->circle_id)
@@ -56,7 +66,9 @@ class GroupSessionPlanController extends Controller
     public function edit(GroupSessionPlan $groupSessionPlan): View
     {
         $this->authorize('update', $groupSessionPlan);
-        $circles = Circle::all(['id', 'name']);
+        $circles = app(\App\Services\UserAccessService::class)
+            ->accessibleCircles(auth()->user())
+            ->get(['id', 'name']);
         $session = $groupSessionPlan;
         return view('group_session_plans.edit', compact('session', 'circles'));
     }
@@ -65,11 +77,38 @@ class GroupSessionPlanController extends Controller
     {
         $this->authorize('update', $groupSessionPlan);
 
-        $groupSessionPlan->update($request->validated());
+        $validated = $request->validated();
+
+        // منع نقل الجلسة إلى حلقة خارج نطاق وصول المستخدم
+        if (isset($validated['circle_id'])) {
+            $this->ensureCircleAccessible((int) $validated['circle_id']);
+        }
+
+        $groupSessionPlan->update($validated);
 
         return redirect()
             ->route('circles.show', $groupSessionPlan->circle_id)
             ->with('success', 'تم تحديث جلسة المجموعة بنجاح.');
+    }
+
+    /**
+     * الإنشاء/النقل مقصور على حلقات نطاق وصول المستخدم
+     * (الأدمن والمدير العام يصلان لكل الحلقات بطبيعة نطاقهما).
+     */
+    private function ensureCircleAccessible(int $circleId): void
+    {
+        $user = auth()->user();
+
+        if ($user->hasRole(['admin', 'general_manager'])) {
+            return;
+        }
+
+        $accessible = app(\App\Services\UserAccessService::class)
+            ->accessibleCircles($user)
+            ->pluck('id')
+            ->contains($circleId);
+
+        abort_unless($accessible, 403);
     }
 
     public function destroy(GroupSessionPlan $groupSessionPlan): RedirectResponse

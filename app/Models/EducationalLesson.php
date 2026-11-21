@@ -36,7 +36,8 @@ class EducationalLesson extends Model
             if (!$model->center_id && auth()->check()) {
                 $access  = app(UserAccessService::class);
                 $teacher = $access->teacher(auth()->user());
-                $model->center_id = $teacher?->center_id;
+                // مركز المعلم يُقرأ عبر فرعه — لا توجد خاصية center_id على Teacher
+                $model->center_id = $access->teacherCenterId($teacher);
             }
         });
     }
@@ -64,10 +65,13 @@ class EducationalLesson extends Model
     }
 
     /**
-     * Weekly follow-ups that used this lesson.
+     * Weekly assessments that used this lesson.
+     *
+     * الربط الفعلي يعيش في جدول student_weekly_educational_lessons —
+     * جدول المتابعات نفسه لا يحتوي عمود educational_lesson_id.
      */
-    public function weeklyFollowups(): HasMany
+    public function weeklyAssessments(): HasMany
     {
-        return $this->hasMany(StudentWeeklyFollowup::class, 'educational_lesson_id');
+        return $this->hasMany(StudentWeeklyEducationalLesson::class, 'educational_lesson_id');
     }
 }
