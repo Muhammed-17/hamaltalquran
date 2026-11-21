@@ -53,7 +53,10 @@ class CirclePolicy
         }
 
         if ($user->hasRole('manager')) {
-            return $circle->center_id === $teacher->center_id;
+            // مركز المعلم يُشتق من فرعه (لا يوجد عمود center_id على المعلمين)
+            $centerId = $teacher->branch?->center_id;
+
+            return $centerId !== null && $circle->center_id === $centerId;
         }
 
         // ✅ المعلم — حلقاته (main/assistant) + مشرف على هذه الحلقة تحديدًا

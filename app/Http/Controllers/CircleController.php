@@ -164,7 +164,7 @@ class CircleController extends Controller
             $teacher = $this->access->teacher($user);
             if ($teacher) {
                 $circleQuery->where(function ($q) use ($teacher) {
-                    $q->whereHas('branch', fn($bq) => $bq->where('center_id', $teacher->center_id))
+                    $q->whereHas('branch', fn($bq) => $bq->where('center_id', $teacher->branch?->center_id))
                         ->orWhereIn('id', function ($sub) use ($teacher) {
                             $sub->select('circle_id')
                                 ->from('circle_teacher')
@@ -197,7 +197,7 @@ class CircleController extends Controller
             $teacher = $this->access->teacher($user);
             if ($teacher) {
                 $circleQuery->where(function ($q) use ($teacher) {
-                    $q->whereHas('branch', fn($bq) => $bq->where('center_id', $teacher->center_id))
+                    $q->whereHas('branch', fn($bq) => $bq->where('center_id', $teacher->branch?->center_id))
                         ->orWhereIn('id', function ($sub) use ($teacher) {
                             $sub->select('circle_id')
                                 ->from('circle_teacher')
@@ -230,7 +230,7 @@ class CircleController extends Controller
             $teacher = $this->access->teacher($user);
             if ($teacher) {
                 $circleQuery->where(function ($q) use ($teacher) {
-                    $q->whereHas('branch', fn($bq) => $bq->where('center_id', $teacher->center_id))
+                    $q->whereHas('branch', fn($bq) => $bq->where('center_id', $teacher->branch?->center_id))
                         ->orWhereIn('id', function ($sub) use ($teacher) {
                             $sub->select('circle_id')
                                 ->from('circle_teacher')
@@ -321,7 +321,7 @@ class CircleController extends Controller
             $teacher = $this->access->teacher($user);
             if ($teacher) {
                 $circleQuery->where(function ($q) use ($teacher) {
-                    $q->whereHas('branch', fn($bq) => $bq->where('center_id', $teacher->center_id))
+                    $q->whereHas('branch', fn($bq) => $bq->where('center_id', $teacher->branch?->center_id))
                         ->orWhereIn('id', function ($sub) use ($teacher) {
                             $sub->select('circle_id')
                                 ->from('circle_teacher')

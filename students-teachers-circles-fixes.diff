@@ -1,0 +1,321 @@
+diff --git a/app/Http/Controllers/CircleController.php b/app/Http/Controllers/CircleController.php
+index 2ead48a..bf6b805 100644
+--- a/app/Http/Controllers/CircleController.php
++++ b/app/Http/Controllers/CircleController.php
+@@ -164,7 +164,7 @@ public function show(string $id)
+             $teacher = $this->access->teacher($user);
+             if ($teacher) {
+                 $circleQuery->where(function ($q) use ($teacher) {
+-                    $q->whereHas('branch', fn($bq) => $bq->where('center_id', $teacher->center_id))
++                    $q->whereHas('branch', fn($bq) => $bq->where('center_id', $teacher->branch?->center_id))
+                         ->orWhereIn('id', function ($sub) use ($teacher) {
+                             $sub->select('circle_id')
+                                 ->from('circle_teacher')
+@@ -197,7 +197,7 @@ public function edit(string $id)
+             $teacher = $this->access->teacher($user);
+             if ($teacher) {
+                 $circleQuery->where(function ($q) use ($teacher) {
+-                    $q->whereHas('branch', fn($bq) => $bq->where('center_id', $teacher->center_id))
++                    $q->whereHas('branch', fn($bq) => $bq->where('center_id', $teacher->branch?->center_id))
+                         ->orWhereIn('id', function ($sub) use ($teacher) {
+                             $sub->select('circle_id')
+                                 ->from('circle_teacher')
+@@ -230,7 +230,7 @@ public function update(UpdateCircleRequest $request, string $id)
+             $teacher = $this->access->teacher($user);
+             if ($teacher) {
+                 $circleQuery->where(function ($q) use ($teacher) {
+-                    $q->whereHas('branch', fn($bq) => $bq->where('center_id', $teacher->center_id))
++                    $q->whereHas('branch', fn($bq) => $bq->where('center_id', $teacher->branch?->center_id))
+                         ->orWhereIn('id', function ($sub) use ($teacher) {
+                             $sub->select('circle_id')
+                                 ->from('circle_teacher')
+@@ -321,7 +321,7 @@ public function destroy(string $id)
+             $teacher = $this->access->teacher($user);
+             if ($teacher) {
+                 $circleQuery->where(function ($q) use ($teacher) {
+-                    $q->whereHas('branch', fn($bq) => $bq->where('center_id', $teacher->center_id))
++                    $q->whereHas('branch', fn($bq) => $bq->where('center_id', $teacher->branch?->center_id))
+                         ->orWhereIn('id', function ($sub) use ($teacher) {
+                             $sub->select('circle_id')
+                                 ->from('circle_teacher')
+diff --git a/app/Http/Controllers/StudentController.php b/app/Http/Controllers/StudentController.php
+index 7528996..5a8934e 100644
+--- a/app/Http/Controllers/StudentController.php
++++ b/app/Http/Controllers/StudentController.php
+@@ -245,6 +245,8 @@ public function store(StoreStudentRequest $request)
+ 
+             $studentData = array_intersect_key($data, array_flip($this->studentColumns));
+ 
++            $this->ensureStudentTargetsAccessible($studentData);
++
+             if (($studentData['status'] ?? '') === 'متوقف') {
+                 $studentData['suspended_at'] = now();
+             }
+@@ -475,6 +477,8 @@ public function update(UpdateStudentRequest $request, $id)
+             }
+ 
+ 
++            $this->ensureStudentTargetsAccessible($studentData, $student);
++
+             if (!$this->hasStudentChanges($student, $studentData, $data)) {
+                 DB::rollBack();
+ 
+@@ -595,6 +599,32 @@ public function destroy($id)
+     // Private Helpers
+     // ─────────────────────────────────────────
+ 
++    // ✅ منع إنشاء طالب أو نقله إلى مركز/حلقة/مشرف خارج نطاق وصول المستخدم
++    // (في التعديل: القيم غير المتغيرة عن الحالية مسموحة دائمًا)
++    private function ensureStudentTargetsAccessible(array $data, ?Student $current = null): void
++    {
++        $user = Auth::user();
++        if ($user->hasRole('admin')) return;
++
++        if (!empty($data['center_id']) && (int) $data['center_id'] !== $current?->center_id) {
++            if (!$this->access->accessibleCenters($user)->pluck('id')->contains((int) $data['center_id'])) {
++                abort(403, 'المركز المحدد خارج نطاق وصولك.');
++            }
++        }
++
++        if (!empty($data['circle_id']) && (int) $data['circle_id'] !== $current?->circle_id) {
++            if (!$this->access->accessibleCircles($user)->pluck('id')->contains((int) $data['circle_id'])) {
++                abort(403, 'الحلقة المحددة خارج نطاق وصولك.');
++            }
++        }
++
++        if (!empty($data['supervisor_id']) && (int) $data['supervisor_id'] !== $current?->supervisor_id) {
++            if (!$this->access->accessibleTeachers($user)->pluck('id')->contains((int) $data['supervisor_id'])) {
++                abort(403, 'المشرف المحدد خارج نطاق وصولك.');
++            }
++        }
++    }
++
+     private function authorizeStudentCenter(Student $student): void
+     {
+         $user = Auth::user();
+diff --git a/app/Policies/CirclePolicy.php b/app/Policies/CirclePolicy.php
+index acce397..0b71678 100644
+--- a/app/Policies/CirclePolicy.php
++++ b/app/Policies/CirclePolicy.php
+@@ -53,7 +53,10 @@ private function canAccessCircle(User $user, Circle $circle): bool
+         }
+ 
+         if ($user->hasRole('manager')) {
+-            return $circle->center_id === $teacher->center_id;
++            // مركز المعلم يُشتق من فرعه (لا يوجد عمود center_id على المعلمين)
++            $centerId = $teacher->branch?->center_id;
++
++            return $centerId !== null && $circle->center_id === $centerId;
+         }
+ 
+         // ✅ المعلم — حلقاته (main/assistant) + مشرف على هذه الحلقة تحديدًا
+diff --git a/app/Policies/TeacherPolicy.php b/app/Policies/TeacherPolicy.php
+index 3d80fd5..b1a8581 100644
+--- a/app/Policies/TeacherPolicy.php
++++ b/app/Policies/TeacherPolicy.php
+@@ -57,7 +57,7 @@ public function update(User $user, Teacher $teacher): bool
+             return $user->id === $teacher->user_id;
+         }
+ 
+-        return $teacher->center_id === $record->center_id;
++        return $record->branch?->center_id !== null && $teacher->branch?->center_id === $record->branch?->center_id;
+     }
+ 
+     public function delete(User $user, Teacher $teacher): bool
+@@ -82,7 +82,7 @@ public function delete(User $user, Teacher $teacher): bool
+             return false;
+         }
+ 
+-        return $teacher->center_id === $record->center_id;
++        return $record->branch?->center_id !== null && $teacher->branch?->center_id === $record->branch?->center_id;
+     }
+ 
+     public function toggle(User $user, Teacher $teacher): bool
+@@ -105,6 +105,6 @@ public function toggle(User $user, Teacher $teacher): bool
+             return false;
+         }
+ 
+-        return $teacher->center_id === $record->center_id;
++        return $record->branch?->center_id !== null && $teacher->branch?->center_id === $record->branch?->center_id;
+     }
+ }
+diff --git a/app/Policies/UserPolicy.php b/app/Policies/UserPolicy.php
+index 82e0a05..62d257e 100644
+--- a/app/Policies/UserPolicy.php
++++ b/app/Policies/UserPolicy.php
+@@ -27,7 +27,7 @@ public function view(UserModel $user, UserModel $model): bool
+         if (!$record) return false;
+ 
+         $modelTeacher = Teacher::where('user_id', $model->id)->first();
+-        return $modelTeacher && $modelTeacher->center_id === $record->center_id;
++        return $modelTeacher && $record->branch?->center_id !== null && $modelTeacher->branch?->center_id === $record->branch?->center_id;
+     }
+ 
+     public function create(UserModel $user): bool
+@@ -47,7 +47,7 @@ public function update(UserModel $user, UserModel $model): bool
+         if (!$record) return false;
+ 
+         $modelTeacher = Teacher::where('user_id', $model->id)->first();
+-        return $modelTeacher && $modelTeacher->center_id === $record->center_id;
++        return $modelTeacher && $record->branch?->center_id !== null && $modelTeacher->branch?->center_id === $record->branch?->center_id;
+     }
+ 
+     public function delete(UserModel $user, UserModel $model): bool
+diff --git a/routes/student.php b/routes/student.php
+index dd05474..5267cf0 100644
+--- a/routes/student.php
++++ b/routes/student.php
+@@ -34,7 +34,6 @@
+         Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
+     });
+ 
+-    Route::middleware('permission:assign student to circle')->group(function () {
+-        Route::post('/students/{student}/assign-circle', [StudentController::class, 'assignCircle'])->name('students.assign-circle');
+-    });
++    // ملحوظة: كان هنا مسار assign-circle يشير لدالة غير موجودة في الكنترولر (500 عند الاستدعاء) —
++    // تعيين الحلقة يتم فعليًا من تحديث الطالب مع فحص صلاحية assign student to circle داخله.
+ });
+diff --git a/tests/Feature/StudentTeacherCircleIntegrityTest.php b/tests/Feature/StudentTeacherCircleIntegrityTest.php
+new file mode 100644
+index 0000000..f0bef63
+--- /dev/null
++++ b/tests/Feature/StudentTeacherCircleIntegrityTest.php
+@@ -0,0 +1,138 @@
++<?php
++
++/*
++|--------------------------------------------------------------------------
++| سلامة الطلاب والمعلمين والحلقات (فحص 2026-11-21)
++|--------------------------------------------------------------------------
++| - صفحات الحلقات كانت 404 للمدير والمشرف حتى في مركزهم: فلتر الكنترولر
++|   وسياسة الحلقة قارنا بعمود center_id غير الموجود على المعلمين (يُشتق
++|   من الفرع) — ونفس المقارنة الفارغة (null === null) في سياسات المعلم
++|   والمستخدم كانت ستسمح بتجاوز المركز لأي دور يملك الصلاحية.
++| - إنشاء طالب أو نقله لم يتحقق من نطاق المركز/الحلقة/المشرف المستهدفة.
++| - مسار assign-circle كان يشير لدالة غير موجودة في الكنترولر (500).
++*/
++
++use App\Models\Branch;
++use App\Models\Center;
++use App\Models\Circle;
++use App\Models\Student;
++use App\Models\Teacher;
++use App\Models\User;
++use Database\Seeders\PermissionSeeder;
++use Illuminate\Support\Facades\DB;
++
++beforeEach(function () {
++    $this->seed(PermissionSeeder::class);
++
++    $this->centerA = Center::create(['name' => 'مركز أ']);
++    $this->centerB = Center::create(['name' => 'مركز ب']);
++    $this->branchA = Branch::create(['center_id' => $this->centerA->id, 'name' => 'فرع أ']);
++    $this->branchB = Branch::create(['center_id' => $this->centerB->id, 'name' => 'فرع ب']);
++    $this->circleA = Circle::create(['name' => 'حلقة أ', 'type' => 'group', 'level' => 'build', 'branch_id' => $this->branchA->id]);
++    $this->circleA2 = Circle::create(['name' => 'حلقة أ2', 'type' => 'group', 'level' => 'build', 'branch_id' => $this->branchA->id]);
++    $this->circleB = Circle::create(['name' => 'حلقة ب', 'type' => 'group', 'level' => 'build', 'branch_id' => $this->branchB->id]);
++
++    $mk = function (string $role, ?Branch $branch) {
++        $u = User::factory()->create(['status' => 'active']);
++        $u->assignRole($role);
++        $t = Teacher::create(['user_id' => $u->id, 'branch_id' => $branch?->id]);
++        return [$u, $t];
++    };
++
++    [$this->admin] = $mk('admin', null);
++    [$this->managerA, $this->managerTeacherA] = $mk('manager', $this->branchA);
++    [$this->supervisorA, $this->supervisorTeacherA] = $mk('supervisor', $this->branchA);
++    DB::table('branch_teacher')->insert(['branch_id' => $this->branchA->id, 'teacher_id' => $this->supervisorTeacherA->id, 'created_at' => now(), 'updated_at' => now()]);
++    [$this->teacherBUser, $this->teacherB] = $mk('teacher', $this->branchB);
++
++    $this->studentA = Student::create([
++        'name' => 'طالب أ', 'center_id' => $this->centerA->id, 'circle_id' => $this->circleA->id,
++        'status' => 'مقيد', 'decision' => 'مقبول', 'gender' => 'ذكر', 'supervisor_id' => $this->supervisorTeacherA->id,
++    ]);
++
++    $this->payload = fn (array $over = []) => array_merge([
++        'supervisor_id' => $this->supervisorTeacherA->id,
++        'join_date' => now()->format('Y-m-d'),
++        'applicant' => 'الأب',
++        'name' => 'طالب جديد',
++        'gender' => 'ذكر',
++        'address' => 'عنوان',
++        'center_id' => $this->centerA->id,
++        'guardian_id' => 'none',
++        'educational_stage' => 'المرحلة الابتدائية',
++        'education_type' => 'حكومي',
++        'school_grade' => 'الصف الرابع',
++        'previous_school' => 'مدرسة سابقة',
++        'health_status' => 'سليم',
++        'learning_difficulties' => 'لا يوجد',
++        'personal_traits' => 'هادئ',
++        'student_exit_status' => 'منتظم',
++        'reading' => 'جيدة',
++        'center_entry_level' => 'construction',
++        'study_system' => 'group',
++        'circle_id' => $this->circleA->id,
++        'status' => 'مقيد',
++        'decision' => 'قبول',
++        'subscription_fees' => 'مدفوع',
++        'received_tools' => 'تم الاستلام',
++    ], $over);
++});
++
++test('manager and supervisor can open circle pages in their own center', function () {
++    $this->actingAs($this->managerA)->get(route('circles.show', $this->circleA))->assertOk();
++    $this->actingAs($this->supervisorA)->get(route('circles.show', $this->circleA))->assertOk();
++    $this->actingAs($this->managerA)->get(route('circles.edit', $this->circleA))->assertOk();
++
++    // والحلقة الأجنبية ما زالت مغلقة
++    $this->actingAs($this->managerA)->get(route('circles.show', $this->circleB))->assertNotFound();
++    expect($this->managerA->can('view', $this->circleA))->toBeTrue()
++        ->and($this->managerA->can('view', $this->circleB))->toBeFalse();
++});
++
++test('manager cannot create a student in a foreign center or circle', function () {
++    $this->actingAs($this->managerA)->post(route('students.store'), ($this->payload)([
++        'name' => 'طالب أجنبي',
++        'center_id' => $this->centerB->id,
++        'circle_id' => $this->circleB->id,
++        'supervisor_id' => $this->teacherB->id,
++    ]));
++    expect(Student::withoutGlobalScopes()->where('name', 'طالب أجنبي')->exists())->toBeFalse();
++
++    // والإنشاء داخل مركزه يعمل
++    $this->actingAs($this->managerA)->post(route('students.store'), ($this->payload)(['name' => 'طالب شرعي']));
++    expect(Student::withoutGlobalScopes()->where('name', 'طالب شرعي')->exists())->toBeTrue();
++});
++
++test('manager cannot move a student to a foreign circle but can within his center', function () {
++    $this->actingAs($this->managerA)->put(route('students.update', $this->studentA), ($this->payload)([
++        'name' => 'طالب أ',
++        'circle_id' => $this->circleB->id,
++        'center_id' => $this->centerB->id,
++    ]));
++    $after = Student::withoutGlobalScopes()->find($this->studentA->id);
++    expect($after->circle_id)->toBe($this->circleA->id)
++        ->and($after->center_id)->toBe($this->centerA->id);
++
++    // نقل داخلي مشروع داخل نفس المركز
++    $this->actingAs($this->managerA)->put(route('students.update', $this->studentA), ($this->payload)([
++        'name' => 'طالب أ',
++        'circle_id' => $this->circleA2->id,
++    ]));
++    expect(Student::withoutGlobalScopes()->find($this->studentA->id)->circle_id)->toBe($this->circleA2->id);
++});
++
++test('teacher policy compares branch centers not nulls', function () {
++    // منح الصلاحيات يدويًا لعزل فحص النطاق في السياسة نفسها
++    $this->managerA->givePermissionTo(['edit teachers', 'delete teachers', 'toggle teacher status']);
++
++    expect($this->managerA->can('update', $this->teacherB))->toBeFalse()
++        ->and($this->managerA->can('delete', $this->teacherB))->toBeFalse()
++        ->and($this->managerA->can('toggle', $this->teacherB))->toBeFalse()
++        ->and($this->managerA->can('update', $this->supervisorTeacherA))->toBeTrue();
++});
++
++test('the dead assign-circle route no longer errors', function () {
++    $this->actingAs($this->admin)->post(route('students.index') . '/' . $this->studentA->id . '/assign-circle', [
++        'circle_id' => $this->circleA2->id,
++    ])->assertNotFound();
++});

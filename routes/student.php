@@ -34,7 +34,6 @@ Route::middleware(['auth', 'verified', 'permission:view students'])->group(funct
         Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
     });
 
-    Route::middleware('permission:assign student to circle')->group(function () {
-        Route::post('/students/{student}/assign-circle', [StudentController::class, 'assignCircle'])->name('students.assign-circle');
-    });
+    // ملحوظة: كان هنا مسار assign-circle يشير لدالة غير موجودة في الكنترولر (500 عند الاستدعاء) —
+    // تعيين الحلقة يتم فعليًا من تحديث الطالب مع فحص صلاحية assign student to circle داخله.
 });

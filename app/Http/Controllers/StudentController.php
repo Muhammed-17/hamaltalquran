@@ -245,6 +245,8 @@ class StudentController extends Controller
 
             $studentData = array_intersect_key($data, array_flip($this->studentColumns));
 
+            $this->ensureStudentTargetsAccessible($studentData);
+
             if (($studentData['status'] ?? '') === 'متوقف') {
                 $studentData['suspended_at'] = now();
             }
@@ -475,6 +477,8 @@ class StudentController extends Controller
             }
 
 
+            $this->ensureStudentTargetsAccessible($studentData, $student);
+
             if (!$this->hasStudentChanges($student, $studentData, $data)) {
                 DB::rollBack();
 
@@ -594,6 +598,32 @@ class StudentController extends Controller
     // ─────────────────────────────────────────
     // Private Helpers
     // ─────────────────────────────────────────
+
+    // ✅ منع إنشاء طالب أو نقله إلى مركز/حلقة/مشرف خارج نطاق وصول المستخدم
+    // (في التعديل: القيم غير المتغيرة عن الحالية مسموحة دائمًا)
+    private function ensureStudentTargetsAccessible(array $data, ?Student $current = null): void
+    {
+        $user = Auth::user();
+        if ($user->hasRole('admin')) return;
+
+        if (!empty($data['center_id']) && (int) $data['center_id'] !== $current?->center_id) {
+            if (!$this->access->accessibleCenters($user)->pluck('id')->contains((int) $data['center_id'])) {
+                abort(403, 'المركز المحدد خارج نطاق وصولك.');
+            }
+        }
+
+        if (!empty($data['circle_id']) && (int) $data['circle_id'] !== $current?->circle_id) {
+            if (!$this->access->accessibleCircles($user)->pluck('id')->contains((int) $data['circle_id'])) {
+                abort(403, 'الحلقة المحددة خارج نطاق وصولك.');
+            }
+        }
+
+        if (!empty($data['supervisor_id']) && (int) $data['supervisor_id'] !== $current?->supervisor_id) {
+            if (!$this->access->accessibleTeachers($user)->pluck('id')->contains((int) $data['supervisor_id'])) {
+                abort(403, 'المشرف المحدد خارج نطاق وصولك.');
+            }
+        }
+    }
 
     private function authorizeStudentCenter(Student $student): void
     {

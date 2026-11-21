@@ -57,7 +57,7 @@ class TeacherPolicy
             return $user->id === $teacher->user_id;
         }
 
-        return $teacher->center_id === $record->center_id;
+        return $record->branch?->center_id !== null && $teacher->branch?->center_id === $record->branch?->center_id;
     }
 
     public function delete(User $user, Teacher $teacher): bool
@@ -82,7 +82,7 @@ class TeacherPolicy
             return false;
         }
 
-        return $teacher->center_id === $record->center_id;
+        return $record->branch?->center_id !== null && $teacher->branch?->center_id === $record->branch?->center_id;
     }
 
     public function toggle(User $user, Teacher $teacher): bool
@@ -105,6 +105,6 @@ class TeacherPolicy
             return false;
         }
 
-        return $teacher->center_id === $record->center_id;
+        return $record->branch?->center_id !== null && $teacher->branch?->center_id === $record->branch?->center_id;
     }
 }

@@ -27,7 +27,7 @@ class UserPolicy
         if (!$record) return false;
 
         $modelTeacher = Teacher::where('user_id', $model->id)->first();
-        return $modelTeacher && $modelTeacher->center_id === $record->center_id;
+        return $modelTeacher && $record->branch?->center_id !== null && $modelTeacher->branch?->center_id === $record->branch?->center_id;
     }
 
     public function create(UserModel $user): bool
@@ -47,7 +47,7 @@ class UserPolicy
         if (!$record) return false;
 
         $modelTeacher = Teacher::where('user_id', $model->id)->first();
-        return $modelTeacher && $modelTeacher->center_id === $record->center_id;
+        return $modelTeacher && $record->branch?->center_id !== null && $modelTeacher->branch?->center_id === $record->branch?->center_id;
     }
 
     public function delete(UserModel $user, UserModel $model): bool
