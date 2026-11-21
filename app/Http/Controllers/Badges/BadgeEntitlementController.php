@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
 
 class BadgeEntitlementController extends Controller
 {
-    public function index(Request $request, UserAccessService $access)
+    public function index(Request $request, UserAccessService $access, BadgeBalanceService $balances)
     {
         $this->authorize('viewAny', BadgeEntitlement::class);
 
@@ -37,8 +37,16 @@ class BadgeEntitlementController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        // رصيد كل موزّع من نوع استحقاقه (لنموذج «توزيع المتبقي» داخل القائمة)
+        $distributorBalances = [];
+        foreach ($entitlements as $e) {
+            $key = $e->teacher_id . '_' . $e->badge_type_id;
+            $distributorBalances[$key] ??= $balances->teacherBalance($e->teacher_id, $e->badge_type_id);
+        }
+
         return view('badges.entitlements.index', [
             'entitlements' => $entitlements,
+            'distributorBalances' => $distributorBalances,
             'circles' => $access->accessibleCircles($user)->get(),
             'types' => BadgeType::orderBy('name')->get(),
         ]);
@@ -54,8 +62,8 @@ class BadgeEntitlementController extends Controller
         ]);
     }
 
-    /** طلاب الحلقة + المعلمون المسؤولون عنها (لنموذج الإنشاء) */
-    public function circleData(Request $request, BadgeAccessService $badgeAccess)
+    /** طلاب الحلقة + المسؤولون عنها + أرصدة عهدتهم لكل نوع (لنموذج الإنشاء الموحد) */
+    public function circleData(Request $request, BadgeAccessService $badgeAccess, BadgeBalanceService $balances)
     {
         $user = $request->user();
         abort_unless($user->can('badges.entitlements.create') || $user->can('badges.collections.create'), 403);
@@ -81,18 +89,33 @@ class BadgeEntitlementController extends Controller
             ->filter(fn ($t) => $t['name'])
             ->values();
 
-        return response()->json(['students' => $students, 'teachers' => $teachers]);
+        // أرصدة العهدة لكل مسؤول + المستخدم الحالي (لخيار «أنا»)، تظهر بجانب كل نوع في النموذج
+        $balancesByUser = [];
+        foreach ($teachers as $t) {
+            $balancesByUser[$t['id']] = $balances->teacherBalances($t['id']);
+        }
+        $balancesByUser[$user->id] = $balances->teacherBalances($user->id);
+
+        return response()->json(['students' => $students, 'teachers' => $teachers, 'balances' => $balancesByUser]);
     }
 
     public function store(StoreBadgeEntitlementRequest $request, BadgeEntitlementService $service)
     {
-        $entitlement = $service->create($request->only([
-            'student_id', 'circle_id', 'teacher_id', 'badge_type_id',
-            'quantity', 'entitlement_date', 'notes',
-        ]), $request->user());
+        $instant = $request->boolean('instant');
 
-        return redirect()->route('badges.entitlements.show', $entitlement)
-            ->with('success', 'تم تسجيل الاستحقاق بنجاح.');
+        $result = $service->createMultiple(
+            $request->only(['student_id', 'circle_id', 'teacher_id', 'entitlement_date', 'notes']),
+            (array) $request->input('quantities', []),
+            $instant,
+            $request->user(),
+        );
+
+        $message = 'تم تسجيل الاستحقاقات بنجاح (' . count($result['entitlements']) . ' من الأنواع).';
+        if ($instant && $result['distributed'] > 0) {
+            $message .= ' وتم تسليم ' . $result['distributed'] . ' وسامًا للطالب فورًا.';
+        }
+
+        return redirect()->route('badges.entitlements.index')->with('success', $message);
     }
 
     public function show(BadgeEntitlement $entitlement, BadgeBalanceService $balances)

@@ -1,80 +1,96 @@
 <x-layouts.markaz-layout>
-    <div class="w-full max-w-3xl mx-auto" dir="rtl">
-        <div class="bg-[#0b3d2c] rounded-3xl p-5 sm:p-6 lg:p-8 text-white shadow-xl mb-6 sm:mb-8">
-            <h1 class="text-xl sm:text-2xl lg:text-3xl font-black mb-1.5">تسجيل استحقاق وسام لطالب</h1>
-            <p class="text-emerald-100/80 text-xs sm:text-sm">يُحفظ الاستحقاق كاملًا حتى لو لم يتوفر رصيد لدى المعلم، ويُفتح عجز تلقائيًا عند النقص</p>
-        </div>
+    <div class="max-w-3xl mx-auto px-3 sm:px-0" dir="rtl" x-data="{
+        circleId: '{{ old('circle_id') }}',
+        studentId: '{{ old('student_id') }}',
+        teacherId: '{{ old('teacher_id') }}',
+        students: [], teachers: [], balances: {},
+        async load() {
+            this.students = []; this.teachers = []; this.balances = {};
+            if (!this.circleId) return;
+            const r = await fetch('{{ route('badges.entitlements.circle-data') }}?circle_id=' + this.circleId, {headers: {'Accept': 'application/json'}});
+            if (!r.ok) return;
+            const d = await r.json();
+            this.students = d.students; this.teachers = d.teachers; this.balances = d.balances || {};
+        },
+        bal(typeId) { return this.teacherId ? (this.balances[this.teacherId]?.[typeId] ?? 0) : '—'; }
+    }" x-init="load()">
+        <h1 class="text-xl sm:text-2xl font-black mb-1">استحقاق وتوزيع جديد</h1>
+        <p class="text-sm text-gray-500 mb-5 sm:mb-6">طالب واحد وكل الأنواع في نموذج واحد — والتسليم الفوري يوزّع المتاح من رصيد الموزّع والباقي يبقى استحقاقًا بعجز.</p>
 
-        <form method="POST" action="{{ route('badges.entitlements.store') }}" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6 lg:p-8 w-full"
-            x-data="{ circleId: '{{ old('circle_id') }}', students: [], teachers: [],
-                async load() {
-                    this.students = []; this.teachers = [];
-                    if (!this.circleId) return;
-                    const res = await fetch(`{{ route('badges.entitlements.circle-data') }}?circle_id=${this.circleId}`, { headers: { 'Accept': 'application/json' } });
-                    if (!res.ok) return;
-                    const data = await res.json();
-                    this.students = data.students; this.teachers = data.teachers;
-                }
-            }" x-init="load()">
+        @if ($errors->any())
+            <div class="bg-red-50 border border-red-200 text-red-700 rounded-2xl p-4 mb-5 text-sm font-bold">
+                @foreach ($errors->all() as $e)<div>{{ $e }}</div>@endforeach
+            </div>
+        @endif
+
+        <form method="POST" action="{{ route('badges.entitlements.store') }}" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6 space-y-5">
             @csrf
-            <div class="space-y-4 sm:space-y-5">
+            <div>
+                <label class="block text-xs font-bold text-gray-400 mb-1.5">الحلقة</label>
+                <select name="circle_id" x-model="circleId" @change="studentId=''; teacherId=''; load()" required class="w-full p-3 border border-gray-200 rounded-xl bg-white text-base sm:text-sm">
+                    <option value="">— اختر الحلقة —</option>
+                    @foreach ($circles as $c)<option value="{{ $c->id }}">{{ $c->name }}</option>@endforeach
+                </select>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1.5">الحلقة *</label>
-                    <select name="circle_id" x-model="circleId" @change="load()" required class="w-full p-3 sm:p-2.5 px-4 border border-gray-200 rounded-xl text-base sm:text-sm bg-white">
-                        <option value="">— اختر الحلقة —</option>
-                        @foreach ($circles as $c)<option value="{{ $c->id }}">{{ $c->name }}</option>@endforeach
+                    <label class="block text-xs font-bold text-gray-400 mb-1.5">الطالب</label>
+                    <select name="student_id" x-model="studentId" required class="w-full p-3 border border-gray-200 rounded-xl bg-white text-base sm:text-sm">
+                        <option value="">— اختر الطالب —</option>
+                        <template x-for="s in students" :key="s.id"><option :value="s.id" x-text="s.name"></option></template>
                     </select>
-                    <x-input-error :messages="$errors->get('circle_id')" class="mt-2" />
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 mb-1.5">الطالب *</label>
-                        <select name="student_id" required class="w-full p-3 sm:p-2.5 px-4 border border-gray-200 rounded-xl text-base sm:text-sm bg-white">
-                            <option value="">— اختر الحلقة أولًا —</option>
-                            <template x-for="s in students" :key="s.id"><option :value="s.id" x-text="s.name"></option></template>
-                        </select>
-                        <x-input-error :messages="$errors->get('student_id')" class="mt-2" />
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 mb-1.5">المعلم المسؤول *</label>
-                        <select name="teacher_id" required class="w-full p-3 sm:p-2.5 px-4 border border-gray-200 rounded-xl text-base sm:text-sm bg-white">
-                            <option value="">— اختر الحلقة أولًا —</option>
-                            @if (auth()->user()->hasRole(['admin', 'general_manager', 'manager']))
-                                <option value="{{ auth()->id() }}" @selected(old('teacher_id') == auth()->id())>أنا — {{ auth()->user()->name }} (التوزيع من عهدتي)</option>
-                            @endif
-                            <template x-for="t in teachers" :key="t.id"><option :value="t.id" x-text="t.name"></option></template>
-                        </select>
-                        <x-input-error :messages="$errors->get('teacher_id')" class="mt-2" />
-                    </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 mb-1.5">نوع الوسام *</label>
-                    <select name="badge_type_id" required class="w-full p-3 sm:p-2.5 px-4 border border-gray-200 rounded-xl text-base sm:text-sm bg-white">
-                        <option value="">— اختر النوع —</option>
-                        @foreach ($types as $type)<option value="{{ $type->id }}" @selected(old('badge_type_id') == $type->id)>{{ $type->name }}</option>@endforeach
+                    <label class="block text-xs font-bold text-gray-400 mb-1.5">المسؤول عن التوزيع</label>
+                    <select name="teacher_id" x-model="teacherId" required class="w-full p-3 border border-gray-200 rounded-xl bg-white text-base sm:text-sm">
+                        <option value="">— اختر المسؤول —</option>
+                        @if (auth()->user()->hasRole(['admin', 'general_manager', 'manager']))
+                            <option value="{{ auth()->id() }}">أنا — التوزيع من عهدتي</option>
+                        @endif
+                        <template x-for="t in teachers" :key="t.id"><option :value="t.id" x-text="t.name"></option></template>
                     </select>
-                    <x-input-error :messages="$errors->get('badge_type_id')" class="mt-2" />
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 mb-1.5">الكمية المستحقة *</label>
-                        <input type="number" name="quantity" min="1" value="{{ old('quantity') }}" required class="w-full p-3 sm:p-2.5 px-4 border border-gray-200 rounded-xl text-base sm:text-sm">
-                        <x-input-error :messages="$errors->get('quantity')" class="mt-2" />
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 mb-1.5">تاريخ الاستحقاق *</label>
-                        <input type="date" name="entitlement_date" value="{{ old('entitlement_date', date('Y-m-d')) }}" required class="w-full p-3 sm:p-2.5 px-4 border border-gray-200 rounded-xl text-base sm:text-sm">
-                        <x-input-error :messages="$errors->get('entitlement_date')" class="mt-2" />
-                    </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-400 mb-1.5">الكميات حسب النوع (رصيد الموزّع يظهر بجانب كل نوع)</label>
+                <div class="border border-gray-200 rounded-xl divide-y divide-gray-100 overflow-hidden">
+                    @foreach ($types as $type)
+                        <div class="flex items-center gap-3 px-3 sm:px-4 py-3">
+                            <div class="flex-1 min-w-0">
+                                <div class="text-sm font-bold truncate">{{ $type->name }}</div>
+                                <div class="text-[11px] text-gray-400">رصيد الموزّع: <span class="font-black text-gray-600" x-text="bal({{ $type->id }})"></span></div>
+                                @error('quantities.' . $type->id)<div class="text-[11px] text-red-600 font-bold">{{ $message }}</div>@enderror
+                            </div>
+                            <input type="number" name="quantities[{{ $type->id }}]" min="0" value="{{ old('quantities.' . $type->id) }}" placeholder="0"
+                                class="w-20 sm:w-24 p-2.5 border border-gray-200 rounded-xl text-center text-base sm:text-sm font-bold">
+                        </div>
+                    @endforeach
+                </div>
+                @error('quantities')<div class="text-xs text-red-600 font-bold mt-1.5">{{ $message }}</div>@enderror
+            </div>
+
+            <label class="flex items-start gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-3.5 cursor-pointer">
+                <input type="checkbox" name="instant" value="1" @checked(old('instant', true)) class="mt-0.5 w-4 h-4 accent-emerald-600">
+                <span>
+                    <span class="block text-sm font-black text-emerald-900">تسليم فوري للطالب</span>
+                    <span class="block text-xs text-emerald-700/80 mt-0.5">يُسلَّم للطالب المتاح من رصيد الموزّع فورًا لكل نوع، وما لا يغطيه الرصيد يبقى استحقاقًا مفتوحًا بعجز يُستكمل لاحقًا من القائمة.</span>
+                </span>
+            </label>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1.5">تاريخ الاستحقاق</label>
+                    <input type="date" name="entitlement_date" value="{{ old('entitlement_date', date('Y-m-d')) }}" required class="w-full p-3 border border-gray-200 rounded-xl text-base sm:text-sm">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-400 mb-1.5">ملاحظات</label>
-                    <input type="text" name="notes" value="{{ old('notes') }}" class="w-full p-3 sm:p-2.5 px-4 border border-gray-200 rounded-xl text-base sm:text-sm">
+                    <input type="text" name="notes" value="{{ old('notes') }}" class="w-full p-3 border border-gray-200 rounded-xl text-base sm:text-sm">
                 </div>
-                <div class="flex flex-col sm:flex-row gap-3 pt-1">
-                    <button class="w-full sm:w-auto px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl active:scale-95">تسجيل الاستحقاق</button>
-                    <a href="{{ route('badges.entitlements.index') }}" class="w-full sm:w-auto px-6 py-3 bg-gray-100 font-bold rounded-2xl text-center">إلغاء</a>
-                </div>
+            </div>
+            <div class="flex flex-col-reverse sm:flex-row gap-3 pt-1">
+                <button class="flex-1 py-3 bg-[#0a5c36] text-white font-bold rounded-xl active:scale-[0.99]">حفظ الاستحقاقات</button>
+                <a href="{{ route('badges.entitlements.index') }}" class="px-6 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl text-center">إلغاء</a>
             </div>
         </form>
     </div>

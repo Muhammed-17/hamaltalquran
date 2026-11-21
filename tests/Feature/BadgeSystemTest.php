@@ -251,8 +251,8 @@ test('custody chain: every rank hands over only from its own balance, downward a
     // مدير الفرع يوزّع بنفسه: استحقاق باسمه عبر النموذج (مسؤول بحكم مركزه) ثم توزيع
     $this->actingAs($managerA)->post(route('badges.entitlements.store'), [
         'student_id' => $this->student2->id, 'circle_id' => $this->circleA->id,
-        'teacher_id' => $managerA->id, 'badge_type_id' => $this->type->id,
-        'quantity' => 10, 'entitlement_date' => '2026-11-09',
+        'teacher_id' => $managerA->id,
+        'quantities' => [$this->type->id => 10], 'entitlement_date' => '2026-11-09',
     ])->assertSessionHasNoErrors();
     $entMgr = BadgeEntitlement::where('teacher_id', $managerA->id)->firstOrFail();
     $this->distributionService->distribute($entMgr, 10, '2026-11-10', $managerA);
@@ -515,8 +515,8 @@ test('center scope: foreign manager cannot entitle or view another center circle
     // محاولة إنشاء استحقاق لحلقة مركز آخر عبر HTTP
     $this->actingAs($this->managerB)->post(route('badges.entitlements.store'), [
         'student_id' => $this->student1->id, 'circle_id' => $this->circleA->id,
-        'teacher_id' => $this->teacherUser->id, 'badge_type_id' => $this->type->id,
-        'quantity' => 3, 'entitlement_date' => '2026-11-10',
+        'teacher_id' => $this->teacherUser->id,
+        'quantities' => [$this->type->id => 3], 'entitlement_date' => '2026-11-10',
     ])->assertSessionHasErrors('circle_id');
     expect(BadgeEntitlement::count())->toBe(0);
 
@@ -524,16 +524,16 @@ test('center scope: foreign manager cannot entitle or view another center circle
     $studentB = Student::create(['name' => 'طالب ب', 'center_id' => $this->centerB->id, 'circle_id' => $this->circleB->id, 'status' => 'مقيد', 'decision' => 'مقبول', 'gender' => 'ذكر', 'supervisor_id' => $this->teacher->id]);
     $this->actingAs($this->teacherUser)->post(route('badges.entitlements.store'), [
         'student_id' => $studentB->id, 'circle_id' => $this->circleA->id,
-        'teacher_id' => $this->teacherUser->id, 'badge_type_id' => $this->type->id,
-        'quantity' => 3, 'entitlement_date' => '2026-11-10',
+        'teacher_id' => $this->teacherUser->id,
+        'quantities' => [$this->type->id => 3], 'entitlement_date' => '2026-11-10',
     ])->assertSessionHasErrors('student_id');
     expect(BadgeEntitlement::count())->toBe(0);
 
     // إنشاء سليم عبر HTTP يعمل ويفتح العجز (لا رصيد)
     $this->actingAs($this->teacherUser)->post(route('badges.entitlements.store'), [
         'student_id' => $this->student1->id, 'circle_id' => $this->circleA->id,
-        'teacher_id' => $this->teacherUser->id, 'badge_type_id' => $this->type->id,
-        'quantity' => 3, 'entitlement_date' => '2026-11-10',
+        'teacher_id' => $this->teacherUser->id,
+        'quantities' => [$this->type->id => 3], 'entitlement_date' => '2026-11-10',
     ])->assertSessionHasNoErrors();
     expect(BadgeEntitlement::count())->toBe(1)
         ->and(BadgeShortage::count())->toBe(1);
@@ -560,4 +560,60 @@ test('badge pages render for authorized users', function () {
     $this->actingAs($this->teacherUser)->get(route('badges.dashboard'))->assertOk();
     $this->actingAs($this->teacherUser)->get(route('badges.entitlements.index'))->assertOk();
     $this->actingAs($this->teacherUser)->get(route('badges.shortages.index'))->assertOk();
+});
+
+// ============================================================
+// الصفحة الموحدة: استحقاقات متعددة الأنواع + تسليم فوري حسب الرصيد
+// ============================================================
+test('unified entitlements: multi-type create with instant distribution by balance', function () {
+    badgeSeedStockAndHandover($this); // المعلم معه 40 من النوع الأساسي فقط
+    $type2 = BadgeType::create(['name' => 'وسام التميز', 'is_active' => true]);
+
+    // ضغطة واحدة: نوعان — الأول بكمية أكبر من الرصيد، والثاني بلا رصيد أصلًا
+    $this->actingAs($this->teacherUser)->post(route('badges.entitlements.store'), [
+        'student_id' => $this->student1->id, 'circle_id' => $this->circleA->id,
+        'teacher_id' => $this->teacherUser->id,
+        'quantities' => [$this->type->id => 50, $type2->id => 7],
+        'entitlement_date' => '2026-11-12', 'instant' => 1,
+    ])->assertSessionHasNoErrors();
+
+    // استحقاقان، وتوزيع واحد فقط (40 = كل رصيد النوع الأول)، وعجزا النوعين يعكسان المتبقي
+    expect(BadgeEntitlement::count())->toBe(2)
+        ->and(BadgeDistribution::count())->toBe(1)
+        ->and($this->balances->studentBalance($this->student1->id, $this->type->id))->toBe(40)
+        ->and($this->balances->studentBalance($this->student1->id, $type2->id))->toBe(0)
+        ->and($this->balances->teacherBalance($this->teacherUser->id, $this->type->id))->toBe(0);
+    $ent1 = BadgeEntitlement::where('badge_type_id', $this->type->id)->firstOrFail();
+    expect($ent1->status->value)->toBe('partial')
+        ->and($ent1->shortage?->shortage_quantity)->toBe(10);
+    $ent2 = BadgeEntitlement::where('badge_type_id', $type2->id)->firstOrFail();
+    expect($ent2->status->value)->toBe('pending')
+        ->and($ent2->shortage?->shortage_quantity)->toBe(7);
+
+    // بدون تسليم فوري: استحقاق فقط حتى مع توفر الرصيد لاحقًا
+    $this->actingAs($this->teacherUser)->post(route('badges.entitlements.store'), [
+        'student_id' => $this->student2->id, 'circle_id' => $this->circleA->id,
+        'teacher_id' => $this->teacherUser->id,
+        'quantities' => [$type2->id => 3],
+        'entitlement_date' => '2026-11-12',
+    ])->assertSessionHasNoErrors();
+    expect(BadgeEntitlement::count())->toBe(3)
+        ->and(BadgeDistribution::count())->toBe(1);
+
+    // استكمال «المتبقي» من القائمة (نفس مسار التوزيع) بعد وصول رصيد جديد للمعلم
+    $this->handoverService->handover($this->teacherUser, $this->type, 10, '2026-11-13', $this->admin);
+    $this->actingAs($this->teacherUser)->post(route('badges.distributions.store'), [
+        'entitlement_id' => $ent1->id, 'quantity' => 10, 'distribution_date' => '2026-11-14',
+    ])->assertSessionHasNoErrors();
+    expect($ent1->fresh()->status->value)->toBe('completed')
+        ->and($this->balances->studentBalance($this->student1->id, $this->type->id))->toBe(50);
+
+    // لا كميات موجبة = لا شيء يُسجَّل
+    $this->actingAs($this->teacherUser)->post(route('badges.entitlements.store'), [
+        'student_id' => $this->student1->id, 'circle_id' => $this->circleA->id,
+        'teacher_id' => $this->teacherUser->id,
+        'quantities' => [$this->type->id => 0],
+        'entitlement_date' => '2026-11-12', 'instant' => 1,
+    ])->assertSessionHasErrors('quantities');
+    expect(BadgeEntitlement::count())->toBe(3);
 });

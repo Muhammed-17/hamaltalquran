@@ -23,8 +23,10 @@ class StoreBadgeEntitlementRequest extends FormRequest
             'circle_id'        => ['required', Rule::exists('circles', 'id')],
             // المسؤول عن التوزيع أي مستخدم طاقم (معلم/مشرف/مدير) — المسؤولية في withValidator
             'teacher_id'       => ['required', Rule::exists('users', 'id')],
-            'badge_type_id'    => ['required', Rule::exists('badge_types', 'id')->where('is_active', true)],
-            'quantity'         => ['required', 'integer', 'min:1'],
+            // الصفحة الموحدة: كمية لكل نوع (صفر/فارغ = لا استحقاق لهذا النوع)
+            'quantities'       => ['required', 'array'],
+            'quantities.*'     => ['nullable', 'integer', 'min:0'],
+            'instant'          => ['nullable', 'boolean'],
             'entitlement_date' => ['required', 'date'],
             'notes'            => ['nullable', 'string'],
         ];
@@ -36,9 +38,9 @@ class StoreBadgeEntitlementRequest extends FormRequest
             'student_id.required'    => 'يجب اختيار الطالب.',
             'circle_id.required'     => 'يجب اختيار الحلقة.',
             'teacher_id.required'    => 'يجب اختيار المعلم.',
-            'badge_type_id.required' => 'يجب اختيار نوع الوسام.',
-            'badge_type_id.exists'   => 'نوع الوسام المحدد غير موجود أو غير مفعّل.',
-            'quantity.min'           => 'الكمية يجب أن تكون أكبر من صفر.',
+            'quantities.required'    => 'أدخل كمية لنوع واحد على الأقل.',
+            'quantities.*.integer'   => 'الكمية يجب أن تكون رقمًا صحيحًا.',
+            'quantities.*.min'       => 'الكمية لا يمكن أن تكون سالبة.',
             'entitlement_date.required' => 'تاريخ الاستحقاق مطلوب.',
         ];
     }
@@ -69,6 +71,22 @@ class StoreBadgeEntitlementRequest extends FormRequest
             $staff = \App\Models\User::find($teacherId);
             if (!$staff || !$access->staffResponsibleForCircle($staff, $circleId)) {
                 $v->errors()->add('teacher_id', 'المسؤول المحدد ليس مسؤولًا عن هذه الحلقة.');
+            }
+
+            // مفاتيح الكميات أنواع مفعّلة فقط، وواحد على الأقل بكمية موجبة
+            $quantities = (array) $this->input('quantities', []);
+            $activeTypeIds = \App\Models\Badges\BadgeType::active()->pluck('id')->map(fn ($i) => (int) $i)->all();
+            $hasPositive = false;
+            foreach ($quantities as $typeId => $quantity) {
+                if (!in_array((int) $typeId, $activeTypeIds, true)) {
+                    $v->errors()->add("quantities.{$typeId}", 'نوع الوسام غير موجود أو غير مفعّل.');
+                }
+                if ((int) $quantity > 0) {
+                    $hasPositive = true;
+                }
+            }
+            if (!$hasPositive) {
+                $v->errors()->add('quantities', 'أدخل كمية أكبر من صفر لنوع واحد على الأقل.');
             }
         });
     }

@@ -14,6 +14,7 @@ class BadgeEntitlementService
         private BadgeBalanceService $balances,
         private BadgeShortageService $shortages,
         private BadgeLogService $logger,
+        private BadgeDistributionService $distributions,
     ) {}
 
     /**
@@ -35,6 +36,62 @@ class BadgeEntitlementService
             $this->logger->log('entitlement.created', $entitlement, newValues: $entitlement->only(['student_id', 'circle_id', 'teacher_id', 'badge_type_id', 'quantity']), user: $actor);
 
             return $entitlement;
+        });
+    }
+
+    /**
+     * الصفحة الموحدة: استحقاقات لعدة أنواع دفعة واحدة لطالب واحد،
+     * مع تسليم فوري اختياري: يُوزَّع من كل نوع المتاح من رصيد الموزّع،
+     * والباقي يبقى استحقاقًا مفتوحًا بعجز — كل ذلك في معاملة واحدة.
+     *
+     * @param  array<string, mixed>  $baseData  student_id, circle_id, teacher_id, entitlement_date, notes
+     * @param  array<int, int>  $quantitiesByType  badge_type_id => quantity
+     * @return array{entitlements: array<int, BadgeEntitlement>, distributed: int}
+     */
+    public function createMultiple(array $baseData, array $quantitiesByType, bool $instant, User $actor): array
+    {
+        return DB::transaction(function () use ($baseData, $quantitiesByType, $instant, $actor) {
+            $created = [];
+            $distributedTotal = 0;
+
+            foreach ($quantitiesByType as $typeId => $quantity) {
+                $quantity = (int) $quantity;
+                if ($quantity <= 0) {
+                    continue;
+                }
+
+                $entitlement = $this->create([
+                    ...$baseData,
+                    'badge_type_id' => (int) $typeId,
+                    'quantity'      => $quantity,
+                ], $actor);
+
+                if ($instant) {
+                    $available = $this->balances->teacherBalance($entitlement->teacher_id, $entitlement->badge_type_id);
+                    $toDistribute = min($quantity, $available);
+
+                    if ($toDistribute > 0) {
+                        $this->distributions->distribute(
+                            $entitlement,
+                            $toDistribute,
+                            $baseData['entitlement_date'],
+                            $actor,
+                            $baseData['notes'] ?? null,
+                        );
+                        $distributedTotal += $toDistribute;
+                    }
+                }
+
+                $created[] = $entitlement;
+            }
+
+            if ($created === []) {
+                throw ValidationException::withMessages([
+                    'quantities' => 'أدخل كمية أكبر من صفر لنوع واحد على الأقل.',
+                ]);
+            }
+
+            return ['entitlements' => $created, 'distributed' => $distributedTotal];
         });
     }
 
