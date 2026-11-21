@@ -25,27 +25,54 @@ class BadgeEntitlementController extends Controller
         $user = $request->user();
         $circleIds = $access->accessibleCircles($user)->pluck('id');
 
-        $entitlements = BadgeEntitlement::with(['student', 'circle', 'teacher', 'badgeType'])
+        $base = BadgeEntitlement::with(['student', 'circle', 'teacher', 'badgeType'])
             ->when(!$user->hasRole(['admin', 'general_manager']), function ($q) use ($circleIds, $user) {
                 $q->where(fn ($w) => $w->whereIn('circle_id', $circleIds)->orWhere('teacher_id', $user->id));
             })
             ->when($request->filled('circle_id'), fn ($q) => $q->where('circle_id', $request->circle_id))
             ->when($request->filled('badge_type_id'), fn ($q) => $q->where('badge_type_id', $request->badge_type_id))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
-            ->when($request->filled('q'), fn ($q) => $q->whereHas('student', fn ($s) => $s->withoutGlobalScopes()->where('name', 'like', "%{$request->q}%")))
+            ->when($request->filled('q'), fn ($q) => $q->whereHas('student', fn ($s) => $s->withoutGlobalScopes()->where('name', 'like', "%{$request->q}%")));
+
+        // التجميع حسب الدفعة: صفوف القائمة عمليات إعطاء لا استحقاقات مفردة
+        // (الاستحقاقات القديمة بلا batch_id تُعامل كلٌّ منها كعملية مستقلة)
+        $batchKeys = (clone $base)->whereNotNull('batch_id')
+            ->selectRaw('MAX(id) as max_id')->selectRaw('batch_id')->groupBy('batch_id')->get()
+            ->map(fn ($r) => ['key' => $r->batch_id, 'max_id' => (int) $r->max_id]);
+        $singleKeys = (clone $base)->whereNull('batch_id')->select('id')->get()
+            ->map(fn ($r) => ['key' => 'single-' . $r->id, 'max_id' => (int) $r->id]);
+        $allKeys = $batchKeys->concat($singleKeys)->sortByDesc('max_id')->values();
+
+        $perPage = 20;
+        $page = \Illuminate\Pagination\Paginator::resolveCurrentPage();
+        $pageKeys = $allKeys->slice(($page - 1) * $perPage, $perPage)->values();
+        $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
+            $pageKeys, $allKeys->count(), $perPage, $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        $batchIds = $pageKeys->pluck('key')->reject(fn ($k) => str_starts_with($k, 'single-'))->values();
+        $singleIds = $pageKeys->pluck('key')->filter(fn ($k) => str_starts_with($k, 'single-'))
+            ->map(fn ($k) => (int) substr($k, 7))->values();
+        $items = (clone $base)
+            ->where(fn ($q) => $q->whereIn('batch_id', $batchIds)->orWhereIn('id', $singleIds))
             ->latest('id')
-            ->paginate(20)
-            ->withQueryString();
+            ->get();
+        $groups = $pageKeys->map(fn ($k) => [
+            'key' => $k['key'],
+            'items' => $items->filter(fn ($e) => ($e->batch_id ?? 'single-' . $e->id) === $k['key'])->values(),
+        ])->filter(fn ($g) => $g['items']->isNotEmpty())->values();
 
         // رصيد كل موزّع من نوع استحقاقه (لنموذج «توزيع المتبقي» داخل القائمة)
         $distributorBalances = [];
-        foreach ($entitlements as $e) {
+        foreach ($items as $e) {
             $key = $e->teacher_id . '_' . $e->badge_type_id;
             $distributorBalances[$key] ??= $balances->teacherBalance($e->teacher_id, $e->badge_type_id);
         }
 
         return view('badges.entitlements.index', [
-            'entitlements' => $entitlements,
+            'groups' => $groups,
+            'paginator' => $paginator,
             'distributorBalances' => $distributorBalances,
             'circles' => $access->accessibleCircles($user)->get(),
             'types' => BadgeType::orderBy('name')->get(),

@@ -26,6 +26,7 @@ class BadgeEntitlementService
         return DB::transaction(function () use ($data, $actor) {
             $entitlement = BadgeEntitlement::create([
                 ...$data,
+                'batch_id'   => $data['batch_id'] ?? (string) \Illuminate\Support\Str::uuid(),
                 'status'     => EntitlementStatus::Pending->value,
                 'created_by' => $actor->id,
             ]);
@@ -53,6 +54,8 @@ class BadgeEntitlementService
         return DB::transaction(function () use ($baseData, $quantitiesByType, $instant, $actor) {
             $created = [];
             $distributedTotal = 0;
+            // كل أنواع العملية الواحدة تشترك في معرّف دفعة واحد
+            $batchId = (string) \Illuminate\Support\Str::uuid();
 
             foreach ($quantitiesByType as $typeId => $quantity) {
                 $quantity = (int) $quantity;
@@ -62,6 +65,7 @@ class BadgeEntitlementService
 
                 $entitlement = $this->create([
                     ...$baseData,
+                    'batch_id'      => $batchId,
                     'badge_type_id' => (int) $typeId,
                     'quantity'      => $quantity,
                 ], $actor);

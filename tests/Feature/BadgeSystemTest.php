@@ -590,6 +590,10 @@ test('unified entitlements: multi-type create with instant distribution by balan
     expect($ent2->status->value)->toBe('pending')
         ->and($ent2->shortage?->shortage_quantity)->toBe(7);
 
+    // نوعا العملية الواحدة يشتركان في معرّف دفعة واحد (يظهران مجموعة واحدة في القائمة)
+    expect($ent1->batch_id)->not->toBeNull()
+        ->and($ent2->batch_id)->toBe($ent1->batch_id);
+
     // بدون تسليم فوري: استحقاق فقط حتى مع توفر الرصيد لاحقًا
     $this->actingAs($this->teacherUser)->post(route('badges.entitlements.store'), [
         'student_id' => $this->student2->id, 'circle_id' => $this->circleA->id,
@@ -599,6 +603,11 @@ test('unified entitlements: multi-type create with instant distribution by balan
     ])->assertSessionHasNoErrors();
     expect(BadgeEntitlement::count())->toBe(3)
         ->and(BadgeDistribution::count())->toBe(1);
+
+    // والعملية المنفصلة لها دفعة مختلفة، وقائمة الاستحقاقات تعمل بالتجميع
+    $ent3 = BadgeEntitlement::where('student_id', $this->student2->id)->firstOrFail();
+    expect($ent3->batch_id)->not->toBe($ent1->batch_id);
+    $this->actingAs($this->teacherUser)->get(route('badges.entitlements.index'))->assertOk();
 
     // استكمال «المتبقي» من القائمة (نفس مسار التوزيع) بعد وصول رصيد جديد للمعلم
     $this->handoverService->handover($this->teacherUser, $this->type, 10, '2026-11-13', $this->admin);

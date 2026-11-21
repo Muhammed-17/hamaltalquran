@@ -15,7 +15,7 @@ class BadgeEntitlement extends Model
 {
     protected $fillable = [
         'student_id', 'circle_id', 'teacher_id', 'badge_type_id',
-        'quantity', 'entitlement_date', 'status', 'notes', 'created_by',
+        'quantity', 'entitlement_date', 'status', 'notes', 'created_by', 'batch_id',
     ];
 
     protected $casts = [
