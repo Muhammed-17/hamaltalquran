@@ -43,8 +43,13 @@ class CollectionRoundPolicy
             return $user->hasRole('admin');
         }
 
-        if ($user->hasAnyRole(['admin', 'general_manager', 'manager'])) {
+        if ($user->hasAnyRole(['admin', 'general_manager'])) {
             return true;
+        }
+
+        // المدير مقيد بحلقات نطاقه (كان يعدّل جولات أي مركز)
+        if ($user->hasRole('manager')) {
+            return $this->userCanAccessCircle($user, $round->circle_id);
         }
 
         return $this->userCanAccessCircle($user, $round->circle_id) && $round->status === 'pending';
@@ -60,8 +65,13 @@ class CollectionRoundPolicy
             return $user->hasRole('admin');
         }
 
-        if ($user->hasAnyRole(['admin', 'general_manager', 'manager'])) {
+        if ($user->hasAnyRole(['admin', 'general_manager'])) {
             return true;
+        }
+
+        // المدير مقيد بحلقات نطاقه (كان يحذف جولات أي مركز)
+        if ($user->hasRole('manager')) {
+            return $this->userCanAccessCircle($user, $round->circle_id);
         }
 
         return $this->userCanAccessCircle($user, $round->circle_id) && $round->status === 'pending';
@@ -69,8 +79,17 @@ class CollectionRoundPolicy
 
     public function confirm(User $user, CollectionRound $round): bool
     {
-        return $user->hasAnyRole(['admin', 'general_manager', 'manager'])
-            && $user->can('confirm collection rounds');
+        if (! $user->can('confirm collection rounds')) {
+            return false;
+        }
+
+        if ($user->hasAnyRole(['admin', 'general_manager'])) {
+            return true;
+        }
+
+        // المدير يؤكد جولات حلقاته فقط (كان يؤكد جولات أي مركز)
+        return $user->hasRole('manager')
+            && $this->userCanAccessCircle($user, $round->circle_id);
     }
 
     private function userCanAccessCircle(User $user, int $circleId): bool

@@ -60,6 +60,12 @@ class SubscriptionTransferController extends Controller
             'collected_by' => 'required|integer|exists:users,id',
         ]);
 
+        // ✅ الحلقة يجب أن تكون ضمن نطاق وصول المستخدم (كان التحويل/البحث
+        // متاحًا على حلقات أي مركز لأي حامل لصلاحية التحويل)
+        if (!Auth::user()->hasAnyRole(['admin', 'general_manager'])) {
+            abort_unless($this->access->canAccessCircle(Auth::user(), (int) $validated['circle_id']), 403, 'ليس لديك صلاحية على هذه الحلقة.');
+        }
+
         $monthDate = Carbon::createFromFormat('Y-m', $validated['month'])->startOfMonth()->format('Y-m-d');
 
         $subscriptions = Subscription::query()
@@ -70,7 +76,7 @@ class SubscriptionTransferController extends Controller
                 $q->where(fn($qq) => $qq->where('status', 'مدفوع')->where('collected_by', $validated['collected_by']))
                     ->orWhere('status', 'معفي');
             })
-            ->orderByRaw("FIELD(status, 'مدفوع', 'معفي')")
+            ->orderByRaw("CASE WHEN status = 'مدفوع' THEN 0 ELSE 1 END")
             ->orderBy('id')
             ->get()
             ->map(function ($s) {
@@ -122,6 +128,11 @@ class SubscriptionTransferController extends Controller
             'subscription_ids.*.exists'   => 'أحد الاشتراكات المحددة غير موجود.',
             'notes.max'                   => 'الملاحظات طويلة جدًا (الحد الأقصى 255 حرفًا).',
         ]);
+
+        // ✅ الحلقة يجب أن تكون ضمن نطاق وصول المستخدم
+        if (!Auth::user()->hasAnyRole(['admin', 'general_manager'])) {
+            abort_unless($this->access->canAccessCircle(Auth::user(), (int) $data['circle_id']), 403, 'ليس لديك صلاحية على هذه الحلقة.');
+        }
 
         // ✅ فقط الأدمن/المدير العام يقدر يحدد شخص تاني كمنفّذ للعملية
         $performedBy = Auth::user()->hasAnyRole(['admin', 'general_manager']) && !empty($data['performed_by'])

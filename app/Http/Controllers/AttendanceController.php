@@ -68,10 +68,22 @@ class AttendanceController extends Controller
 
 
         // ✅ O(N) — Aggregation في DB بدلاً من O(N²) في PHP
-        $circleStats = DB::table('attendances')
+        // (مقيّد بنفس نطاق الاستعلام الرئيسي — كان التجميع بلا أي قيد نطاق)
+        $circleStatsQuery = DB::table('attendances')
             ->join('students', 'attendances.student_id', '=', 'students.id')
             ->join('circles', 'students.circle_id', '=', 'circles.id')
-            ->where('attendances.date', '>=', now()->subDays(30))
+            ->where('attendances.date', '>=', now()->subDays(30));
+
+        if ($user->hasRole('guardian')) {
+            $circleStatsQuery->where('students.guardian_id', $user->id);
+        } elseif (!$user->hasRole(['admin', 'general_manager'])) {
+            $scopeCircleIds = $this->access->accessibleCircles($user)->pluck('id');
+            $scopeCircleIds->isEmpty()
+                ? $circleStatsQuery->whereRaw('1=0')
+                : $circleStatsQuery->whereIn('students.circle_id', $scopeCircleIds);
+        }
+
+        $circleStats = $circleStatsQuery
             ->selectRaw('
                 circles.name as circle_name,
                 COUNT(*) as total,

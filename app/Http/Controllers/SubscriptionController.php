@@ -542,6 +542,14 @@ class SubscriptionController extends Controller
             abort(403, 'ليس لديك صلاحية لإضافة اشتراك لهذه الحلقة.');
         }
 
+        // ✅ الطالب يجب أن يكون عضوًا في الحلقة المختارة نفسها — بدون هذا الفحص
+        // أمكن إنشاء اشتراك لطالب حلقة/مركز آخر تحت حلقة المستخدم، بل وإعادة
+        // كتابة سجل الطالب الأجنبي الموجود لنفس الشهر (نقله لحلقة المستخدم)
+        $student = Student::withoutGlobalScopes()->find($validated['student_id']);
+        if (!$student || (int) $student->circle_id !== (int) $validated['circle_id']) {
+            return back()->withErrors(['student_id' => 'الطالب المحدد لا ينتمي إلى الحلقة المختارة.'])->withInput();
+        }
+
         $teacherId = $user->hasRole(['admin', 'general_manager'])
             ? ($validated['teacher_id'] ?? $user->id)
             : $user->id;
@@ -905,6 +913,29 @@ class SubscriptionController extends Controller
         $month = Carbon::createFromFormat('Y-m', $validated['month'])->startOfMonth()->format('Y-m-d');
         $isExempt = $validated['status'] === 'معفي';
         $isUnpaid = $validated['status'] === 'غير مدفوع';
+
+        // ✅ عند إعادة التعيين فقط (طالب أو حلقة مختلفة عن الحالية): الطالب
+        // الجديد يجب أن يكون عضوًا في الحلقة المستهدفة — منع نقل الاشتراك
+        // لطالب حلقة/مركز آخر. التعديلات العادية على نفس الطالب والحلقة
+        // مسموحة حتى لو انتقل الطالب لحلقة أخرى لاحقًا (سجله التاريخي).
+        $isReassignment = (int) $validated['student_id'] !== (int) $subscription->student_id
+            || (int) $validated['circle_id'] !== (int) $subscription->circle_id;
+        if ($isReassignment) {
+            $newStudent = Student::withoutGlobalScopes()->find($validated['student_id']);
+            if (!$newStudent || (int) $newStudent->circle_id !== (int) $validated['circle_id']) {
+                return back()->withErrors(['student_id' => 'الطالب المحدد لا ينتمي إلى الحلقة المختارة.'])->withInput();
+            }
+        }
+
+        // ✅ منع تكرار (طالب، شهر): نقل الاشتراك لشهر/طالب يوجد له سجل آخر
+        // كان ينتج سجلين لنفس الطالب ونفس الشهر (لا قيد فرادة في القاعدة)
+        $duplicateExists = Subscription::where('student_id', $validated['student_id'])
+            ->where('month', $month)
+            ->where('id', '!=', $subscription->id)
+            ->exists();
+        if ($duplicateExists) {
+            return back()->withErrors(['month' => 'يوجد سجل اشتراك آخر لهذا الطالب في نفس الشهر.'])->withInput();
+        }
 
         $teacherId = $user->hasRole(['admin', 'general_manager'])
             ? ($validated['teacher_id'] ?? $subscription->teacher_id)
