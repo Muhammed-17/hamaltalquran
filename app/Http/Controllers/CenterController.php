@@ -138,15 +138,30 @@ class CenterController extends Controller
     }
     public function destroy(Center $center)
     {
+        // ✅ حراس حذف: حذف المركز يتسلسل (cascade) إلى فروعه وحلقاته ودروسه
+        // واشتراكات حلقاته — كان الفحص على الطلاب المباشرين فقط، فمركز كامل
+        // الهيكل بلا طلاب مباشرين كان يُمسح بنقرة واحدة
+        $branchesCount = $center->branches()->count();
+        if ($branchesCount > 0) {
+            return redirect()->route('centers.index')
+                ->with('error', 'لا يمكن حذف هذا المركز لأنه مرتبط بـ ' . $branchesCount . ' فرع. يرجى حذف الفروع أو نقلها أولاً.');
+        }
+
         // ✅ استخدم center_id بدل center
         $studentsCount = \App\Models\Student::where('center_id', $center->id)->count();
 
         if ($studentsCount > 0) {
             return redirect()->route('centers.index')
-                ->with('error', 'لا يمكن حذف هذا الفرع لأنه مرتبط بـ ' . $studentsCount . ' طالب.');
+                ->with('error', 'لا يمكن حذف هذا المركز لأنه مرتبط بـ ' . $studentsCount . ' طالب.');
+        }
+
+        $lessonsCount = $center->educationalLessons()->count();
+        if ($lessonsCount > 0) {
+            return redirect()->route('centers.index')
+                ->with('error', 'لا يمكن حذف هذا المركز لوجود ' . $lessonsCount . ' درس تربوي مرتبط به.');
         }
 
         $center->delete();
-        return redirect()->route('centers.index')->with('success', 'تم حذف الفرع بنجاح');
+        return redirect()->route('centers.index')->with('success', 'تم حذف المركز بنجاح');
     }
 }

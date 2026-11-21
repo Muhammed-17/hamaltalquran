@@ -97,6 +97,22 @@ class BranchController extends Controller
      */
     public function destroy(Branch $branch)
     {
+        // ✅ حراس حذف: حذف الفرع يتسلسل (cascade) إلى الحلقات واشتراكاتها
+        // ويصفّر فرع المعلمين المرتبطين — كان الحذف يتم بنقرة واحدة بلا فحص
+        $circlesCount = \App\Models\Circle::where('branch_id', $branch->id)->count();
+        if ($circlesCount > 0) {
+            return redirect()
+                ->route('branches.index')
+                ->with('error', 'لا يمكن حذف الفرع لوجود ' . $circlesCount . ' حلقة مرتبطة به. يرجى نقل الحلقات أو حذفها أولاً.');
+        }
+
+        $teachersCount = Teacher::where('branch_id', $branch->id)->count();
+        if ($teachersCount > 0) {
+            return redirect()
+                ->route('branches.index')
+                ->with('error', 'لا يمكن حذف الفرع لارتباط ' . $teachersCount . ' معلم به. يرجى نقل المعلمين إلى فرع آخر أولاً.');
+        }
+
         $branch->delete();
 
         return redirect()
@@ -109,6 +125,12 @@ class BranchController extends Controller
      */
     private function validateBranch(Request $request, $branchId = null): array
     {
+        // ✅ المشرف المؤهل فقط (نفس قاعدة قائمة النموذج): مشرف/مدير/مدير عام —
+        // كان أي معلم يمر بـ exists فقط فيُمنح إشراف الفرع وحقوقه فعليًا
+        $eligibleSupervisorIds = Teacher::whereHas('user.roles', function ($query) {
+            $query->whereIn('name', ['supervisor', 'manager', 'general_manager']);
+        })->pluck('id');
+
         return $request->validate([
             'center_id' => ['required', 'exists:centers,id'],
             'name' => [
@@ -122,7 +144,7 @@ class BranchController extends Controller
             'address' => ['nullable', 'string', 'max:255'],
             'established_at' => ['required', 'date'],
             'supervisor_ids' => ['required', 'array', 'min:1'],
-            'supervisor_ids.*' => ['exists:teachers,id'],
+            'supervisor_ids.*' => ['integer', Rule::in($eligibleSupervisorIds)],
         ], [
             'center_id.required' => 'يجب اختيار المركز.',
             'center_id.exists' => 'المركز المحدد غير موجود.',
@@ -132,6 +154,7 @@ class BranchController extends Controller
             'established_at.date' => 'صيغة تاريخ الإنشاء غير صحيحة.',
             'supervisor_ids.required' => 'يجب اختيار مشرف واحد على الأقل.',
             'supervisor_ids.min' => 'يجب اختيار مشرف واحد على الأقل.',
+            'supervisor_ids.*.in' => 'أحد المشرفين المحددين غير مؤهل للإشراف على الفروع.',
         ]);
     }
     /**
