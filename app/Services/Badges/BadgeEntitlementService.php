@@ -1,0 +1,84 @@
+<?php
+
+namespace App\Services\Badges;
+
+use App\Enums\Badges\EntitlementStatus;
+use App\Models\Badges\BadgeEntitlement;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+
+class BadgeEntitlementService
+{
+    public function __construct(
+        private BadgeBalanceService $balances,
+        private BadgeShortageService $shortages,
+        private BadgeLogService $logger,
+    ) {}
+
+    /**
+     * تسجيل استحقاق طالب. لا يُشترط توفر رصيد لدى المعلم:
+     * الاستحقاق يُحفظ كاملًا، ويُفتح عجز تلقائيًا عند نقص الرصيد.
+     */
+    public function create(array $data, User $actor): BadgeEntitlement
+    {
+        return DB::transaction(function () use ($data, $actor) {
+            $entitlement = BadgeEntitlement::create([
+                ...$data,
+                'status'     => EntitlementStatus::Pending->value,
+                'created_by' => $actor->id,
+            ]);
+
+            $teacherBalance = $this->balances->teacherBalance($entitlement->teacher_id, $entitlement->badge_type_id);
+            $this->shortages->openIfUnderstocked($entitlement, $teacherBalance);
+
+            $this->logger->log('entitlement.created', $entitlement, newValues: $entitlement->only(['student_id', 'circle_id', 'teacher_id', 'badge_type_id', 'quantity']), user: $actor);
+
+            return $entitlement;
+        });
+    }
+
+    public function update(BadgeEntitlement $entitlement, array $data, User $actor): BadgeEntitlement
+    {
+        return DB::transaction(function () use ($entitlement, $data, $actor) {
+            $entitlement = BadgeEntitlement::lockForUpdate()->findOrFail($entitlement->id);
+
+            if ($entitlement->status === EntitlementStatus::Cancelled) {
+                throw ValidationException::withMessages(['entitlement' => 'لا يمكن تعديل استحقاق ملغي.']);
+            }
+
+            if (isset($data['quantity']) && (int) $data['quantity'] < $entitlement->deliveredQuantity()) {
+                throw ValidationException::withMessages(['quantity' => 'الكمية الجديدة أقل مما تم توزيعه بالفعل.']);
+            }
+
+            $old = $entitlement->only(['quantity', 'entitlement_date', 'notes']);
+            $entitlement->update($data);
+            $this->shortages->syncEntitlementState($entitlement);
+
+            $this->logger->log('entitlement.updated', $entitlement, oldValues: $old, newValues: $entitlement->only(['quantity', 'entitlement_date', 'notes']), user: $actor);
+
+            return $entitlement;
+        });
+    }
+
+    public function cancel(BadgeEntitlement $entitlement, User $actor, ?string $reason = null): BadgeEntitlement
+    {
+        return DB::transaction(function () use ($entitlement, $actor, $reason) {
+            $entitlement = BadgeEntitlement::lockForUpdate()->findOrFail($entitlement->id);
+
+            if ($entitlement->status === EntitlementStatus::Cancelled) {
+                throw ValidationException::withMessages(['entitlement' => 'هذا الاستحقاق ملغي بالفعل.']);
+            }
+            if ($entitlement->deliveredQuantity() > 0) {
+                throw ValidationException::withMessages(['entitlement' => 'لا يمكن إلغاء استحقاق تم توزيع جزء منه. ألغِ التوزيعات أولًا.']);
+            }
+
+            $entitlement->update(['status' => EntitlementStatus::Cancelled->value]);
+            $this->shortages->cancelForEntitlement($entitlement);
+
+            $this->logger->log('entitlement.cancelled', $entitlement, reason: $reason, user: $actor);
+
+            return $entitlement;
+        });
+    }
+}

@@ -162,6 +162,12 @@ class PermissionSeeder extends Seeder
             'examine competition participants' => ['اختبار/تقييم المُشارِكين', 'competitions'],
         ];
 
+        // دمج صلاحيات نظام الأوسمة من مصدرها المركزي (config/badge_permissions.php)
+        // حتى لا يحذفها خطوة التنظيف بالأسفل عند إعادة تشغيل هذا الـ Seeder
+        foreach (config('badge_permissions.permissions', []) as $name => $details) {
+            $permissionMap[$name] = $details;
+        }
+
         // 1. إنشاء وتحديث الصلاحيات ببياناتها العربية الكاملة والمجمعات
         foreach ($permissionMap as $name => $details) {
             Permission::updateOrCreate(
@@ -520,6 +526,18 @@ class PermissionSeeder extends Seeder
             'examiner'       => 'مختبر',
             'guardian'        => 'ولي أمر',
         ];
+
+        // دمج منح الأوسمة الافتراضية في صلاحيات كل دور
+        $badgePermissionNames = array_keys(config('badge_permissions.permissions', []));
+        foreach (config('badge_permissions.grants', []) as $roleName => $grants) {
+            if ($grants === ['*']) {
+                $grants = $badgePermissionNames;
+            }
+            $rolesPermissions[$roleName] = array_values(array_unique(array_merge(
+                $rolesPermissions[$roleName] ?? [],
+                $grants
+            )));
+        }
 
         // 3. إنشاء وتحديث الأدوار ومزامنة صلاحياتها
         foreach ($rolesPermissions as $roleName => $rolePermissions) {
