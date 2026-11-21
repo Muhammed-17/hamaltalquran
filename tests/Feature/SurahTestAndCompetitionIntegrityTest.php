@@ -34,6 +34,9 @@ use Illuminate\Support\Facades\DB;
 |   على أسئلته المطالَب بها.
 | - إنشاء/تعديل اختبارات السور: الحلقة ضمن نطاق الوصول، والنتائج
 |   لطلاب حلقة الاختبار فقط (الصلاحيات عند المدير والمشرف لا المعلم).
+| - صفحة إنشاء سؤال مستوى كانت 404: مسار العرض {question} يبتلع كلمة
+|   create (قيد whereNumber الآن)، وفوقه 3 أسماء صلاحيات بصيغة مفردة
+|   غير موجودة في authorize الكنترولر (create/view level question).
 */
 beforeEach(function () {
     $this->seed(PermissionSeeder::class);
@@ -217,6 +220,21 @@ test('admin can store a manual result for a participant', function () {
     ])->assertRedirect();
 
     expect((float) CompetitionResult::first()->total_score)->toBe(88.5);
+});
+
+test('level questions create page is reachable and show still works', function () {
+    // كان مسار العرض {question} يبتلع كلمة create فيُرجع 404،
+    // وفوقه أسماء صلاحيات مفردة خاطئة في authorize الكنترولر
+    $level = Level::create(['name' => 'مستوى الأسئلة']);
+    $compLevel = CompetitionLevel::create(['competition_id' => $this->competition->id, 'level_id' => $level->id]);
+    $question = CompetitionQuestion::create([
+        'competition_level_id' => $compLevel->id, 'name' => 'سؤال مستوى', 'type' => 'memorization', 'score' => 10,
+    ]);
+
+    $this->actingAs($this->admin)->get(route('competitions.level-questions.create', $this->competition))
+        ->assertOk();
+    $this->actingAs($this->admin)->get(route('competitions.level-questions.show', [$this->competition, $question]))
+        ->assertOk();
 });
 
 test('examiner cannot grade a question claimed by another examiner', function () {

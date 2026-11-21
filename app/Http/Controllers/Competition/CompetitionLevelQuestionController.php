@@ -38,7 +38,7 @@ class CompetitionLevelQuestionController extends Controller
 
     public function create(Competition $competition, Request $request)
     {
-        $this->authorize('create level question');
+        $this->authorize('create level questions');
 
         return view('competitions.level_questions.create_level_question', [
             'competition'     => $competition,
@@ -50,7 +50,7 @@ class CompetitionLevelQuestionController extends Controller
 
     public function store(StoreCompetitionQuestionRequest $request, Competition $competition)
     {
-        $this->authorize('create level question');
+        $this->authorize('create level questions');
 
         $levelId = $request->get('competition_level_id');
 
@@ -73,7 +73,7 @@ class CompetitionLevelQuestionController extends Controller
 
     public function show(Competition $competition, CompetitionQuestion $question)
     {
-        $this->authorize('view level question');
+        $this->authorize('view level questions');
 
         $this->ensureQuestionBelongsToCompetition($competition, $question);
 

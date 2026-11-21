@@ -48,7 +48,8 @@ Route::middleware(['auth', 'verified', 'permission:view competitions'])->group(f
         //! أسئلة المستوى (مستقلة عن المختبر — إنشاء/تعديل/حذف)
         Route::middleware('permission:view level questions')->group(function () {
             Route::get('/{competition}/level-questions', [CompetitionLevelQuestionController::class, 'index'])->name('level-questions');
-            Route::get('/{competition}/level-questions/{question}', [CompetitionLevelQuestionController::class, 'show'])->name('level-questions.show');
+            // whereNumber: بدونها يبتلع مسار العرض كلمة create كأنها معرف سؤال فيُرجع 404
+            Route::get('/{competition}/level-questions/{question}', [CompetitionLevelQuestionController::class, 'show'])->name('level-questions.show')->whereNumber('question');
         });
 
         Route::middleware('permission:create level questions')->group(function () {
@@ -57,12 +58,12 @@ Route::middleware(['auth', 'verified', 'permission:view competitions'])->group(f
         });
 
         Route::middleware('permission:edit level questions')->group(function () {
-            Route::get('/{competition}/level-questions/{question}/edit', [CompetitionLevelQuestionController::class, 'edit'])->name('level-questions.edit');
-            Route::put('/{competition}/level-questions/{question}', [CompetitionLevelQuestionController::class, 'update'])->name('level-questions.update');
+            Route::get('/{competition}/level-questions/{question}/edit', [CompetitionLevelQuestionController::class, 'edit'])->name('level-questions.edit')->whereNumber('question');
+            Route::put('/{competition}/level-questions/{question}', [CompetitionLevelQuestionController::class, 'update'])->name('level-questions.update')->whereNumber('question');
         });
 
         Route::middleware('permission:delete level questions')->group(function () {
-            Route::delete('/{competition}/level-questions/{question}', [CompetitionLevelQuestionController::class, 'destroy'])->name('level-questions.destroy');
+            Route::delete('/{competition}/level-questions/{question}', [CompetitionLevelQuestionController::class, 'destroy'])->name('level-questions.destroy')->whereNumber('question');
         });
 
         //! المختبرون
