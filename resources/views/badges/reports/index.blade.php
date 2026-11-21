@@ -14,6 +14,7 @@
                     <th class="px-6 py-3 text-sm font-bold text-gray-600">إجمالي الموزّع</th>
                     <th class="px-6 py-3 text-sm font-bold text-gray-600">إجمالي المحصّل</th>
                     <th class="px-6 py-3 text-sm font-bold text-gray-600">إجمالي المفقود</th>
+                    <th class="px-6 py-3 text-sm font-bold text-gray-600">إجمالي التالف</th>
                     <th class="px-6 py-3 text-sm font-bold text-gray-600">حركة النوع</th>
                 </tr>
             </thead>
@@ -25,6 +26,7 @@
                         <td class="px-6 py-3 text-sm">{{ $distributedPerType[$type->id] ?? 0 }}</td>
                         <td class="px-6 py-3 text-sm">{{ $collectedPerType[$type->id] ?? 0 }}</td>
                         <td class="px-6 py-3 text-sm text-red-600 font-bold">{{ $missingPerType[$type->id] ?? 0 }}</td>
+                        <td class="px-6 py-3 text-sm text-orange-600 font-bold">{{ $damagedPerType[$type->id] ?? 0 }}</td>
                         <td class="px-6 py-3 text-sm">
                             @can('badges.stock.history')
                                 <a href="{{ route('badges.stock.history', ['badge_type_id' => $type->id]) }}" class="text-[#0a5c36] font-bold hover:underline">عرض الحركة</a>

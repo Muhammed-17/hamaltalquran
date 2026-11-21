@@ -308,6 +308,45 @@ test('collection: all students included, partial/missing tracked, no double coll
         ->and($this->balances->studentBalance($this->student1->id, $this->type->id))->toBe(4);
 });
 
+test('collection damaged: settled for the student but never returns to teacher custody', function () {
+    badgeSeedStockAndHandover($this); // إدارة 60، معلم 40
+
+    $entitlement = $this->entitlementService->create([
+        'student_id' => $this->student1->id, 'circle_id' => $this->circleA->id,
+        'teacher_id' => $this->teacherUser->id, 'badge_type_id' => $this->type->id,
+        'quantity' => 10, 'entitlement_date' => '2026-11-10',
+    ], $this->admin);
+    $distribution = $this->distributionService->distribute($entitlement, 10, '2026-11-11', $this->teacherUser);
+    expect($this->balances->teacherBalance($this->teacherUser->id, $this->type->id))->toBe(30);
+
+    $round = $this->collectionService->createRound($this->circleA, $this->teacherUser->id, '2026-11-20', $this->teacherUser);
+    $item = $round->items()->where('distribution_id', $distribution->id)->first();
+
+    // تالف بعدد صفر مرفوض (التالف رجع فعليًا)
+    try {
+        $this->collectionService->updateItem($item, 0, 'damaged', null, $this->teacherUser);
+        $this->fail('damaged with zero returned must fail');
+    } catch (ValidationException) {
+        expect(true)->toBeTrue();
+    }
+
+    // رجع 4 تالفين من أصل 10
+    $this->collectionService->updateItem($item, 4, 'damaged', 'ممزقة', $this->teacherUser);
+    $this->collectionService->complete($round, $this->teacherUser);
+
+    expect($item->fresh()->status->value)->toBe('damaged')
+        // الطالب سُوّي حسابه في الـ 4 (رجعهم فعليًا)
+        ->and($this->balances->studentBalance($this->student1->id, $this->type->id))->toBe(6)
+        // المعلم لم يُضف لعهدته شيء من التالف
+        ->and($this->balances->teacherBalance($this->teacherUser->id, $this->type->id))->toBe(30)
+        ->and($this->balances->totalDamaged($this->type->id))->toBe(4);
+
+    // الجولة التالية: المتبقي القابل للتحصيل 6 فقط
+    $round2 = $this->collectionService->createRound($this->circleA, $this->teacherUser->id, '2026-11-25', $this->teacherUser);
+    $item2 = $round2->items()->where('distribution_id', $distribution->id)->first();
+    expect($item2->distributed_quantity)->toBe(6);
+});
+
 test('permissions and policies gate badge operations', function () {
     expect($this->admin->can('badges.types.create'))->toBeTrue()
         ->and($this->teacherUser->can('badges.types.create'))->toBeFalse()

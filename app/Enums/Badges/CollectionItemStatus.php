@@ -8,6 +8,7 @@ enum CollectionItemStatus: string
     case Partial = 'partial';
     case NotCollected = 'not_collected';
     case Missing = 'missing';
+    case Damaged = 'damaged';
 
     public function label(): string
     {
@@ -16,6 +17,9 @@ enum CollectionItemStatus: string
             self::Partial => 'تحصيل جزئي',
             self::NotCollected => 'لم يُحصَّل',
             self::Missing => 'مفقود',
+            // تالف: رجع من الطالب فعليًا لكن غير صالح للاستخدام —
+            // يُسوّى من حساب الطالب ولا يعود لعهدة المعلم
+            self::Damaged => 'تالف',
         };
     }
 

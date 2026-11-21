@@ -44,6 +44,11 @@ class BadgeReportController extends Controller
             ->selectRaw('badge_type_id, SUM(distributed_quantity - collected_quantity) as total')
             ->groupBy('badge_type_id')->pluck('total', 'badge_type_id');
 
+        $damagedPerType = BadgeCollectionItem::where('status', 'damaged')
+            ->whereHas('round', fn ($q) => $q->where('status', 'completed'))
+            ->selectRaw('badge_type_id, SUM(collected_quantity) as total')
+            ->groupBy('badge_type_id')->pluck('total', 'badge_type_id');
+
         $openShortages = BadgeShortage::open()
             ->with(['student', 'teacher', 'badgeType', 'entitlement.circle'])
             ->latest('id')->limit(50)->get();
@@ -55,7 +60,7 @@ class BadgeReportController extends Controller
 
         return view('badges.reports.index', compact(
             'types', 'adminBalances', 'teachers', 'teacherBalances',
-            'distributedPerType', 'collectedPerType', 'missingPerType',
+            'distributedPerType', 'collectedPerType', 'missingPerType', 'damagedPerType',
             'openShortages', 'missingItems'
         ));
     }

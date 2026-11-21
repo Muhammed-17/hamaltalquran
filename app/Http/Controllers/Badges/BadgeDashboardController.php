@@ -40,6 +40,7 @@ class BadgeDashboardController extends Controller
             'rounds_completed'   => BadgeCollectionRound::where('status', 'completed')->count(),
             'collected_total'    => $balances->totalCollected(),
             'missing_total'      => $balances->totalMissing(),
+            'damaged_total'      => $balances->totalDamaged(),
         ];
 
         $types = BadgeType::orderBy('name')->get();

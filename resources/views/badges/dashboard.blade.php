@@ -14,7 +14,7 @@
             ['استحقاقات مفتوحة', $stats['entitlements_open'], 'text-amber-600'],
             ['أوسمة ناقصة (عدد السجلات)', $stats['shortage_open_count'], 'text-red-600'],
             ['كمية الأوسمة الناقصة', $stats['shortage_open_qty'], 'text-red-600'],
-            ['المحصّل فعليًا / المفقود', $stats['collected_total'] . ' / ' . $stats['missing_total'], 'text-gray-800'],
+            ['المحصّل / المفقود / التالف', $stats['collected_total'] . ' / ' . $stats['missing_total'] . ' / ' . $stats['damaged_total'], 'text-gray-800'],
         ] as [$label, $value, $cls])
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                 <div class="text-xs font-bold text-gray-400 mb-1">{{ $label }}</div>

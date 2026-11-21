@@ -103,12 +103,20 @@ class BadgeCollectionService
                 throw ValidationException::withMessages(['collected_quantity' => 'الكمية المحصلة لا يمكن أن تتجاوز الكمية الموزعة للطالب.']);
             }
 
-            $resolvedStatus = $status === CollectionItemStatus::Missing->value
-                ? CollectionItemStatus::Missing
-                : CollectionItemStatus::fromQuantities($item->distributed_quantity, $collected);
+            // «مفقود» و«تالف» حالتان يدويتان لا تُستنتجان من الكميات:
+            // المفقود لم يرجع أصلًا (محصّل = صفر)، والتالف رجع بعدد يُسجَّل
+            // في collected_quantity لكنه لا يعود لعهدة المعلم الصالحة
+            $resolvedStatus = match ($status) {
+                CollectionItemStatus::Missing->value => CollectionItemStatus::Missing,
+                CollectionItemStatus::Damaged->value => CollectionItemStatus::Damaged,
+                default => CollectionItemStatus::fromQuantities($item->distributed_quantity, $collected),
+            };
 
             if ($resolvedStatus === CollectionItemStatus::Missing && $collected > 0) {
                 throw ValidationException::withMessages(['collected_quantity' => 'الوسام المفقود لا يمكن أن تكون له كمية محصلة.']);
+            }
+            if ($resolvedStatus === CollectionItemStatus::Damaged && $collected === 0) {
+                throw ValidationException::withMessages(['collected_quantity' => 'الوسام التالف رجع فعليًا: سجّل عدد القطع التالفة المرجعة.']);
             }
 
             $item->update([

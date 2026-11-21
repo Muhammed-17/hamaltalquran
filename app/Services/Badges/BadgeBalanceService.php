@@ -52,8 +52,10 @@ class BadgeBalanceService
             ->where('source_id', $teacherUserId)
             ->sum('quantity');
 
+        // المحصّل الصالح فقط يعود لعهدة المعلم — التالف رجع لكنه غير صالح
         $collectedBack = (int) BadgeCollectionItem::where('badge_type_id', $badgeTypeId)
             ->where('collected_quantity', '>', 0)
+            ->where('status', '!=', 'damaged')
             ->whereHas('round', fn ($q) => $q
                 ->where('status', 'completed')
                 ->where('teacher_id', $teacherUserId))
@@ -115,6 +117,15 @@ class BadgeBalanceService
     public function totalCollected(?int $badgeTypeId = null): int
     {
         return (int) BadgeCollectionItem::when($badgeTypeId, fn ($q) => $q->where('badge_type_id', $badgeTypeId))
+            ->whereHas('round', fn ($q) => $q->where('status', 'completed'))
+            ->sum('collected_quantity');
+    }
+
+    /** إجمالي التالف المرجع في جولات معتمدة (سُوّي من الطلاب ولم يدخل عهدة صالحة) */
+    public function totalDamaged(?int $badgeTypeId = null): int
+    {
+        return (int) BadgeCollectionItem::when($badgeTypeId, fn ($q) => $q->where('badge_type_id', $badgeTypeId))
+            ->where('status', 'damaged')
             ->whereHas('round', fn ($q) => $q->where('status', 'completed'))
             ->sum('collected_quantity');
     }
