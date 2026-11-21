@@ -25,7 +25,7 @@
 
             <!-- الخلفية -->
             <div class="absolute inset-0 z-0 rounded-sm">
-                <img src="{{ asset('images/hero.png') }}" alt="Markaz Hero" class="w-full h-full object-cover">
+                <img src="{{ asset('images/hero.webp') }}" alt="Markaz Hero" class="w-full h-full object-cover">
                 <div class="absolute inset-0 bg-gradient-to-l from-[#0a5c36]/90 via-[#0a5c36]/70 to-transparent"></div>
             </div>
 
