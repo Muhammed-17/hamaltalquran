@@ -117,6 +117,40 @@ test('handover: moves balance from admin to teacher and rejects over-stock', fun
         ->and($this->balances->teacherBalance($this->teacherUser->id, $this->type->id))->toBe(25);
 });
 
+test('handover create: multiple types in one submission, atomic on over-balance', function () {
+    $type2 = \App\Models\Badges\BadgeType::create(['name' => 'وسام التميز', 'is_active' => true]);
+    $this->stock->recordMovement($this->type, 100, $this->admin);
+    $this->stock->recordMovement($type2, 50, $this->admin);
+
+    // تسليم نوعين بضغطة واحدة
+    $this->actingAs($this->admin)->post(route('badges.handovers.store'), [
+        'teacher_id' => $this->teacherUser->id,
+        'quantities' => [$this->type->id => 30, $type2->id => 20],
+        'handover_date' => '2026-11-15',
+    ])->assertRedirect(route('badges.handovers.index'));
+
+    expect(\App\Models\Badges\BadgeTeacherHandover::count())->toBe(2)
+        ->and($this->balances->teacherBalance($this->teacherUser->id, $this->type->id))->toBe(30)
+        ->and($this->balances->teacherBalance($this->teacherUser->id, $type2->id))->toBe(20)
+        ->and($this->balances->adminBalance($this->type->id))->toBe(70);
+
+    // نوع يتجاوز رصيد الإدارة ⇒ لا يُسجَّل أي تسليم (ذرّي) والخطأ على صف النوع
+    $this->actingAs($this->admin)->post(route('badges.handovers.store'), [
+        'teacher_id' => $this->teacherUser->id,
+        'quantities' => [$this->type->id => 10, $type2->id => 999],
+        'handover_date' => '2026-11-16',
+    ])->assertSessionHasErrors('quantities.' . $type2->id);
+    expect(\App\Models\Badges\BadgeTeacherHandover::count())->toBe(2);
+
+    // كل الكميات صفر ⇒ خطأ تحقق ولا تسليم
+    $this->actingAs($this->admin)->post(route('badges.handovers.store'), [
+        'teacher_id' => $this->teacherUser->id,
+        'quantities' => [$this->type->id => 0, $type2->id => 0],
+        'handover_date' => '2026-11-16',
+    ])->assertSessionHasErrors('quantities');
+    expect(\App\Models\Badges\BadgeTeacherHandover::count())->toBe(2);
+});
+
 test('entitlement without teacher balance is saved and opens a shortage automatically', function () {
     $entitlement = $this->entitlementService->create([
         'student_id' => $this->student1->id, 'circle_id' => $this->circleA->id,

@@ -46,6 +46,43 @@ class BadgeTeacherHandoverService
         });
     }
 
+    /**
+     * تسليم عدة أنواع لمعلم دفعة واحدة (نموذج إنشاء واحد).
+     * العملية ذرّية: تجاوز رصيد الإدارة في أي نوع يُبطل التسليم كله،
+     * ويُعاد الخطأ مربوطًا بصف النوع المخالف (quantities.{id}).
+     *
+     * @param  array<int, int>  $quantitiesByType  [badge_type_id => quantity]
+     * @return BadgeTeacherHandover[]
+     */
+    public function handoverMultiple(User $teacher, array $quantitiesByType, string $date, User $actor, ?string $notes = null): array
+    {
+        return DB::transaction(function () use ($teacher, $quantitiesByType, $date, $actor, $notes) {
+            $handovers = [];
+
+            foreach ($quantitiesByType as $typeId => $quantity) {
+                if ((int) $quantity <= 0) {
+                    continue;
+                }
+
+                $type = BadgeType::findOrFail((int) $typeId);
+
+                try {
+                    $handovers[] = $this->handover($teacher, $type, (int) $quantity, $date, $actor, $notes);
+                } catch (ValidationException $e) {
+                    throw ValidationException::withMessages([
+                        "quantities.{$typeId}" => collect($e->errors())->flatten()->first(),
+                    ]);
+                }
+            }
+
+            if (empty($handovers)) {
+                throw ValidationException::withMessages(['quantities' => 'أدخل كمية أكبر من صفر لنوع واحد على الأقل.']);
+            }
+
+            return $handovers;
+        });
+    }
+
     /** إلغاء تسليم (عكسي موثق — لا حذف): يُشترط أن تكون الكمية ما زالت في عهدة المعلم */
     public function cancel(BadgeTeacherHandover $handover, User $actor, ?string $reason = null): BadgeTeacherHandover
     {

@@ -52,11 +52,18 @@ class BadgeTeacherHandoverController extends Controller
     public function store(StoreBadgeTeacherHandoverRequest $request, BadgeTeacherHandoverService $service)
     {
         $teacher = User::findOrFail($request->teacher_id);
-        $type = BadgeType::findOrFail($request->badge_type_id);
 
-        $service->handover($teacher, $type, (int) $request->quantity, $request->handover_date, $request->user(), $request->notes);
+        // تسليم كل الأنواع المطلوبة دفعة واحدة (ذرّي — إما الكل أو لا شيء)
+        $handovers = $service->handoverMultiple(
+            $teacher,
+            (array) $request->input('quantities', []),
+            $request->handover_date,
+            $request->user(),
+            $request->notes,
+        );
 
-        return redirect()->route('badges.handovers.index')->with('success', 'تم تسليم الأوسمة للمعلم بنجاح.');
+        return redirect()->route('badges.handovers.index')
+            ->with('success', 'تم تسليم الأوسمة للمعلم بنجاح (' . count($handovers) . ' من الأنواع).');
     }
 
     public function show(BadgeTeacherHandover $handover, BadgeBalanceService $balances)
