@@ -220,7 +220,6 @@ class StudentController extends Controller
             'centers'            => $this->access->accessibleCenters($user)->get(),
             'teachers'           => $this->access->accessibleTeachers($user)->get(),
             'supervisors'        => $this->access->accessibleSupervisors($user)->get(),
-            'guardians'          => User::role('guardian')->get(),
             'subscriptionPrices' => DB::table('subscription_prices')->get(),
             'surahs'             => \App\Models\Surah::orderBy('number')->get(),
         ]);
@@ -422,7 +421,6 @@ class StudentController extends Controller
             'centers'            => $this->access->accessibleCenters($user)->get(),
             'teachers'           => $this->access->accessibleTeachers($user)->get(),
             'supervisors'        => $this->access->accessibleSupervisors($user)->get(),
-            'guardians'          => User::role('guardian')->get(),
             'subscriptionPrices' => DB::table('subscription_prices')->get(),
             'construction'       => $student->constructionDetail,
             'itqan'              => $student->itqanDetail,

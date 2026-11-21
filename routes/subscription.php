@@ -10,6 +10,9 @@ Route::middleware(['auth', 'verified', 'permission:view subscriptions'])->group(
     Route::get('subscriptions/filter-options', [SubscriptionController::class, 'getFilterOptions'])
         ->name('subscriptions.filter-options');
 
+    Route::get('subscriptions/students-for-circle', [SubscriptionController::class, 'studentsForCircle'])
+        ->name('subscriptions.students-for-circle');
+
     // ─── عرض الاشتراكات ───────────────────────────────────────────
     Route::middleware('permission:view subscriptions|view own subscriptions')->group(function () {
         Route::get('/subscriptions', [SubscriptionController::class, 'index'])

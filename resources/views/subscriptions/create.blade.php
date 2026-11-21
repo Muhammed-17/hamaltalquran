@@ -9,7 +9,8 @@
                 amount: {{ old('amount', 60) }},
                 status: '{{ old('status', 'مدفوع') }}',
                 isSubmitting: false,
-                students: {{ Js::from($students) }},
+                students: [],
+                studentsLoadedFor: null,
                 circles: {{ Js::from($circles) }},
                 prices: {{ Js::from($prices) }},
                 get isSelectedStudentExempted() {
@@ -71,8 +72,31 @@
                     }));
                 },
 
+                async loadStudents(circleId) {
+                    if (!circleId) {
+                        this.students = [];
+                        this.studentsLoadedFor = null;
+                        return;
+                    }
+                    if (this.studentsLoadedFor == circleId) return;
+                    try {
+                        const res = await fetch(
+                            `{{ route('subscriptions.students-for-circle') }}?circle_id=${circleId}`, {
+                                headers: {
+                                    'Accept': 'application/json'
+                                }
+                            });
+                        if (!res.ok) return;
+                        const data = await res.json();
+                        this.students = data.students ?? [];
+                        this.studentsLoadedFor = circleId;
+                    } catch (e) {
+                        /* تجاهل: تبقى القائمة فارغة حتى تنجح محاولة لاحقة */
+                    }
+                },
+
                 init() {
-                    window.addEventListener('searchable-change', (e) => {
+                    window.addEventListener('searchable-change', async (e) => {
                         const {
                             name,
                             value
@@ -82,6 +106,7 @@
                             this.selectedCircle = value;
                             this.selectedStudent = '';
 
+                            await this.loadStudents(value);
                             this.$nextTick(() => {
                                 this.pushStudentOptions();
                                 this.updateDefaultAmount();
@@ -95,12 +120,15 @@
                     });
 
                     if (this.selectedCircle) {
-                        this.$nextTick(() => {
-                            this.pushStudentOptions();
-                            if (this.selectedStudent) {
-                                this.updateDefaultAmount();
-                            }
-                        });
+                        (async () => {
+                            await this.loadStudents(this.selectedCircle);
+                            this.$nextTick(() => {
+                                this.pushStudentOptions();
+                                if (this.selectedStudent) {
+                                    this.updateDefaultAmount();
+                                }
+                            });
+                        })();
                     }
 
                     this.$watch('selectedMonth', () => {

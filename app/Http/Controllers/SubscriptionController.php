@@ -492,12 +492,8 @@ class SubscriptionController extends Controller
         $circles   = $this->access->accessibleCircles($user)->get();
         $circleIds = $circles->pluck('id');
 
-        $students = Student::withoutGlobalScopes()
-            ->with(['circle', 'subscriptions'])
-            ->where('status', 'مقيد')
-            ->whereIn('circle_id', $circleIds)
-            ->get();
-
+        // الطلاب يُحمَّلون عند الطلب لكل حلقة عبر studentsForCircle —
+        // لا حاجة لتضمين كل طلاب النطاق في الصفحة
         $prices = \App\Models\SubscriptionPrice::all();
 
         $teachers = collect();
@@ -510,16 +506,19 @@ class SubscriptionController extends Controller
         $collectedByUsers = $this->buildCollectedByUsers($user);
 
         // ✅ الطلاب المعفيون هذا الشهر (لتمييزهم بصريًا في الفورم)
+        $scopedStudentIds = Student::withoutGlobalScopes()
+            ->where('status', 'مقيد')
+            ->whereIn('circle_id', $circleIds)
+            ->select('id');
         $currentMonthStart = now()->startOfMonth()->format('Y-m-d');
         $exemptedStudentIds = Subscription::where('month', $currentMonthStart)
             ->where('status', 'معفي')
-            ->whereIn('student_id', $students->pluck('id'))
+            ->whereIn('student_id', $scopedStudentIds)
             ->pluck('student_id')
             ->toArray();
 
         return view('subscriptions.create', compact(
             'circles',
-            'students',
             'prices',
             'teachers',
             'collectedByUsers',
@@ -856,14 +855,8 @@ class SubscriptionController extends Controller
         $user     = Auth::user();
         $circles  = $this->access->accessibleCircles($user)->get();
 
-        $students = Student::withoutGlobalScopes()
-            ->with(['circle', 'subscriptions'])
-            ->where(function ($q) use ($subscription, $circles) {
-                $q->where('status', 'مقيد')
-                    ->whereIn('circle_id', $circles->pluck('id'));
-            })
-            ->orWhere('id', $subscription->student_id)
-            ->get();
+        // الطلاب يُحمَّلون عند الطلب لكل حلقة عبر studentsForCircle
+        // (مع include_student_id لطالب هذا الاشتراك)
         $prices = \App\Models\SubscriptionPrice::all();
 
         $teachers = collect();
@@ -880,16 +873,22 @@ class SubscriptionController extends Controller
         $isLockedByConfirmedRound = $collectionRoundItem && $collectionRoundItem->collectionRound?->status === 'confirmed';
 
         // ✅ الطلاب المعفون في شهر هذا الاشتراك تحديدًا (لتمييزهم بصريًا في الفورم)
+        $scopedStudentIds = Student::withoutGlobalScopes()
+            ->where(function ($q) use ($circles) {
+                $q->where('status', 'مقيد')
+                    ->whereIn('circle_id', $circles->pluck('id'));
+            })
+            ->orWhere('id', $subscription->student_id)
+            ->select('id');
         $exemptedStudentIds = Subscription::where('month', $subscription->month)
             ->where('status', 'معفي')
-            ->whereIn('student_id', $students->pluck('id'))
+            ->whereIn('student_id', $scopedStudentIds)
             ->pluck('student_id')
             ->toArray();
 
         return view('subscriptions.edit', compact(
             'subscription',
             'circles',
-            'students',
             'prices',
             'teachers',
             'collectedByUsers',
@@ -1040,6 +1039,42 @@ class SubscriptionController extends Controller
 
         return redirect()->route('subscriptions.index')
             ->with('success', 'تم حذف الاشتراك بنجاح');
+    }
+
+    /**
+     * طلاب حلقة واحدة لنموذج إنشاء/تعديل الاشتراك (تحميل عند الطلب).
+     * كان النموذج يضمّن كل طلاب النطاق (مع اشتراكاتهم) داخل الصفحة —
+     * مع نمو المركز تصبح الصفحة محمّلة بآلاف السجلات بلا داعٍ.
+     */
+    public function studentsForCircle(Request $request)
+    {
+        $user = Auth::user();
+
+        $circleId = (int) $request->get('circle_id');
+        if (!$circleId || !$this->access->canAccessCircle($user, $circleId)) {
+            abort(403, 'ليس لديك صلاحية على هذه الحلقة.');
+        }
+
+        $students = Student::withoutGlobalScopes()
+            ->with(['circle', 'subscriptions'])
+            ->where('status', 'مقيد')
+            ->where('circle_id', $circleId)
+            ->orderBy('name')
+            ->get();
+
+        // في شاشة التعديل: طالب الاشتراك الحالي يُضمَّن دائمًا (لعرض اسمه
+        // وفحوص الإعفاء) حتى لو انتقل لحلقة أخرى أو تغيّرت حالته
+        $includeId = (int) $request->get('include_student_id');
+        if ($includeId && !$students->contains('id', $includeId)) {
+            $extra = Student::withoutGlobalScopes()
+                ->with(['circle', 'subscriptions'])
+                ->find($includeId);
+            if ($extra) {
+                $students->push($extra);
+            }
+        }
+
+        return response()->json(['students' => $students]);
     }
 
     public function getFilterOptions(Request $request)
