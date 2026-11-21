@@ -24,7 +24,7 @@ class BadgeBalanceService
     public function adminBalance(int $badgeTypeId): int
     {
         $movements = (int) BadgeStockMovement::where('badge_type_id', $badgeTypeId)
-            ->selectRaw("SUM(CASE WHEN movement_type = 'adjustment' THEN quantity ELSE ABS(quantity) END) as total")
+            ->selectRaw("SUM(quantity) as total")
             ->value('total');
 
         $handedOver = (int) BadgeTeacherHandover::active()
@@ -46,8 +46,8 @@ class BadgeBalanceService
             ->where('badge_type_id', $badgeTypeId)
             ->sum('quantity');
 
-        $returnedToAdmin = (int) BadgeStockMovement::where('movement_type', 'return')
-            ->where('badge_type_id', $badgeTypeId)
+        // الإرجاع للإدارة يُميَّز بمصدره (معلم) لا بنوع حركة
+        $returnedToAdmin = (int) BadgeStockMovement::where('badge_type_id', $badgeTypeId)
             ->where('source_type', 'teacher')
             ->where('source_id', $teacherUserId)
             ->sum('quantity');
@@ -82,7 +82,7 @@ class BadgeBalanceService
     /** خريطة أرصدة الإدارة لكل الأنواع: [badge_type_id => balance] */
     public function adminBalances(): array
     {
-        $movements = BadgeStockMovement::selectRaw("badge_type_id, SUM(CASE WHEN movement_type = 'adjustment' THEN quantity ELSE ABS(quantity) END) as total")
+        $movements = BadgeStockMovement::selectRaw("badge_type_id, SUM(quantity) as total")
             ->groupBy('badge_type_id')->pluck('total', 'badge_type_id');
 
         $handedOver = BadgeTeacherHandover::active()

@@ -2,7 +2,6 @@
 
 namespace App\Services\Badges;
 
-use App\Enums\Badges\StockMovementType;
 use App\Models\Badges\BadgeStockMovement;
 use App\Models\Badges\BadgeType;
 use App\Models\User;
@@ -17,43 +16,34 @@ class BadgeStockService
     ) {}
 
     /**
-     * تسجيل حركة مخزون مركزي (افتتاحي / إضافة / تسوية).
+     * تسجيل حركة مخزون مركزي. لا يوجد «نوع حركة»:
+     * كمية موجبة = دخول مخزون (افتتاحي أو إضافة أو دفعة طباعة)،
+     * وكمية سالبة = تسوية/تصحيح وسببها إلزامي في الملاحظات.
      * المرتجعات من المعلمين تمر عبر returnFromTeacher لخصمها من عهدة المعلم.
      */
     public function recordMovement(
         BadgeType $type,
-        StockMovementType $movementType,
         int $quantity,
         User $actor,
         ?string $notes = null,
-        ?string $sourceType = null,
-        ?int $sourceId = null,
     ): BadgeStockMovement {
-        return DB::transaction(function () use ($type, $movementType, $quantity, $actor, $notes, $sourceType, $sourceId) {
+        return DB::transaction(function () use ($type, $quantity, $actor, $notes) {
             $this->balances->lockType($type->id);
 
-            if ($movementType === StockMovementType::Adjustment) {
-                if ($quantity === 0) {
-                    throw ValidationException::withMessages(['quantity' => 'كمية التسوية لا يمكن أن تكون صفرًا.']);
-                }
-                if (empty($notes)) {
-                    throw ValidationException::withMessages(['notes' => 'يجب توثيق سبب التسوية في الملاحظات.']);
-                }
-            } elseif ($quantity <= 0) {
-                throw ValidationException::withMessages(['quantity' => 'الكمية يجب أن تكون أكبر من صفر.']);
+            if ($quantity === 0) {
+                throw ValidationException::withMessages(['quantity' => 'الكمية لا يمكن أن تكون صفرًا.']);
+            }
+            if ($quantity < 0 && empty($notes)) {
+                throw ValidationException::withMessages(['notes' => 'التسوية بالخصم تتطلب توثيق السبب في الملاحظات.']);
             }
 
-            $newBalance = $this->balances->adminBalance($type->id) + ($movementType === StockMovementType::Adjustment ? $quantity : abs($quantity));
-            if ($newBalance < 0) {
-                throw ValidationException::withMessages(['quantity' => 'التسوية ستجعل رصيد الإدارة سالبًا. الرصيد الحالي: ' . $this->balances->adminBalance($type->id)]);
+            if ($this->balances->adminBalance($type->id) + $quantity < 0) {
+                throw ValidationException::withMessages(['quantity' => 'هذه الحركة ستجعل رصيد الإدارة سالبًا. الرصيد الحالي: ' . $this->balances->adminBalance($type->id)]);
             }
 
             $movement = BadgeStockMovement::create([
                 'badge_type_id'    => $type->id,
-                'movement_type'    => $movementType->value,
                 'quantity'         => $quantity,
-                'source_type'      => $sourceType,
-                'source_id'        => $sourceId,
                 'destination_type' => 'admin',
                 'destination_id'   => null,
                 'notes'            => $notes,
@@ -61,7 +51,7 @@ class BadgeStockService
                 'created_at'       => now(),
             ]);
 
-            $this->logger->log('stock.' . $movementType->value, $movement, newValues: $movement->only(['badge_type_id', 'movement_type', 'quantity']), user: $actor);
+            $this->logger->log('stock.movement', $movement, newValues: $movement->only(['badge_type_id', 'quantity']), user: $actor);
 
             return $movement;
         });
@@ -84,7 +74,6 @@ class BadgeStockService
 
             $movement = BadgeStockMovement::create([
                 'badge_type_id'    => $type->id,
-                'movement_type'    => StockMovementType::ReturnToAdmin->value,
                 'quantity'         => $quantity,
                 'source_type'      => 'teacher',
                 'source_id'        => $teacher->id,

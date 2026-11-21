@@ -14,10 +14,12 @@
                 </select>
             </div>
             <div class="w-full lg:w-48">
-                <label class="block text-xs font-bold text-gray-400 mb-1.5">نوع الحركة</label>
-                <select name="movement_type" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
+                <label class="block text-xs font-bold text-gray-400 mb-1.5">نوع العرض</label>
+                <select name="kind" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
                     <option value="">الكل</option>
-                    @foreach ($movementTypes as $mt)<option value="{{ $mt->value }}" @selected(request('movement_type') === $mt->value)>{{ $mt->label() }}</option>@endforeach
+                    <option value="addition" @selected(request('kind') === 'addition')>إضافات مخزون</option>
+                    <option value="return" @selected(request('kind') === 'return')>مرتجعات من معلمين</option>
+                    <option value="adjustment" @selected(request('kind') === 'adjustment')>تسويات / تصحيح</option>
                 </select>
             </div>
             <div class="w-full lg:w-44">
@@ -49,7 +51,7 @@
                 @forelse ($movements as $m)
                     <tr>
                         <td class="px-6 py-4 text-sm font-bold">{{ $m->badgeType->name }}</td>
-                        <td class="px-6 py-4 text-sm">{{ $m->movement_type->label() }}</td>
+                        <td class="px-6 py-4 text-sm">{{ $m->description() }}</td>
                         <td class="px-6 py-4 text-sm font-bold">{{ $m->quantity }}</td>
                         <td class="px-6 py-4 text-sm">{{ $m->source_type === 'teacher' ? 'معلم #' . $m->source_id : 'الإدارة' }}</td>
                         <td class="px-6 py-4 text-sm">{{ $m->notes ?? '—' }}</td>

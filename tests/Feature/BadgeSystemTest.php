@@ -10,7 +10,7 @@
 | صحة أرصدة الإدارة والمعلم والطالب، الصلاحيات، ونطاق المراكز.
 */
 
-use App\Enums\Badges\StockMovementType;
+
 use App\Models\Badges\BadgeCollectionItem;
 use App\Models\Badges\BadgeDistribution;
 use App\Models\Badges\BadgeEntitlement;
@@ -71,23 +71,23 @@ beforeEach(function () {
 /** مخزون 100 + تسليم 40 للمعلم */
 function badgeSeedStockAndHandover($test): void
 {
-    $test->stock->recordMovement($test->type, StockMovementType::InitialStock, 100, $test->admin);
+    $test->stock->recordMovement($test->type, 100, $test->admin);
     $test->handoverService->handover($test->teacherUser, $test->type, 40, '2026-11-01', $test->admin);
 }
 
 test('stock: initial stock, additions and adjustments drive the admin balance', function () {
-    $this->stock->recordMovement($this->type, StockMovementType::InitialStock, 100, $this->admin);
+    $this->stock->recordMovement($this->type, 100, $this->admin);
     expect($this->balances->adminBalance($this->type->id))->toBe(100);
 
-    $this->stock->recordMovement($this->type, StockMovementType::Addition, 50, $this->admin);
+    $this->stock->recordMovement($this->type, 50, $this->admin);
     expect($this->balances->adminBalance($this->type->id))->toBe(150);
 
-    $this->stock->recordMovement($this->type, StockMovementType::Adjustment, -20, $this->admin, 'تلف 20 وسامًا');
+    $this->stock->recordMovement($this->type, -20, $this->admin, 'تلف 20 وسامًا');
     expect($this->balances->adminBalance($this->type->id))->toBe(130);
 
     // تسوية بلا سبب موثق مرفوضة
     try {
-        $this->stock->recordMovement($this->type, StockMovementType::Adjustment, -5, $this->admin);
+        $this->stock->recordMovement($this->type, -5, $this->admin);
         $this->fail('adjustment without notes must fail');
     } catch (ValidationException) {
         expect(true)->toBeTrue();
@@ -95,7 +95,7 @@ test('stock: initial stock, additions and adjustments drive the admin balance', 
 
     // تسوية تجعل الرصيد سالبًا مرفوضة
     try {
-        $this->stock->recordMovement($this->type, StockMovementType::Adjustment, -999, $this->admin, 'سبب');
+        $this->stock->recordMovement($this->type, -999, $this->admin, 'سبب');
         $this->fail('negative balance adjustment must fail');
     } catch (ValidationException) {
         expect($this->balances->adminBalance($this->type->id))->toBe(130);
@@ -103,7 +103,7 @@ test('stock: initial stock, additions and adjustments drive the admin balance', 
 });
 
 test('handover: moves balance from admin to teacher and rejects over-stock', function () {
-    $this->stock->recordMovement($this->type, StockMovementType::InitialStock, 30, $this->admin);
+    $this->stock->recordMovement($this->type, 30, $this->admin);
 
     try {
         $this->handoverService->handover($this->teacherUser, $this->type, 31, '2026-11-01', $this->admin);
@@ -229,7 +229,7 @@ test('return to admin: deducts teacher balance, adds to admin, rejects over-bala
 });
 
 test('handover cancel: restores balances and is blocked after distribution', function () {
-    $this->stock->recordMovement($this->type, StockMovementType::InitialStock, 100, $this->admin);
+    $this->stock->recordMovement($this->type, 100, $this->admin);
     $handover = $this->handoverService->handover($this->teacherUser, $this->type, 40, '2026-11-01', $this->admin);
 
     $entitlement = $this->entitlementService->create([

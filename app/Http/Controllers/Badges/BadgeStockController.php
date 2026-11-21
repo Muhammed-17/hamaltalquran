@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Badges;
 
-use App\Enums\Badges\StockMovementType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Badges\StoreBadgeReturnRequest;
 use App\Http\Requests\Badges\StoreBadgeStockMovementRequest;
@@ -27,15 +26,17 @@ class BadgeStockController extends Controller
             'adminBalances' => $balances->adminBalances(),
             'recentMovements' => $recentMovements,
             'teachers' => $access->selectableTeachers(auth()->user()),
-            'movementTypes' => StockMovementType::cases(),
         ]);
     }
 
     public function history(Request $request)
     {
+        // فلتر «نوع العرض» مستنتج من الكمية والمصدر (لا يوجد عمود نوع حركة)
         $movements = BadgeStockMovement::with(['badgeType', 'creator'])
             ->when($request->filled('badge_type_id'), fn ($q) => $q->where('badge_type_id', $request->badge_type_id))
-            ->when($request->filled('movement_type'), fn ($q) => $q->where('movement_type', $request->movement_type))
+            ->when($request->kind === 'addition', fn ($q) => $q->where('quantity', '>', 0)->where(fn ($w) => $w->whereNull('source_type')->orWhere('source_type', '!=', 'teacher')))
+            ->when($request->kind === 'return', fn ($q) => $q->where('source_type', 'teacher'))
+            ->when($request->kind === 'adjustment', fn ($q) => $q->where('quantity', '<', 0))
             ->when($request->filled('from'), fn ($q) => $q->whereDate('created_at', '>=', $request->from))
             ->when($request->filled('to'), fn ($q) => $q->whereDate('created_at', '<=', $request->to))
             ->latest('id')
@@ -45,7 +46,6 @@ class BadgeStockController extends Controller
         return view('badges.stock.history', [
             'movements' => $movements,
             'types' => BadgeType::orderBy('name')->get(),
-            'movementTypes' => StockMovementType::cases(),
         ]);
     }
 
@@ -55,7 +55,6 @@ class BadgeStockController extends Controller
 
         $stock->recordMovement(
             $type,
-            StockMovementType::from($request->movement_type),
             (int) $request->quantity,
             $request->user(),
             $request->notes,

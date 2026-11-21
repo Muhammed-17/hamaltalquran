@@ -45,20 +45,12 @@
                         <x-input-error :messages="$errors->get('badge_type_id')" class="mt-2" />
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-400 mb-1.5">نوع الحركة *</label>
-                        <select name="movement_type" required class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                            @foreach ($movementTypes as $mt)
-                                @if ($mt->value !== 'return')<option value="{{ $mt->value }}">{{ $mt->label() }}</option>@endif
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 mb-1.5">الكمية * <span class="text-gray-300">(للتسوية: موجبة للإضافة أو سالبة للخصم)</span></label>
+                        <label class="block text-xs font-bold text-gray-400 mb-1.5">الكمية * <span class="text-gray-300">(موجبة = إضافة مخزون، سالبة = تسوية بالخصم)</span></label>
                         <input type="number" name="quantity" value="{{ old('quantity') }}" required class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm">
                         <x-input-error :messages="$errors->get('quantity')" class="mt-2" />
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-400 mb-1.5">ملاحظات (إلزامية للتسوية)</label>
+                        <label class="block text-xs font-bold text-gray-400 mb-1.5">ملاحظات (إلزامية عند الخصم/التسوية)</label>
                         <input type="text" name="notes" value="{{ old('notes') }}" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm">
                         <x-input-error :messages="$errors->get('notes')" class="mt-2" />
                     </div>
@@ -116,7 +108,7 @@
                 @forelse ($recentMovements as $m)
                     <tr>
                         <td class="px-6 py-3 text-sm">{{ $m->badgeType->name }}</td>
-                        <td class="px-6 py-3 text-sm">{{ $m->movement_type->label() }}</td>
+                        <td class="px-6 py-3 text-sm">{{ $m->description() }}</td>
                         <td class="px-6 py-3 text-sm font-bold">{{ $m->quantity }}</td>
                         <td class="px-6 py-3 text-sm">{{ $m->creator->name ?? '—' }}</td>
                         <td class="px-6 py-3 text-sm">{{ $m->created_at?->format('Y-m-d H:i') }}</td>
