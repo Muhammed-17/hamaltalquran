@@ -14,6 +14,10 @@
         },
         bal(typeId) { return this.teacherId ? (this.balances[this.teacherId]?.[typeId] ?? 0) : '—'; }
     }" x-init="load()">
+        <a href="{{ route('badges.entitlements.index') }}" onclick="if (window.history.length > 1) { window.history.back(); return false; }" class="inline-flex items-center gap-1.5 text-sm font-bold text-gray-500 hover:text-[#0a5c36] mb-4 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            رجوع للخلف
+        </a>
         <h1 class="text-xl sm:text-2xl font-black mb-1">استحقاق وتوزيع جديد</h1>
         <p class="text-sm text-gray-500 mb-5 sm:mb-6">طالب واحد وكل الأنواع في نموذج واحد — والتسليم الفوري يوزّع المتاح من رصيد الموزّع والباقي يبقى استحقاقًا بعجز.</p>
 
@@ -62,7 +66,7 @@
                                 <div class="text-[11px] text-gray-400">رصيد الموزّع: <span class="font-black text-gray-600" x-text="bal({{ $type->id }})"></span></div>
                                 @error('quantities.' . $type->id)<div class="text-[11px] text-red-600 font-bold">{{ $message }}</div>@enderror
                             </div>
-                            <input type="number" name="quantities[{{ $type->id }}]" min="0" value="{{ old('quantities.' . $type->id) }}" placeholder="0"
+                            <input type="number" name="quantities[{{ $type->id }}]" min="0" value="{{ old('quantities.' . $type->id, 1) }}" placeholder="1"
                                 class="w-20 sm:w-24 p-2.5 border border-gray-200 rounded-xl text-center text-base sm:text-sm font-bold">
                         </div>
                     @endforeach

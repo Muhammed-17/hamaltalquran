@@ -1,11 +1,9 @@
 <?php
 
 use App\Http\Controllers\Badges\BadgeCollectionRoundController;
-use App\Http\Controllers\Badges\BadgeDashboardController;
 use App\Http\Controllers\Badges\BadgeDistributionController;
 use App\Http\Controllers\Badges\BadgeEntitlementController;
 use App\Http\Controllers\Badges\BadgeLogController;
-use App\Http\Controllers\Badges\BadgeReportController;
 use App\Http\Controllers\Badges\BadgeShortageController;
 use App\Http\Controllers\Badges\BadgeStockController;
 use App\Http\Controllers\Badges\BadgeTeacherHandoverController;
@@ -23,8 +21,6 @@ Route::middleware(['auth', 'verified'])
     ->prefix('badges')
     ->name('badges.')
     ->group(function () {
-
-        Route::get('/', [BadgeDashboardController::class, 'index'])->name('dashboard');
 
         // ─── أنواع الأوسمة ───
         Route::resource('types', BadgeTypeController::class);
@@ -50,6 +46,12 @@ Route::middleware(['auth', 'verified'])
         // ─── استحقاقات الطلاب ───
         Route::get('entitlements/circle-data', [BadgeEntitlementController::class, 'circleData'])
             ->name('entitlements.circle-data');
+        Route::get('entitlements/statistics', [BadgeEntitlementController::class, 'statistics'])
+            ->middleware('permission:badges.entitlements.view')
+            ->name('entitlements.statistics');
+        Route::get('entitlements/report', [BadgeEntitlementController::class, 'report'])
+            ->middleware('permission:badges.reports.view')
+            ->name('entitlements.report');
         Route::resource('entitlements', BadgeEntitlementController::class)
             ->except(['destroy']);
         Route::post('entitlements/{entitlement}/cancel', [BadgeEntitlementController::class, 'cancel'])
@@ -79,10 +81,7 @@ Route::middleware(['auth', 'verified'])
         Route::post('collections/{collection}/cancel', [BadgeCollectionRoundController::class, 'cancel'])
             ->name('collections.cancel');
 
-        // ─── التقارير وسجل العمليات ───
-        Route::get('reports', [BadgeReportController::class, 'index'])
-            ->middleware('permission:badges.reports.view')
-            ->name('reports.index');
+        // ─── سجل العمليات (التقارير مدمجة في لوحة الإحصائيات) ───
         Route::get('logs', [BadgeLogController::class, 'index'])
             ->middleware('permission:badges.logs.view')
             ->name('logs.index');

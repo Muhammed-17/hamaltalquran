@@ -8,6 +8,7 @@ enum CollectionRoundStatus: string
     case Completed = 'completed';
     case Cancelled = 'cancelled';
 
+
     public function label(): string
     {
         return match ($this) {

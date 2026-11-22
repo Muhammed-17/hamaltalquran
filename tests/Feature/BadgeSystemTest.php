@@ -542,7 +542,9 @@ test('center scope: foreign manager cannot entitle or view another center circle
 test('badge pages render for authorized users', function () {
     badgeSeedStockAndHandover($this);
 
-    $this->actingAs($this->admin)->get(route('badges.dashboard'))->assertOk();
+    // صفحة /badges (لوحة الأوسمة) محذوفة نهائيًا — الإحصائيات خاصة بالاستحقاقات
+    $this->actingAs($this->admin)->get('/badges')->assertNotFound();
+    $this->actingAs($this->admin)->get(route('badges.entitlements.statistics'))->assertOk();
     $this->actingAs($this->admin)->get(route('badges.types.index'))->assertOk();
     $this->actingAs($this->admin)->get(route('badges.stock.index'))->assertOk();
     $this->actingAs($this->admin)->get(route('badges.stock.history'))->assertOk();
@@ -554,10 +556,11 @@ test('badge pages render for authorized users', function () {
     $this->actingAs($this->admin)->get(route('badges.shortages.index'))->assertOk();
     $this->actingAs($this->admin)->get(route('badges.collections.index'))->assertOk();
     $this->actingAs($this->admin)->get(route('badges.collections.create'))->assertOk();
-    $this->actingAs($this->admin)->get(route('badges.reports.index'))->assertOk();
+    // وصفحة التقارير المستقلة محذوفة أيضًا — التقرير صار ملفًا يُنزَّل من صفحة الاستحقاقات
+    $this->actingAs($this->admin)->get('/badges/reports')->assertNotFound();
     $this->actingAs($this->admin)->get(route('badges.logs.index'))->assertOk();
 
-    $this->actingAs($this->teacherUser)->get(route('badges.dashboard'))->assertOk();
+    $this->actingAs($this->teacherUser)->get(route('badges.entitlements.statistics'))->assertOk();
     $this->actingAs($this->teacherUser)->get(route('badges.entitlements.index'))->assertOk();
     $this->actingAs($this->teacherUser)->get(route('badges.shortages.index'))->assertOk();
 });
@@ -625,4 +628,98 @@ test('unified entitlements: multi-type create with instant distribution by balan
         'entitlement_date' => '2026-11-12', 'instant' => 1,
     ])->assertSessionHasErrors('quantities');
     expect(BadgeEntitlement::count())->toBe(3);
+
+    // فلاتر القائمة: المسؤول عن التوزيع + الشهر (تاريخ الاستحقاق)
+    $this->actingAs($this->admin)->get(route('badges.entitlements.index', ['teacher_id' => $this->teacherUser->id, 'month' => '2026-11']))
+        ->assertOk()->assertSee('طالب أول');
+    $this->actingAs($this->admin)->get(route('badges.entitlements.index', ['month' => '2026-10']))
+        ->assertOk()->assertDontSee('طالب أول');
+    $this->actingAs($this->admin)->get(route('badges.entitlements.index', ['teacher_id' => $this->admin->id]))
+        ->assertOk()->assertDontSee('طالب أول');
+
+    // إحصائيات الاستحقاقات حسب الفلاتر: إجمالي المستحق 60 والموزّع 50 في نوفمبر، وصفر خارجه
+    $this->actingAs($this->admin)->get(route('badges.entitlements.statistics', ['month' => '2026-11']))
+        ->assertOk()->assertSee('>60<', false)->assertSee('>50<', false);
+    $this->actingAs($this->admin)->get(route('badges.entitlements.statistics', ['month' => '2026-10']))
+        ->assertOk()->assertDontSee('>60<', false);
+    $this->actingAs($this->admin)->get(route('badges.entitlements.statistics', ['teacher_id' => $this->admin->id]))
+        ->assertOk()->assertDontSee('>60<', false);
+
+    // زر التقرير: ملف Excel يُنزَّل حسب الفلاتر
+    $this->actingAs($this->admin)->get(route('badges.entitlements.report', ['month' => '2026-11']))
+        ->assertOk()->assertDownload();
+});
+
+// ============================================================
+// ملف التقرير: إجمالي كل نوع + صف الإجمالي العام
+// ============================================================
+
+test('report export shows per-type totals and a grand total row', function () {
+    badgeSeedStockAndHandover($this); // المعلم معه 40 من النوع الافتراضي
+
+    $type2 = BadgeType::create(['name' => 'وسام التميز', 'is_active' => true]);
+    $this->stock->recordMovement($type2, 50, $this->admin);
+    $this->handoverService->handover($this->teacherUser, $type2, 50, '2026-11-02', $this->admin);
+
+    // استحقاقان: 30 من النوع الأول (توزيع فوري كامل) و20 من الثاني (10 موزّعة و10 متبقية)
+    $this->entitlementService->createMultiple([
+        'student_id' => $this->student1->id, 'circle_id' => $this->circleA->id,
+        'teacher_id' => $this->teacherUser->id, 'entitlement_date' => '2026-11-05',
+    ], [$this->type->id => 30, $type2->id => 10], true, $this->admin);
+    $this->entitlementService->create([
+        'student_id' => $this->student2->id, 'circle_id' => $this->circleA->id,
+        'teacher_id' => $this->teacherUser->id, 'badge_type_id' => $type2->id,
+        'quantity' => 10, 'entitlement_date' => '2026-11-06',
+    ], $this->teacherUser);
+
+    $export = new \App\Exports\BadgeEntitlementsReportExport(
+        fn () => \App\Models\Badges\BadgeEntitlement::query()
+    );
+    [$detail, $summary] = $export->sheets();
+
+    // ورقة الملخص: صف لكل نوع بإجماليه، ثم صف الإجمالي العام
+    $summaryRows = $summary->collection();
+    expect($summaryRows)->toHaveCount(3);
+    $byType = $summaryRows->keyBy('type');
+    expect($byType[$this->type->name]['entitled'])->toBe(30)
+        ->and($byType[$this->type->name]['delivered'])->toBe(30)
+        ->and($byType[$this->type->name]['remaining'])->toBe(0)
+        ->and($byType['وسام التميز']['entitled'])->toBe(20)
+        ->and($byType['وسام التميز']['delivered'])->toBe(10)
+        ->and($byType['وسام التميز']['remaining'])->toBe(10);
+    $grand = $summaryRows->last();
+    expect($grand['type'])->toBe('الإجمالي العام')
+        ->and($grand['entitled'])->toBe(50)
+        ->and($grand['delivered'])->toBe(40)
+        ->and($grand['remaining'])->toBe(10);
+
+    // الورقة الأولى: صف واحد لكل طالب والأنواع بجانب بعضها (مستحق/خد لكل نوع)
+    $detailRows = $detail->collection();
+    expect($detailRows)->toHaveCount(3); // طالبان + صف الإجمالي — لا صفوف مكررة لنفس الطالب
+    $headings = $detail->headings();
+    $ent1 = array_search($this->type->name . ' — مستحق', $headings);
+    $took1 = array_search($this->type->name . ' — خد', $headings);
+    $ent2 = array_search('وسام التميز — مستحق', $headings);
+    $took2 = array_search('وسام التميز — خد', $headings);
+    expect($ent1)->not->toBeFalse()->and($took1)->not->toBeFalse()
+        ->and($ent2)->not->toBeFalse()->and($took2)->not->toBeFalse();
+    $byName = $detailRows->keyBy(0);
+    $first = $byName['طالب أول'];
+    expect($first[$ent1])->toBe(30)->and($first[$took1])->toBe(30)
+        ->and($first[$ent2])->toBe(10)->and($first[$took2])->toBe(10)
+        ->and($first[count($first) - 3])->toBe(40)  // إجمالي المستحق
+        ->and($first[count($first) - 2])->toBe(40)  // إجمالي الموزّع
+        ->and($first[count($first) - 1])->toBe(0);  // إجمالي المتبقي
+    $second = $byName['طالب ثانٍ'];
+    expect($second[$ent1])->toBe(0)->and($second[$took1])->toBe(0)
+        ->and($second[$ent2])->toBe(10)->and($second[$took2])->toBe(0)
+        ->and($second[count($second) - 3])->toBe(10)
+        ->and($second[count($second) - 1])->toBe(10);
+    $grand = $detailRows->last();
+    expect($grand[0])->toBe('الإجمالي العام')
+        ->and($grand[$ent1])->toBe(30)->and($grand[$took1])->toBe(30)
+        ->and($grand[$ent2])->toBe(20)->and($grand[$took2])->toBe(10)
+        ->and($grand[count($grand) - 3])->toBe(50)
+        ->and($grand[count($grand) - 2])->toBe(40)
+        ->and($grand[count($grand) - 1])->toBe(10);
 });
