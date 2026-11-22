@@ -14,9 +14,12 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 /**
  * تقرير الاستحقاقات والتوزيعات (زر «التقرير» في صفحة الاستحقاقات):
- * يُبنى من نفس استعلام الفلاتر الحالية. الورقة الأولى صف واحد لكل طالب
- * والأنواع بجانب بعضها (مستحق/خد لكل نوع) ثم إجمالي الطالب، والثانية
- * ملخص بإجمالي كل نوع — وكل ورقة تنتهي بصف «الإجمالي العام».
+ * يُبنى من نفس استعلام الفلاتر الحالية، وبنفس تصميم الملف النموذجي الذي
+ * أرسله المستخدم: صف واحد لكل طالب، واسم كل نوع عنوان مدموج فوق ثلاثة
+ * أعمدة «المستحق» (المتبقي له) و«المستلم» (ما استلمه فعليًا) و«الإجمالي»
+ * (صيغة حية = المستحق + المستلم)، ثم أعمدة «إجمالي المستحق/الموزّع/المتبقي»
+ * بصيغ تجمع أعمدة الأنواع، وصف أخير «الإجمالي» بصيغ مجموع لكل عمود.
+ * والورقة الثانية ملخص بإجمالي كل نوع.
  */
 class BadgeEntitlementsReportExport implements WithMultipleSheets
 {
@@ -31,7 +34,7 @@ class BadgeEntitlementsReportExport implements WithMultipleSheets
     }
 }
 
-class BadgeEntitlementsDetailSheet implements FromCollection, WithHeadings, WithStyles, WithTitle
+class BadgeEntitlementsDetailSheet implements FromCollection, WithHeadings, WithStyles, WithTitle, \Maatwebsite\Excel\Concerns\WithEvents
 {
     public function __construct(private Closure $baseQuery) {}
 
@@ -54,14 +57,14 @@ class BadgeEntitlementsDetailSheet implements FromCollection, WithHeadings, With
         $ids = (clone $base)->select('id');
         $types = $this->typesInScope();
 
-        // المستحق لكل طالب في كل نوع
+        // المستحق الكلي لكل طالب في كل نوع
         $entitledPerType = (clone $base)
             ->selectRaw('student_id, badge_type_id, SUM(quantity) as qty')
             ->groupBy('student_id', 'badge_type_id')->get()
             ->groupBy('student_id')
             ->map(fn ($rows) => $rows->pluck('qty', 'badge_type_id'));
 
-        // اللي كل طالب خده فعليًا من كل نوع (الموزّع)
+        // المستلم فعليًا لكل طالب من كل نوع (الموزّع)
         $takenPerType = BadgeDistribution::query()
             ->where('badge_distributions.status', 'active')
             ->join('badge_entitlements as be', 'be.id', '=', 'badge_distributions.entitlement_id')
@@ -82,7 +85,10 @@ class BadgeEntitlementsDetailSheet implements FromCollection, WithHeadings, With
         $students = \App\Models\Student::withoutGlobalScopes()
             ->whereIn('id', $entitledPerType->keys())->with('circle:id,name')->get()->keyBy('id');
 
-        $rows = collect($entitledPerType->keys())->map(function ($studentId) use ($entitledPerType, $takenPerType, $distributorPerStudent, $teacherNames, $students, $types) {
+        $letter = fn (int $col) => \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
+
+        $rows = collect($entitledPerType->keys())->values()->map(function ($studentId, $i) use ($entitledPerType, $takenPerType, $distributorPerStudent, $teacherNames, $students, $types, $letter) {
+            $excelRow = $i + 3; // صفا العناوين أولًا
             $student = $students[$studentId] ?? null;
             $dist = $distributorPerStudent[$studentId] ?? null;
             $distributor = $dist && (int) $dist->teachers_count === 1
@@ -90,28 +96,57 @@ class BadgeEntitlementsDetailSheet implements FromCollection, WithHeadings, With
                 : 'متعدد';
 
             $row = [$student?->name, $student?->circle?->name, $distributor];
-            $totalEntitled = 0;
-            $totalTaken = 0;
-            foreach ($types as $t) {
-                $ent = (int) ($entitledPerType[$studentId][$t->id] ?? 0);
+            $dueCols = [];
+            $takenCols = [];
+            foreach ($types as $ti => $t) {
+                $entitled = (int) ($entitledPerType[$studentId][$t->id] ?? 0);
                 $taken = (int) ($takenPerType[$studentId][$t->id] ?? 0);
-                $row[] = $ent;
-                $row[] = $taken;
-                $totalEntitled += $ent;
-                $totalTaken += $taken;
+                $dueCol = 4 + ($ti * 3);
+                $row[] = $entitled - $taken; // المستحق = المتبقي له
+                $row[] = $taken;             // المستلم = ما استلمه فعليًا
+                $row[] = '=SUM(' . $letter($dueCol) . $excelRow . ':' . $letter($dueCol + 1) . $excelRow . ')'; // إجمالي النوع
+                $dueCols[] = $letter($dueCol) . $excelRow;
+                $takenCols[] = $letter($dueCol + 1) . $excelRow;
             }
-            $row[] = $totalEntitled;
-            $row[] = $totalTaken;
-            $row[] = $totalEntitled - $totalTaken;
+            // الأعمدة الختامية: صيغ حية تجمع أعمدة الأنواع
+            $row[] = '=' . implode('+', $dueCols);   // إجمالي المستحق
+            $row[] = '=' . implode('+', $takenCols); // إجمالي الموزّع
+            $row[] = '=' . implode('+', $dueCols);   // إجمالي المتبقي (= المستحق في هذا التصميم)
 
             return $row;
         })->sortBy(0)->values();
 
-        // صف الإجمالي العام: مجموع كل عمود
-        $columnCount = 3 + ($types->count() * 2) + 3;
-        $grand = ['الإجمالي العام', '', ''];
-        for ($i = 3; $i < $columnCount; $i++) {
-            $grand[] = (int) $rows->sum(fn ($r) => $r[$i]);
+        // إعادة ترقيم صيغ الإجمالي بعد الفرز الأبجدي: الصيغ مبنية على رقم الصف النهائي
+        $rows = $rows->map(function ($row, $i) use ($types) {
+            $excelRow = $i + 3;
+            foreach ($types as $ti => $t) {
+                $dueCol = 4 + ($ti * 3);
+                $l1 = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($dueCol);
+                $l2 = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($dueCol + 1);
+                $row[3 + ($ti * 3) + 2] = '=SUM(' . $l1 . $excelRow . ':' . $l2 . $excelRow . ')';
+            }
+            $dueCols = [];
+            $takenCols = [];
+            foreach ($types as $ti => $t) {
+                $dueCol = 4 + ($ti * 3);
+                $dueCols[] = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($dueCol) . $excelRow;
+                $takenCols[] = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($dueCol + 1) . $excelRow;
+            }
+            $n = count($row);
+            $row[$n - 3] = '=' . implode('+', $dueCols);
+            $row[$n - 2] = '=' . implode('+', $takenCols);
+            $row[$n - 1] = '=' . implode('+', $dueCols);
+
+            return $row;
+        });
+
+        // صف الإجمالي: صيغة مجموع لكل عمود رقمي
+        $columnCount = 3 + ($types->count() * 3) + 3;
+        $lastDataRow = $rows->count() + 2;
+        $grand = ['الإجمالي', '', ''];
+        for ($col = 4; $col <= $columnCount; $col++) {
+            $l = $letter($col);
+            $grand[] = $rows->isEmpty() ? 0 : "=SUM({$l}3:{$l}{$lastDataRow})";
         }
         $rows->push($grand);
 
@@ -120,25 +155,65 @@ class BadgeEntitlementsDetailSheet implements FromCollection, WithHeadings, With
 
     public function headings(): array
     {
-        $headings = ['الطالب', 'الحلقة', 'المسؤول عن التوزيع'];
-        foreach ($this->typesInScope() as $t) {
-            $headings[] = $t->name . ' — مستحق';
-            $headings[] = $t->name . ' — خد';
-        }
-        $headings[] = 'إجمالي المستحق';
-        $headings[] = 'إجمالي الموزّع';
-        $headings[] = 'إجمالي المتبقي';
+        $types = $this->typesInScope();
 
-        return $headings;
+        $row1 = ['الطالب', 'الحلقة', 'المسؤول عن التوزيع'];
+        $row2 = ['', '', ''];
+        foreach ($types as $t) {
+            $row1[] = $t->name;
+            $row1[] = '';
+            $row1[] = '';
+            $row2[] = 'المستحق';
+            $row2[] = 'المستلم';
+            $row2[] = 'الإجمالي';
+        }
+        $row1[] = 'إجمالي المستحق';
+        $row1[] = 'إجمالي الموزّع';
+        $row1[] = 'إجمالي المتبقي';
+        $row2[] = '';
+        $row2[] = '';
+        $row2[] = '';
+
+        return [$row1, $row2];
+    }
+
+    /** دمج اسم كل نوع فوق أعمدته الثلاثة، ودمج باقي العناوين رأسيًا، وضبط عروض الأعمدة */
+    public function registerEvents(): array
+    {
+        $typesCount = $this->typesInScope()->count();
+
+        return [
+            \Maatwebsite\Excel\Events\AfterSheet::class => function (\Maatwebsite\Excel\Events\AfterSheet $event) use ($typesCount) {
+                $sheet = $event->sheet->getDelegate();
+                $letter = fn (int $col) => \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col);
+                $lastColumn = 3 + ($typesCount * 3) + 3;
+
+                foreach ([1, 2, 3, $lastColumn - 2, $lastColumn - 1, $lastColumn] as $col) {
+                    $sheet->mergeCells($letter($col) . '1:' . $letter($col) . '2');
+                }
+                for ($i = 0; $i < $typesCount; $i++) {
+                    $sheet->mergeCells($letter(4 + ($i * 3)) . '1:' . $letter(6 + ($i * 3)) . '1');
+                }
+                $sheet->getStyle('A1:' . $letter($lastColumn) . '2')->getAlignment()->setHorizontal('center')->setVertical('center');
+
+                $sheet->getColumnDimension('A')->setWidth(30);
+                $sheet->getColumnDimension('B')->setWidth(18);
+                $sheet->getColumnDimension('C')->setWidth(20);
+                for ($col = 4; $col <= $lastColumn; $col++) {
+                    $sheet->getColumnDimension($letter($col))->setWidth(13);
+                }
+            },
+        ];
     }
 
     public function styles(Worksheet $sheet)
     {
         $studentsWithData = ($this->baseQuery)()->distinct()->count('student_id');
-        $totalsRow = $studentsWithData + 2; // العناوين + صف لكل طالب + صف الإجمالي
+        $totalsRow = $studentsWithData + 3; // صفا العناوين + صف لكل طالب + صف الإجمالي
 
         return [
             1 => ['font' => ['bold' => true]],
+            2 => ['font' => ['bold' => true]],
             $totalsRow => ['font' => ['bold' => true]],
         ];
     }

@@ -38,6 +38,12 @@ Route::middleware(['auth', 'verified'])
             ->name('stock.returns.store');
 
         // ─── تسليم الأوسمة للمعلمين ───
+        Route::get('handovers/report', [BadgeTeacherHandoverController::class, 'report'])
+            ->middleware('permission:badges.reports.view')
+            ->name('handovers.report');
+        Route::get('handovers/statistics', [BadgeTeacherHandoverController::class, 'statistics'])
+            ->middleware('permission:badges.handovers.view')
+            ->name('handovers.statistics');
         Route::resource('handovers', BadgeTeacherHandoverController::class)
             ->only(['index', 'create', 'store', 'show']);
         Route::post('handovers/{handover}/cancel', [BadgeTeacherHandoverController::class, 'cancel'])
@@ -64,6 +70,8 @@ Route::middleware(['auth', 'verified'])
             ->name('distributions.cancel');
 
         // ─── الأوسمة الناقصة ───
+        Route::post('shortages/distribute-student', [BadgeShortageController::class, 'distributeStudent'])
+            ->name('shortages.distribute-student');
         Route::get('shortages', [BadgeShortageController::class, 'index'])
             ->name('shortages.index');
         Route::get('shortages/{shortage}', [BadgeShortageController::class, 'show'])

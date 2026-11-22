@@ -12,7 +12,7 @@
                     <label class="block text-xs font-bold text-gray-400 mb-1.5">المستلم *</label>
                     <select name="teacher_id" required class="w-full p-3 sm:p-2.5 px-4 border border-gray-200 rounded-xl text-base sm:text-sm bg-white">
                         <option value="">— اختر المستلم —</option>
-                        @foreach ($teachers as $t)<option value="{{ $t->id }}" @selected(old('teacher_id') == $t->id)>{{ $t->name }} ({{ $access->custodyRoleLabel($t) }})</option>@endforeach
+                        @foreach ($teachers as $t)<option value="{{ $t->id }}" @selected(old('teacher_id', $prefillTeacherId ?? null) == $t->id)>{{ $t->name }} ({{ $access->custodyRoleLabel($t) }})</option>@endforeach
                     </select>
                     <x-input-error :messages="$errors->get('teacher_id')" class="mt-2" />
                 </div>
@@ -28,7 +28,7 @@
                                 </div>
                                 <div class="shrink-0 w-28 sm:w-32">
                                     <input type="number" name="quantities[{{ $type->id }}]" min="0" inputmode="numeric"
-                                        value="{{ old('quantities.' . $type->id) }}" placeholder="0"
+                                        value="{{ old('quantities.' . $type->id, $prefillQuantities[$type->id] ?? null) }}" placeholder="0"
                                         class="w-full p-2.5 px-3 border border-gray-200 rounded-xl text-base sm:text-sm text-center">
                                 </div>
                             </div>

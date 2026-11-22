@@ -21,9 +21,9 @@ class BadgeTeacherHandoverService
      * - أي مُسلِّم آخر يسلّم من عهدته الشخصية فقط — لا رصيد، لا تسليم
      * الرتبة والنطاق يتحقق منهما طلب الإدخال (BadgeAccessService::canHandoverTo)
      */
-    public function handover(User $teacher, BadgeType $type, int $quantity, string $date, User $actor, ?string $notes = null): BadgeTeacherHandover
+    public function handover(User $teacher, BadgeType $type, int $quantity, string $date, User $actor, ?string $notes = null, ?string $batchId = null): BadgeTeacherHandover
     {
-        return DB::transaction(function () use ($teacher, $type, $quantity, $date, $actor, $notes) {
+        return DB::transaction(function () use ($teacher, $type, $quantity, $date, $actor, $notes, $batchId) {
             $this->balances->lockType($type->id);
 
             if ($quantity <= 0) {
@@ -53,6 +53,7 @@ class BadgeTeacherHandoverService
                 'notes'          => $notes,
                 'status'         => 'active',
                 'created_by'     => $actor->id,
+                'batch_id'       => $batchId ?? (string) \Illuminate\Support\Str::uuid(),
             ]);
 
             $this->logger->log('handover.created', $handover, newValues: $handover->only(['teacher_id', 'source_user_id', 'badge_type_id', 'quantity']), user: $actor);
@@ -73,6 +74,7 @@ class BadgeTeacherHandoverService
     {
         return DB::transaction(function () use ($teacher, $quantitiesByType, $date, $actor, $notes) {
             $handovers = [];
+            $batchId = (string) \Illuminate\Support\Str::uuid(); // معرّف واحد لكل العملية
 
             foreach ($quantitiesByType as $typeId => $quantity) {
                 if ((int) $quantity <= 0) {
@@ -82,7 +84,7 @@ class BadgeTeacherHandoverService
                 $type = BadgeType::findOrFail((int) $typeId);
 
                 try {
-                    $handovers[] = $this->handover($teacher, $type, (int) $quantity, $date, $actor, $notes);
+                    $handovers[] = $this->handover($teacher, $type, (int) $quantity, $date, $actor, $notes, $batchId);
                 } catch (ValidationException $e) {
                     throw ValidationException::withMessages([
                         "quantities.{$typeId}" => collect($e->errors())->flatten()->first(),

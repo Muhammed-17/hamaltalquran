@@ -4,14 +4,16 @@
             <h1 class="text-3xl font-black mb-2">الاستحقاقات والتوزيعات</h1>
             <p class="text-emerald-100/80 text-sm font-medium">{{ $paginator->total() }} عملية إعطاء</p>
         </div>
-        <div class="flex flex-wrap gap-2.5 z-10">
+        <div class="flex flex-wrap items-center gap-2.5 z-10">
             @can('badges.entitlements.create')
                 <a href="{{ route('badges.entitlements.create') }}" class="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-2xl shadow-lg active:scale-95">+ استحقاق وتوزيع جديد</a>
             @endcan
-            <a href="{{ route('badges.entitlements.statistics', array_filter(['month' => request('month'), 'teacher_id' => request('teacher_id'), 'circle_id' => request('circle_id'), 'status' => request('status')])) }}" class="px-5 py-3 bg-white/10 hover:bg-white/20 border border-white/25 text-white font-bold rounded-2xl transition active:scale-95">الإحصائيات</a>
-            @can('badges.reports.view')
-                <a href="{{ route('badges.entitlements.report', array_filter(['month' => request('month'), 'teacher_id' => request('teacher_id'), 'circle_id' => request('circle_id'), 'status' => request('status'), 'q' => request('q')])) }}" class="px-5 py-3 bg-white/10 hover:bg-white/20 border border-white/25 text-white font-bold rounded-2xl transition active:scale-95">التقرير</a>
-            @endcan
+            <div class="flex flex-wrap gap-2.5 ms-3 ps-5 border-s border-white/25">
+                <a href="{{ route('badges.entitlements.statistics', array_filter(['month' => request('month'), 'teacher_id' => request('teacher_id'), 'circle_id' => request('circle_id'), 'status' => request('status')])) }}" class="px-5 py-3 bg-white/10 hover:bg-white/20 border border-white/25 text-white font-bold rounded-2xl transition active:scale-95">الإحصائيات</a>
+                @can('badges.reports.view')
+                    <a href="{{ route('badges.entitlements.report', array_filter(['month' => request('month'), 'teacher_id' => request('teacher_id'), 'circle_id' => request('circle_id'), 'status' => request('status'), 'q' => request('q')])) }}" class="px-5 py-3 bg-white/10 hover:bg-white/20 border border-white/25 text-white font-bold rounded-2xl transition active:scale-95">التقرير</a>
+                @endcan
+            </div>
         </div>
         <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
     </div>

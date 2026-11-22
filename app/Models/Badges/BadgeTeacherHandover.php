@@ -10,7 +10,7 @@ class BadgeTeacherHandover extends Model
 {
     protected $fillable = [
         'teacher_id', 'source_user_id', 'badge_type_id', 'quantity', 'handover_date',
-        'notes', 'status', 'cancelled_by', 'cancelled_at', 'created_by',
+        'notes', 'status', 'cancelled_by', 'cancelled_at', 'created_by', 'batch_id',
     ];
 
     protected $casts = [

@@ -15,33 +15,146 @@ use Illuminate\Http\Request;
 
 class BadgeTeacherHandoverController extends Controller
 {
+    /**
+     * استعلام التسليمات داخل نطاق المستخدم ومصفّى بفلاتر الصفحة
+     * (مستلم/نوع/حالة/شهر) — أساس مشترك للقائمة وملف التقرير.
+     */
+    private function handoverFilterQuery(Request $request, BadgeAccessService $access)
+    {
+        $user = $request->user();
+        $visibleIds = $access->selectableRecipients($user)->pluck('id')->push($user->id);
+
+        return BadgeTeacherHandover::query()
+            ->when(!$user->hasRole(['admin', 'general_manager']), fn ($q) => $q->where(fn ($w) => $w
+                ->whereIn('teacher_id', $visibleIds)
+                ->orWhere('source_user_id', $user->id)))
+            ->when($request->filled('teacher_id'), fn ($q) => $q->where('teacher_id', (int) $request->teacher_id))
+            ->when($request->filled('badge_type_id'), fn ($q) => $q->where('badge_type_id', (int) $request->badge_type_id))
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
+            ->when($request->filled('month') && preg_match('/^\d{4}-\d{2}$/', (string) $request->month), function ($q) use ($request) {
+                [$year, $month] = explode('-', (string) $request->month);
+                $q->whereYear('handover_date', (int) $year)->whereMonth('handover_date', (int) $month);
+            });
+    }
+
+    /** زر التقرير: ملف Excel بالتسليمات حسب الفلاتر الحالية */
+    public function report(Request $request, BadgeAccessService $access)
+    {
+        $base = fn () => $this->handoverFilterQuery($request, $access);
+
+        $month = $request->filled('month') ? (string) $request->month : 'all';
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\BadgeHandoversReportExport($base),
+            "handovers-report-{$month}.xlsx"
+        );
+    }
+
+    /** صفحة إحصائيات التسليمات — نفس فلاتر القائمة، والأرقام من نفس النطاق المرئي */
+    public function statistics(Request $request, BadgeAccessService $access)
+    {
+        $this->authorize('viewAny', BadgeTeacherHandover::class);
+
+        $user = $request->user();
+        $base = $this->handoverFilterQuery($request, $access);
+
+        // مجموعا الحالات يُحسبان من نفس الفلاتر لكن دون فلتر الحالة نفسه
+        $requestNoStatus = clone $request;
+        $requestNoStatus->query->remove('status');
+        $requestNoStatus->request->remove('status');
+        $statusSums = $this->handoverFilterQuery($requestNoStatus, $access)
+            ->selectRaw('status, COUNT(*) as records, SUM(quantity) as qty')
+            ->groupBy('status')->get()->keyBy('status');
+
+        // صفوف النشط: لبطاقات الإجمالي وعدّ العمليات (حسب batch_id) والجداول
+        $activeRows = (clone $base)->where('status', 'active')
+            ->get(['id', 'teacher_id', 'badge_type_id', 'batch_id', 'quantity']);
+        $batchKey = fn ($h) => $h->batch_id ?? 'single-' . $h->id;
+
+        $perType = $activeRows->groupBy('badge_type_id')->map(fn ($rows) => [
+            'ops' => $rows->map($batchKey)->unique()->count(),
+            'qty' => (int) $rows->sum('quantity'),
+        ]);
+        $perTypeCancelled = (clone $base)->where('status', 'cancelled')
+            ->selectRaw('badge_type_id, SUM(quantity) as qty')
+            ->groupBy('badge_type_id')->pluck('qty', 'badge_type_id');
+        $perRecipient = $activeRows->groupBy('teacher_id')->map(fn ($rows) => [
+            'ops' => $rows->map($batchKey)->unique()->count(),
+            'qty' => (int) $rows->sum('quantity'),
+        ]);
+
+        // قائمة المستلمين للفلتر: من لهم تسليمات داخل النطاق المرئي (دون فلتر المستلم نفسه)
+        $requestNoTeacher = clone $request;
+        $requestNoTeacher->query->remove('teacher_id');
+        $requestNoTeacher->request->remove('teacher_id');
+        $recipients = User::whereIn('id',
+            $this->handoverFilterQuery($requestNoTeacher, $access)->distinct()->pluck('teacher_id')
+        )->orderBy('name')->get(['id', 'name']);
+
+        return view('badges.handovers.statistics', [
+            'totals' => [
+                'received' => (int) ($statusSums['active']->qty ?? 0),
+                'operations' => $activeRows->map($batchKey)->unique()->count(),
+                'recipients' => $activeRows->pluck('teacher_id')->unique()->count(),
+                'cancelled_qty' => (int) ($statusSums['cancelled']->qty ?? 0),
+                'cancelled_records' => (int) ($statusSums['cancelled']->records ?? 0),
+            ],
+            'perType' => $perType,
+            'perTypeCancelled' => $perTypeCancelled,
+            'perRecipient' => $perRecipient,
+            'recipientUsers' => User::whereIn('id', $perRecipient->keys())->get(['id', 'name'])->keyBy('id'),
+            'recipients' => $recipients,
+            'types' => BadgeType::orderBy('name')->get(),
+        ]);
+    }
+
     public function index(Request $request, BadgeAccessService $access)
     {
         $this->authorize('viewAny', BadgeTeacherHandover::class);
 
         $user = $request->user();
-        $visibleIds = $access->selectableRecipients($user)->pluck('id')->push($user->id);
+        $base = $this->handoverFilterQuery($request, $access);
 
-        $handovers = BadgeTeacherHandover::with(['teacher', 'badgeType', 'creator', 'sourceUser'])
-            ->when(!$user->hasRole(['admin', 'general_manager']), fn ($q) => $q->where(fn ($w) => $w
-                ->whereIn('teacher_id', $visibleIds)
-                ->orWhere('source_user_id', $user->id)))
-            ->when($request->filled('teacher_id'), fn ($q) => $q->where('teacher_id', $request->teacher_id))
-            ->when($request->filled('badge_type_id'), fn ($q) => $q->where('badge_type_id', $request->badge_type_id))
-            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
+        // التجميع حسب الدفعة: صفوف القائمة عمليات تسليم لا أنواعًا مفردة
+        // (التسليمات القديمة بلا batch_id تُعامل كلٌّ منها كعملية مستقلة)
+        $batchKeys = (clone $base)->whereNotNull('batch_id')
+            ->selectRaw('MAX(id) as max_id')->selectRaw('batch_id')->groupBy('batch_id')->get()
+            ->map(fn ($r) => ['key' => $r->batch_id, 'max_id' => (int) $r->max_id]);
+        $singleKeys = (clone $base)->whereNull('batch_id')->select('id')->get()
+            ->map(fn ($r) => ['key' => 'single-' . $r->id, 'max_id' => (int) $r->id]);
+        $allKeys = $batchKeys->concat($singleKeys)->sortByDesc('max_id')->values();
+
+        $perPage = 20;
+        $page = \Illuminate\Pagination\Paginator::resolveCurrentPage();
+        $pageKeys = $allKeys->slice(($page - 1) * $perPage, $perPage)->values();
+        $paginator = new \Illuminate\Pagination\LengthAwarePaginator(
+            $pageKeys, $allKeys->count(), $perPage, $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        $batchIds = $pageKeys->pluck('key')->reject(fn ($k) => str_starts_with($k, 'single-'))->values();
+        $singleIds = $pageKeys->pluck('key')->filter(fn ($k) => str_starts_with($k, 'single-'))
+            ->map(fn ($k) => (int) substr($k, 7))->values();
+        $items = (clone $base)
+            ->with(['teacher', 'badgeType', 'creator', 'sourceUser'])
+            ->where(fn ($q) => $q->whereIn('batch_id', $batchIds)->orWhereIn('id', $singleIds))
             ->latest('id')
-            ->paginate(20)
-            ->withQueryString();
+            ->get();
+        $groups = $pageKeys->map(fn ($k) => [
+            'key' => $k['key'],
+            'items' => $items->filter(fn ($h) => ($h->batch_id ?? 'single-' . $h->id) === $k['key'])->values(),
+        ])->filter(fn ($g) => $g['items']->isNotEmpty())->values();
 
         return view('badges.handovers.index', [
-            'handovers' => $handovers,
+            'groups' => $groups,
+            'paginator' => $paginator,
             // فلتر المستلمين: من يستطيع تسليمهم + نفسه (كمستلم)
             'teachers' => $access->selectableRecipients($user)->push($user),
             'types' => BadgeType::orderBy('name')->get(),
         ]);
     }
 
-    public function create(BadgeAccessService $access, BadgeBalanceService $balances)
+    public function create(Request $request, BadgeAccessService $access, BadgeBalanceService $balances)
     {
         $this->authorize('create', BadgeTeacherHandover::class);
 
@@ -56,6 +169,11 @@ class BadgeTeacherHandoverController extends Controller
             'adminBalances' => $isAdmin ? $balances->adminBalances() : $balances->teacherBalances($user->id),
             'balanceLabel' => $isAdmin ? 'رصيد الإدارة' : 'رصيد عهدتك',
             'access' => $access,
+            // تعبئة مسبقة اختيارية (مثال: زر «تسليم» في صفحة النواقص يعبّئ
+            // المستلم وكميات عجزه) — تُستخدم فقط عند غياب old input
+            'prefillTeacherId' => $request->filled('teacher_id') ? (int) $request->teacher_id : null,
+            'prefillQuantities' => collect((array) $request->query('quantities', []))
+                ->map(fn ($q) => (int) $q)->all(),
         ]);
     }
 

@@ -153,12 +153,14 @@
                     <button @click="open = !open"
                         class="w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-[#0d7a48] transition-colors focus:outline-none {{ request()->routeIs('badges.*') ? 'bg-[#0d7a48]' : '' }}">
                         <span>الأوسمة</span>
-                        <svg class="w-4 h-4 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        <svg class="w-4 h-4 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
                     </button>
                     <div x-show="open" class="space-y-1 pr-4">
                         @can('badges.types.view')<a href="{{ route('badges.types.index') }}" class="block px-4 py-1.5 rounded-lg text-sm {{ request()->routeIs('badges.types.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">أنواع الأوسمة</a>@endcan
                         @can('badges.stock.view')<a href="{{ route('badges.stock.index') }}" class="block px-4 py-1.5 rounded-lg text-sm {{ request()->routeIs('badges.stock.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">المخزون المركزي</a>@endcan
-                        @can('badges.handovers.view')<a href="{{ route('badges.handovers.index') }}" class="block px-4 py-1.5 rounded-lg text-sm {{ request()->routeIs('badges.handovers.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">تسليم المعلمين</a>@endcan
+                        @can('badges.handovers.view')<a href="{{ route('badges.handovers.index') }}" class="block px-4 py-1.5 rounded-lg text-sm {{ request()->routeIs('badges.handovers.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">تسليم المعلمون</a>@endcan
                         @can('badges.entitlements.view')<a href="{{ route('badges.entitlements.index') }}" class="block px-4 py-1.5 rounded-lg text-sm {{ request()->routeIs('badges.entitlements.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">الاستحقاقات والتوزيعات</a>@endcan
                         @can('badges.shortages.view')<a href="{{ route('badges.shortages.index') }}" class="block px-4 py-1.5 rounded-lg text-sm {{ request()->routeIs('badges.shortages.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">الأوسمة الناقصة</a>@endcan
                         @can('badges.collections.view')<a href="{{ route('badges.collections.index') }}" class="block px-4 py-1.5 rounded-lg text-sm {{ request()->routeIs('badges.collections.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">تحصيل الأوسمة</a>@endcan

@@ -539,6 +539,58 @@ test('center scope: foreign manager cannot entitle or view another center circle
         ->and(BadgeShortage::count())->toBe(1);
 });
 
+test('handovers: month filter and Excel report', function () {
+    badgeSeedStockAndHandover($this); // تسليم 40 من النوع الافتراضي بتاريخ 2026-11-01
+
+    // فلتر الشهر على تاريخ التسليم
+    $this->actingAs($this->admin)->get(route('badges.handovers.index', ['month' => '2026-11']))
+        ->assertOk()->assertSee('2026-11-01');
+    $this->actingAs($this->admin)->get(route('badges.handovers.index', ['month' => '2026-10']))
+        ->assertOk()->assertDontSee('2026-11-01');
+
+    // زر التقرير: ملف Excel يُنزَّل حسب الفلاتر
+    $this->actingAs($this->admin)->get(route('badges.handovers.report', ['month' => '2026-11']))
+        ->assertOk()->assertDownload();
+
+    // ملف التقرير: قائمة تسليمات، وبدل عمود النوع عمودٌ لكل نوع فيه الكمية
+    $export = new \App\Exports\BadgeHandoversReportExport(
+        fn () => \App\Models\Badges\BadgeTeacherHandover::query()
+    );
+    [$detail, $summary] = $export->sheets();
+    $headings = $detail->headings();
+    $typeCol = array_search($this->type->name, $headings);
+    expect($typeCol)->not->toBeFalse()
+        ->and($headings[0])->toBe('الشهر')
+        ->and($headings[1])->toBe('المستلم')
+        ->and($headings[count($headings) - 2])->toBe('الإجمالي')
+        ->and($headings)->not->toContain('المسلّم')
+        ->and($headings)->not->toContain('تاريخ التسليم')
+        ->and($headings)->not->toContain('الحالة');
+    // تسليم ثانٍ لنفس المستلم في نفس الشهر من نوع آخر: يجب أن يندمج في نفس الصف
+    $type2 = BadgeType::create(['name' => 'وسام التميز', 'is_active' => true]);
+    $this->stock->recordMovement($type2, 50, $this->admin);
+    $this->handoverService->handover($this->teacherUser, $type2, 15, '2026-11-20', $this->admin);
+
+    $export = new \App\Exports\BadgeHandoversReportExport(
+        fn () => \App\Models\Badges\BadgeTeacherHandover::query()
+    );
+    [$detail, $summary] = $export->sheets();
+    $headings = $detail->headings();
+    $typeCol = array_search($this->type->name, $headings);
+    $type2Col = array_search('وسام التميز', $headings);
+    $rows = $detail->collection();
+    expect($rows)->toHaveCount(1); // صف واحد للمستلم — اسمه يظهر مرة واحدة، وبلا صف إجمالي أخير
+    $row = $rows->first();
+    expect($row[0])->toBe('2026-11')
+        ->and($row[1])->toBe($this->teacherUser->name)
+        ->and($row[$typeCol])->toBe(40)
+        ->and($row[$type2Col])->toBe(15)
+        ->and($row[count($row) - 2])->toBe(55); // إجمالي الصف عبر الأنواع
+    $summaryRows = $summary->collection();
+    expect($summaryRows->last()['type'])->toBe('الإجمالي العام')
+        ->and($summaryRows->last()['quantity'])->toBe(55);
+});
+
 test('badge pages render for authorized users', function () {
     badgeSeedStockAndHandover($this);
 
@@ -693,33 +745,226 @@ test('report export shows per-type totals and a grand total row', function () {
         ->and($grand['delivered'])->toBe(40)
         ->and($grand['remaining'])->toBe(10);
 
-    // الورقة الأولى: صف واحد لكل طالب والأنواع بجانب بعضها (مستحق/خد لكل نوع)
+    // الورقة الأولى بنفس تصميم ملف المستخدم النموذجي: صف واحد لكل طالب، واسم
+    // النوع مدموج فوق «المستحق/المستلم/الإجمالي» وإجمالي النوع صيغة SUM حية
     $detailRows = $detail->collection();
     expect($detailRows)->toHaveCount(3); // طالبان + صف الإجمالي — لا صفوف مكررة لنفس الطالب
-    $headings = $detail->headings();
-    $ent1 = array_search($this->type->name . ' — مستحق', $headings);
-    $took1 = array_search($this->type->name . ' — خد', $headings);
-    $ent2 = array_search('وسام التميز — مستحق', $headings);
-    $took2 = array_search('وسام التميز — خد', $headings);
-    expect($ent1)->not->toBeFalse()->and($took1)->not->toBeFalse()
-        ->and($ent2)->not->toBeFalse()->and($took2)->not->toBeFalse();
+    [$headRow1, $headRow2] = $detail->headings();
+    $base1 = array_search($this->type->name, $headRow1);
+    $base2 = array_search('وسام التميز', $headRow1);
+    expect($base1)->not->toBeFalse()->and($base2)->not->toBeFalse()
+        ->and($headRow2[$base1])->toBe('المستحق')->and($headRow2[$base1 + 1])->toBe('المستلم')
+        ->and($headRow2[$base1 + 2])->toBe('الإجمالي')
+        ->and($headRow1[count($headRow1) - 3])->toBe('إجمالي المستحق')
+        ->and($headRow1[count($headRow1) - 2])->toBe('إجمالي الموزّع')
+        ->and($headRow1[count($headRow1) - 1])->toBe('إجمالي المتبقي');
+    $letter = fn ($zeroBased) => \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($zeroBased + 1);
     $byName = $detailRows->keyBy(0);
-    $first = $byName['طالب أول'];
-    expect($first[$ent1])->toBe(30)->and($first[$took1])->toBe(30)
-        ->and($first[$ent2])->toBe(10)->and($first[$took2])->toBe(10)
-        ->and($first[count($first) - 3])->toBe(40)  // إجمالي المستحق
-        ->and($first[count($first) - 2])->toBe(40)  // إجمالي الموزّع
-        ->and($first[count($first) - 1])->toBe(0);  // إجمالي المتبقي
-    $second = $byName['طالب ثانٍ'];
-    expect($second[$ent1])->toBe(0)->and($second[$took1])->toBe(0)
-        ->and($second[$ent2])->toBe(10)->and($second[$took2])->toBe(0)
-        ->and($second[count($second) - 3])->toBe(10)
-        ->and($second[count($second) - 1])->toBe(10);
+    $first = $byName['طالب أول']; // الصف 3 في الملف
+    expect($first[$base1])->toBe(0)->and($first[$base1 + 1])->toBe(30)   // الحفظ: استلم 30 ولم يتبقَّ شيء
+        ->and($first[$base1 + 2])->toBe('=SUM(' . $letter($base1) . '3:' . $letter($base1 + 1) . '3)')
+        ->and($first[$base2])->toBe(0)->and($first[$base2 + 1])->toBe(10) // التميز: استلم 10
+        ->and($first[count($first) - 3])->toBe('=' . implode('+', collect([$base1, $base2])->sort()->map(fn ($b) => $letter($b) . '3')->all()))  // إجمالي المستحق
+        ->and($first[count($first) - 2])->toBe('=' . implode('+', collect([$base1, $base2])->sort()->map(fn ($b) => $letter($b + 1) . '3')->all())); // إجمالي الموزّع
+    $second = $byName['طالب ثانٍ']; // الصف 4
+    expect($second[$base2])->toBe(10)->and($second[$base2 + 1])->toBe(0) // له 10 مستحقة لم يستلمها
+        ->and($second[$base2 + 2])->toBe('=SUM(' . $letter($base2) . '4:' . $letter($base2 + 1) . '4)');
     $grand = $detailRows->last();
-    expect($grand[0])->toBe('الإجمالي العام')
-        ->and($grand[$ent1])->toBe(30)->and($grand[$took1])->toBe(30)
-        ->and($grand[$ent2])->toBe(20)->and($grand[$took2])->toBe(10)
-        ->and($grand[count($grand) - 3])->toBe(50)
-        ->and($grand[count($grand) - 2])->toBe(40)
-        ->and($grand[count($grand) - 1])->toBe(10);
+    expect($grand[0])->toBe('الإجمالي')
+        ->and($grand[$base1])->toBe('=SUM(' . $letter($base1) . '3:' . $letter($base1) . '4)')
+        ->and($grand[$base1 + 1])->toBe('=SUM(' . $letter($base1 + 1) . '3:' . $letter($base1 + 1) . '4)');
+});
+
+
+test('handovers index: one operation with several types shows as a single grouped row', function () {
+    $type2 = BadgeType::create(['name' => 'وسام التميز', 'is_active' => true]);
+    $this->stock->recordMovement($this->type, 100, $this->admin);
+    $this->stock->recordMovement($type2, 50, $this->admin);
+
+    $handovers = $this->handoverService->handoverMultiple($this->teacherUser, [
+        $this->type->id => 10,
+        $type2->id => 15,
+    ], '2026-11-10', $this->admin);
+
+    // العملية الواحدة = batch_id واحد مشترك بين كل سجلاتها
+    expect($handovers)->toHaveCount(2)
+        ->and($handovers[0]->batch_id)->not->toBeNull()
+        ->and($handovers[0]->batch_id)->toBe($handovers[1]->batch_id);
+
+    // والقائمة تعرضها صفًّا واحدًا بإجمالي العملية، لا صفًّا لكل نوع
+    $this->actingAs($this->admin)
+        ->get(route('badges.handovers.index'))
+        ->assertOk()
+        ->assertSee('وسام الحفظ')
+        ->assertSee('وسام التميز')
+        ->assertSee('الإجمالي: 25');
+});
+
+test('handovers statistics page: totals follow the filters and count operations by batch', function () {
+    $type2 = BadgeType::create(['name' => 'وسام التميز', 'is_active' => true]);
+    $this->stock->recordMovement($this->type, 100, $this->admin);
+    $this->stock->recordMovement($type2, 50, $this->admin);
+    $this->handoverService->handoverMultiple($this->teacherUser, [
+        $this->type->id => 10,
+        $type2->id => 15,
+    ], '2026-11-10', $this->admin);
+    $cancelled = $this->handoverService->handover($this->teacherUser, $this->type, 5, '2026-11-11', $this->admin);
+    $this->handoverService->cancel($cancelled, $this->admin);
+
+    $response = $this->actingAs($this->admin)->get(route('badges.handovers.statistics'));
+    $response->assertOk();
+    $totals = $response->viewData('totals');
+    expect($totals['received'])->toBe(25)          // النشط فقط: 10 + 15
+        ->and($totals['operations'])->toBe(1)      // العملية المتعددة تُعدّ واحدة
+        ->and($totals['recipients'])->toBe(1)
+        ->and($totals['cancelled_qty'])->toBe(5)
+        ->and($totals['cancelled_records'])->toBe(1);
+    $perType = $response->viewData('perType');
+    expect($perType[$this->type->id]['qty'])->toBe(10)
+        ->and($perType[$type2->id]['qty'])->toBe(15);
+
+    // فلتر الشهر يضيّق الأرقام
+    $nov = $this->actingAs($this->admin)->get(route('badges.handovers.statistics', ['month' => '2026-10']));
+    expect($nov->viewData('totals')['received'])->toBe(0);
+});
+
+test('shortages index: grouped by distributor, one row per student, handover button prefilled with the shortage', function () {
+    // بلا رصيد عند الموزّع: الطالب الأول عجزه في نوعين (10 + 4)، والثاني في نوع واحد (7)
+    $type2 = BadgeType::create(['name' => 'وسام التميز', 'is_active' => true]);
+    foreach ([
+        [$this->student1->id, $this->type->id, 10],
+        [$this->student1->id, $type2->id, 4],
+        [$this->student2->id, $this->type->id, 7],
+    ] as [$studentId, $typeId, $qty]) {
+        $this->entitlementService->create([
+            'student_id' => $studentId, 'circle_id' => $this->circleA->id,
+            'teacher_id' => $this->teacherUser->id, 'badge_type_id' => $typeId,
+            'quantity' => $qty, 'entitlement_date' => '2026-11-10',
+        ], $this->teacherUser);
+    }
+    expect(BadgeShortage::count())->toBe(3);
+
+    $response = $this->actingAs($this->admin)->get(route('badges.shortages.index'));
+    $response->assertOk()
+        ->assertSee('عرض الطلاب')
+        ->assertSee('إجمالي الناقص: 21')
+        // لا فلتر نوع وسام ولا فلتر حالة عجز في الصفحة
+        ->assertDontSee('حالة العجز')
+        ->assertDontSee('name="badge_type_id"', false)
+        ->assertDontSee('name="status"', false)
+        // ألوان البطاقة inline (تظهر حتى مع build قديم لا يعرف كلاسات الأحمر الجديدة)
+        ->assertSee('background-color:#991b1b', false)
+        ->assertSee('background-color:#b91c1c', false);
+    // كل طالب يظهر مرة واحدة في الصفحة كلها (صف واحد مهما تعددت أنواع عجزه)
+    expect(substr_count($response->getContent(), $this->student1->name))->toBe(1)
+        ->and(substr_count($response->getContent(), $this->student2->name))->toBe(1);
+    // موزّع واحد = مجموعة واحدة، وسجلات العجز الثلاثة داخلها
+    $group = $response->viewData('groups')[0];
+    expect($response->viewData('groups'))->toHaveCount(1)
+        ->and($group['items'])->toHaveCount(3)
+        ->and($response->viewData('totalRecords'))->toBe(3);
+
+    // زر «تسليم» للأدمن (يستطيع التسليم للموزّع) ويعبّئ نموذج التسليم بكميات العجز
+    expect($group['canHandover'])->toBeTrue();
+    $create = $this->actingAs($this->admin)->get($group['handoverUrl']);
+    $create->assertOk();
+    expect($create->viewData('prefillTeacherId'))->toBe($this->teacherUser->id)
+        ->and($create->viewData('prefillQuantities')[$this->type->id])->toBe(17) // 10 + 7
+        ->and($create->viewData('prefillQuantities')[$type2->id])->toBe(4);
+});
+
+test('shortages visibility: each rank sees his own shortage and those below him only', function () {
+    // مدير فرع أ + مشرف على حلقة أ (نفس تجهيز اختبار سلسلة العهدة)
+    $managerA = User::factory()->create(['status' => 'active']);
+    $managerA->assignRole('manager');
+    Teacher::create(['user_id' => $managerA->id, 'branch_id' => $this->branchA->id]);
+    $supervisor = User::factory()->create(['status' => 'active']);
+    $supervisor->assignRole('supervisor');
+    $supervisorTeacher = Teacher::create(['user_id' => $supervisor->id, 'branch_id' => $this->branchA->id]);
+    DB::table('branch_teacher')->insert(['branch_id' => $this->branchA->id, 'teacher_id' => $supervisorTeacher->id, 'created_at' => now(), 'updated_at' => now()]);
+
+    // عجز لكل واحد من الثلاثة (بلا أرصدة عند أيٍّ منهم)
+    $mk = fn (User $distributor) => $this->entitlementService->create([
+        'student_id' => $this->student1->id, 'circle_id' => $this->circleA->id,
+        'teacher_id' => $distributor->id, 'badge_type_id' => $this->type->id,
+        'quantity' => 3, 'entitlement_date' => '2026-11-10',
+    ], $distributor);
+    $teacherEnt = $mk($this->teacherUser);
+    $supEnt = $mk($supervisor);
+    $mgrEnt = $mk($managerA);
+    expect(BadgeShortage::count())->toBe(3);
+
+    $groupTeacherIds = fn ($response) => collect($response->viewData('groups'))
+        ->map(fn ($g) => $g['teacher']?->id)->sort()->values()->all();
+
+    // المشرف: عجزه + عجز المعلم (تحته) — ولا يرى عجز المدير (فوقه)
+    $supResponse = $this->actingAs($supervisor)->get(route('badges.shortages.index'));
+    $supResponse->assertOk();
+    expect($groupTeacherIds($supResponse))->toBe(collect([$supervisor->id, $this->teacherUser->id])->sort()->values()->all());
+
+    // المعلم: عجزه فقط
+    $teacherResponse = $this->actingAs($this->teacherUser)->get(route('badges.shortages.index'));
+    expect($groupTeacherIds($teacherResponse))->toBe([$this->teacherUser->id]);
+
+    // المدير: عجزه + المشرف + المعلم (كل من تحته في مركزه)
+    $mgrResponse = $this->actingAs($managerA)->get(route('badges.shortages.index'));
+    expect($groupTeacherIds($mgrResponse))->toBe(collect([$managerA->id, $supervisor->id, $this->teacherUser->id])->sort()->values()->all());
+
+    // الأدمن: الكل
+    $adminResponse = $this->actingAs($this->admin)->get(route('badges.shortages.index'));
+    expect($groupTeacherIds($adminResponse))->toBe(collect([$managerA->id, $supervisor->id, $this->teacherUser->id])->sort()->values()->all());
+
+    // سياسة العرض منسجمة: المشرف يفتح عجز المعلم ولا يفتح عجز المدير
+    $teacherShortage = BadgeShortage::where('entitlement_id', $teacherEnt->id)->firstOrFail();
+    $mgrShortage = BadgeShortage::where('entitlement_id', $mgrEnt->id)->firstOrFail();
+    expect($supervisor->can('view', $teacherShortage))->toBeTrue()
+        ->and($supervisor->can('view', $mgrShortage))->toBeFalse();
+});
+
+test('shortages: per-student deliver button distributes every type up to the distributor balance', function () {
+    $type2 = BadgeType::create(['name' => 'وسام التميز', 'is_active' => true]);
+    foreach ([
+        [$this->student1->id, $this->type->id, 10],
+        [$this->student1->id, $type2->id, 4],
+        [$this->student2->id, $this->type->id, 7],
+    ] as [$studentId, $typeId, $qty]) {
+        $this->entitlementService->create([
+            'student_id' => $studentId, 'circle_id' => $this->circleA->id,
+            'teacher_id' => $this->teacherUser->id, 'badge_type_id' => $typeId,
+            'quantity' => $qty, 'entitlement_date' => '2026-11-10',
+        ], $this->teacherUser);
+    }
+    // الموزّع يستلم 12 من النوع الأول فقط — النوع الثاني بلا رصيد
+    $this->stock->recordMovement($this->type, 100, $this->admin);
+    $this->handoverService->handover($this->teacherUser, $this->type, 12, '2026-11-11', $this->admin);
+
+    // الزر ظاهر في صف الطالب داخل القائمة
+    $this->actingAs($this->teacherUser)->get(route('badges.shortages.index'))
+        ->assertOk()->assertSee('/badges/shortages/distribute-student', false);
+
+    // ضغطة واحدة للطالب الأول: يُسلَّم 10 من النوع الأول، ويبقى عجز النوع الثاني كاملًا
+    $this->actingAs($this->teacherUser)->post(route('badges.shortages.distribute-student'), [
+        'teacher_id' => $this->teacherUser->id, 'student_id' => $this->student1->id,
+    ])->assertRedirect()->assertSessionHas('success');
+    expect($this->balances->studentBalance($this->student1->id, $this->type->id))->toBe(10)
+        ->and($this->balances->studentBalance($this->student1->id, $type2->id))->toBe(0)
+        ->and($this->balances->teacherBalance($this->teacherUser->id, $this->type->id))->toBe(2);
+    $s1t2 = BadgeShortage::where('student_id', $this->student1->id)->where('badge_type_id', $type2->id)->firstOrFail();
+    expect($s1t2->shortage_quantity)->toBe(4);
+
+    // الطالب الثاني: الرصيد المتبقي 2 فقط — تسليم جزئي ويبقى عجز 5
+    $this->actingAs($this->teacherUser)->post(route('badges.shortages.distribute-student'), [
+        'teacher_id' => $this->teacherUser->id, 'student_id' => $this->student2->id,
+    ])->assertRedirect();
+    expect($this->balances->studentBalance($this->student2->id, $this->type->id))->toBe(2);
+    $s2 = BadgeShortage::where('student_id', $this->student2->id)->firstOrFail();
+    expect($s2->shortage_quantity)->toBe(5);
+
+    // مدير مركز آخر لا يستطيع الاستكمال نيابة عنه: لا توزيع جديد
+    $before = BadgeDistribution::count();
+    $denied = $this->actingAs($this->managerB)->post(route('badges.shortages.distribute-student'), [
+        'teacher_id' => $this->teacherUser->id, 'student_id' => $this->student2->id,
+    ]);
+    expect($denied->status())->toBeIn([302, 403])
+        ->and(BadgeDistribution::count())->toBe($before);
 });
