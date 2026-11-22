@@ -1,6 +1,5 @@
 <x-layouts.markaz-layout>
     <div dir="rtl" class="bg-[#0b3d2c] rounded-3xl p-6 text-white shadow-xl mb-8 flex items-center gap-4">
-        @if ($type->image)<img src="{{ asset('storage/' . $type->image) }}" class="w-16 h-16 object-contain rounded-xl bg-white/10" alt="">@endif
         <div>
             <h1 class="text-2xl font-black">{{ $type->name }}</h1>
             <p class="text-emerald-100/80 text-sm">{{ $type->description }}</p>

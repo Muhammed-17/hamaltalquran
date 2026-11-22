@@ -598,6 +598,9 @@ test('badge pages render for authorized users', function () {
     $this->actingAs($this->admin)->get('/badges')->assertNotFound();
     $this->actingAs($this->admin)->get(route('badges.entitlements.statistics'))->assertOk();
     $this->actingAs($this->admin)->get(route('badges.types.index'))->assertOk();
+    // حقل صورة الوسام محذوف نهائيًا — نموذج النوع بلا أي رفع ملفات
+    $this->actingAs($this->admin)->get(route('badges.types.create'))
+        ->assertOk()->assertDontSee('name="image"', false);
     $this->actingAs($this->admin)->get(route('badges.stock.index'))->assertOk();
     $this->actingAs($this->admin)->get(route('badges.stock.history'))->assertOk();
     $this->actingAs($this->admin)->get(route('badges.handovers.index'))->assertOk();
@@ -822,6 +825,13 @@ test('handovers statistics page: totals follow the filters and count operations 
     $perType = $response->viewData('perType');
     expect($perType[$this->type->id]['qty'])->toBe(10)
         ->and($perType[$type2->id]['qty'])->toBe(15);
+
+    // جدول «حسب المستلم»: كمية كل نوع على حدة بجانب الإجمالي
+    $perRecipient = $response->viewData('perRecipient');
+    expect($perRecipient[$this->teacherUser->id]['types'][$this->type->id])->toBe(10)
+        ->and($perRecipient[$this->teacherUser->id]['types'][$type2->id])->toBe(15)
+        ->and($perRecipient[$this->teacherUser->id]['qty'])->toBe(25);
+    $response->assertSee('<th class="px-5 py-3 text-sm font-bold text-gray-600">وسام التميز</th>', false);
 
     // فلتر الشهر يضيّق الأرقام
     $nov = $this->actingAs($this->admin)->get(route('badges.handovers.statistics', ['month' => '2026-10']));

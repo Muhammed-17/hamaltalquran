@@ -2,7 +2,7 @@
     <div dir="rtl" class="bg-[#0b3d2c] rounded-3xl p-6 text-white shadow-xl mb-8">
         <h1 class="text-2xl font-black">تعديل نوع الوسام: {{ $type->name }}</h1>
     </div>
-    <form method="POST" action="{{ route('badges.types.update', $type) }}" enctype="multipart/form-data">
+    <form method="POST" action="{{ route('badges.types.update', $type) }}">
         @csrf @method('PUT')
         @include('badges.types.form')
     </form>

@@ -6,15 +6,6 @@
                 class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-[#0a5c36]">
             <x-input-error :messages="$errors->get('name')" class="mt-2" />
         </div>
-        <div>
-            <label class="block text-xs font-bold text-gray-400 mb-1.5">صورة الوسام</label>
-            <input type="file" name="image" accept="image/*"
-                class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-            <x-input-error :messages="$errors->get('image')" class="mt-2" />
-            @if ($type->image)
-                <img src="{{ asset('storage/' . $type->image) }}" alt="{{ $type->name }}" class="mt-2 w-16 h-16 object-contain rounded-lg border">
-            @endif
-        </div>
         <div class="md:col-span-2">
             <label class="block text-xs font-bold text-gray-400 mb-1.5">الوصف</label>
             <textarea name="description" rows="3"

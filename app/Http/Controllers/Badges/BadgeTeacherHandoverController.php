@@ -81,6 +81,8 @@ class BadgeTeacherHandoverController extends Controller
         $perRecipient = $activeRows->groupBy('teacher_id')->map(fn ($rows) => [
             'ops' => $rows->map($batchKey)->unique()->count(),
             'qty' => (int) $rows->sum('quantity'),
+            // كمية كل نوع على حدة — لأعمدة الأنواع بجانب الإجمالي في جدول «حسب المستلم»
+            'types' => $rows->groupBy('badge_type_id')->map(fn ($tRows) => (int) $tRows->sum('quantity')),
         ]);
 
         // قائمة المستلمين للفلتر: من لهم تسليمات داخل النطاق المرئي (دون فلتر المستلم نفسه)

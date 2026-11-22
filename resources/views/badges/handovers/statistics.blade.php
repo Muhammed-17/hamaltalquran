@@ -67,7 +67,7 @@
             @endforeach
         </div>
 
-        <div class="grid lg:grid-cols-2 gap-6">
+        <div class="flex flex-col gap-6">
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
                 <div class="px-6 py-4 font-black">حسب نوع الوسام</div>
                 <table class="w-full text-right">
@@ -96,11 +96,15 @@
 
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
                 <div class="px-6 py-4 font-black">حسب المستلم</div>
+                @php $shownTypes = $types->filter(fn ($t) => isset($perType[$t->id])); @endphp
                 <table class="w-full text-right">
                     <thead class="bg-gray-50 border-b border-gray-100">
                         <tr>
                             <th class="px-5 py-3 text-sm font-bold text-gray-600">المستلم</th>
                             <th class="px-5 py-3 text-sm font-bold text-gray-600">عمليات</th>
+                            @foreach ($shownTypes as $type)
+                                <th class="px-5 py-3 text-sm font-bold text-gray-600">{{ $type->name }}</th>
+                            @endforeach
                             <th class="px-5 py-3 text-sm font-bold text-gray-600">إجمالي المستلم</th>
                         </tr>
                     </thead>
@@ -109,10 +113,13 @@
                             <tr>
                                 <td class="px-5 py-3 text-sm font-bold">{{ $recipientUsers[$teacherId]?->name ?? '—' }}</td>
                                 <td class="px-5 py-3 text-sm">{{ $row['ops'] }}</td>
+                                @foreach ($shownTypes as $type)
+                                    <td class="px-5 py-3 text-sm">{{ $row['types'][$type->id] ?? 0 }}</td>
+                                @endforeach
                                 <td class="px-5 py-3 text-sm font-black text-emerald-700">{{ $row['qty'] }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="3" class="px-5 py-8 text-center text-gray-400 text-sm">لا بيانات مطابقة للفلاتر</td></tr>
+                            <tr><td colspan="{{ 3 + $shownTypes->count() }}" class="px-5 py-8 text-center text-gray-400 text-sm">لا بيانات مطابقة للفلاتر</td></tr>
                         @endforelse
                     </tbody>
                 </table>

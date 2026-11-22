@@ -17,7 +17,6 @@ class UpdateBadgeTypeRequest extends FormRequest
         return [
             'name'        => ['required', 'string', 'max:255', Rule::unique('badge_types', 'name')->ignore($this->route('type')->id)],
             'description' => ['nullable', 'string'],
-            'image'       => ['nullable', 'image', 'max:2048'],
             'is_active'   => ['nullable', 'boolean'],
         ];
     }
@@ -27,8 +26,6 @@ class UpdateBadgeTypeRequest extends FormRequest
         return [
             'name.required' => 'اسم الوسام مطلوب.',
             'name.unique'   => 'يوجد نوع وسام بهذا الاسم بالفعل.',
-            'image.image'   => 'الملف المرفوع يجب أن يكون صورة.',
-            'image.max'     => 'حجم الصورة لا يتجاوز 2 ميجابايت.',
         ];
     }
 }

@@ -8,7 +8,6 @@ use App\Http\Requests\Badges\UpdateBadgeTypeRequest;
 use App\Models\Badges\BadgeType;
 use App\Services\Badges\BadgeBalanceService;
 use App\Services\Badges\BadgeLogService;
-use Illuminate\Support\Facades\Storage;
 
 class BadgeTypeController extends Controller
 {
@@ -40,11 +39,6 @@ class BadgeTypeController extends Controller
     {
         $data = $request->validated();
         $data['is_active'] = $request->boolean('is_active', true);
-        if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('badges', 'public');
-        } else {
-            unset($data['image']);
-        }
 
         $type = BadgeType::create($data);
         $this->logger->log('type.created', $type, newValues: $type->only(['name', 'is_active']));
@@ -73,14 +67,6 @@ class BadgeTypeController extends Controller
     {
         $data = $request->validated();
         $data['is_active'] = $request->boolean('is_active');
-        if ($request->hasFile('image')) {
-            if ($type->image) {
-                Storage::disk('public')->delete($type->image);
-            }
-            $data['image'] = $request->file('image')->store('badges', 'public');
-        } else {
-            unset($data['image']);
-        }
 
         $old = $type->only(['name', 'is_active']);
         $type->update($data);
@@ -93,9 +79,6 @@ class BadgeTypeController extends Controller
     {
         $this->authorize('delete', $type);
 
-        if ($type->image) {
-            Storage::disk('public')->delete($type->image);
-        }
         $type->delete();
         $this->logger->log('type.deleted', 'badge_types', $type->id);
 

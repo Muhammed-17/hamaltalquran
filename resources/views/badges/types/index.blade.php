@@ -27,10 +27,7 @@
                 @forelse ($types as $type)
                     <tr>
                         <td class="px-6 py-4 text-sm font-bold">
-                            <span class="flex items-center gap-3">
-                                @if ($type->image)<img src="{{ asset('storage/' . $type->image) }}" class="w-9 h-9 object-contain rounded-lg border" alt="">@endif
-                                {{ $type->name }}
-                            </span>
+                            {{ $type->name }}
                         </td>
                         <td class="px-6 py-4 text-sm font-black">{{ $adminBalances[$type->id] ?? 0 }}</td>
                         <td class="px-6 py-4 text-sm">{{ $type->handovers_count }}</td>
