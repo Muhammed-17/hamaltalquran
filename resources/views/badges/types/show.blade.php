@@ -18,11 +18,11 @@
     </div>
 
     <div class="mt-6 flex gap-3" dir="rtl">
-        @can('badges.stock.history')
+        @if (auth()->user()->hasRole('admin'))
             <a href="{{ route('badges.stock.history', ['badge_type_id' => $type->id]) }}" class="px-5 py-2.5 bg-gray-100 rounded-xl font-bold text-sm">سجل حركة هذا النوع</a>
-        @endcan
-        @can('badges.types.update')
+        @endif
+        @if (auth()->user()->hasRole('admin'))
             <a href="{{ route('badges.types.edit', $type) }}" class="px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm">تعديل</a>
-        @endcan
+        @endif
     </div>
 </x-layouts.markaz-layout>

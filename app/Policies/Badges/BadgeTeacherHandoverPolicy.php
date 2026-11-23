@@ -12,23 +12,23 @@ class BadgeTeacherHandoverPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->can('badges.handovers.view');
+        return $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor']);
     }
 
     public function view(User $user, BadgeTeacherHandover $handover): bool
     {
-        return $user->can('badges.handovers.view')
+        return $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor'])
             && $this->access->teacherInScope($user, $handover->teacher_id);
     }
 
     public function create(User $user): bool
     {
-        return $user->can('badges.handovers.create');
+        return $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor']);
     }
 
     public function cancel(User $user, BadgeTeacherHandover $handover): bool
     {
-        return $user->can('badges.handovers.cancel')
+        return $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor'])
             && $this->access->teacherInScope($user, $handover->teacher_id);
     }
 }

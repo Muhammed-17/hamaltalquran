@@ -148,7 +148,7 @@
                 @endcan
 
                 {{-- قسم الأوسمة --}}
-                @canany(['badges.types.view', 'badges.stock.view', 'badges.handovers.view', 'badges.entitlements.view', 'badges.shortages.view', 'badges.collections.view'])
+                @canany(['badges.entitlements.view', 'badges.shortages.view'])
                 <div x-data="{ open: {{ request()->routeIs('badges.*') ? 'true' : 'false' }} }" class="space-y-1">
                     <button @click="open = !open"
                         class="w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-[#0d7a48] transition-colors focus:outline-none {{ request()->routeIs('badges.*') ? 'bg-[#0d7a48]' : '' }}">
@@ -158,9 +158,9 @@
                         </svg>
                     </button>
                     <div x-show="open" class="space-y-1 pr-4">
-                        @can('badges.types.view')<a href="{{ route('badges.types.index') }}" class="block px-4 py-1.5 rounded-lg text-sm {{ request()->routeIs('badges.types.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">أنواع الأوسمة</a>@endcan
-                        @can('badges.stock.view')<a href="{{ route('badges.stock.index') }}" class="block px-4 py-1.5 rounded-lg text-sm {{ request()->routeIs('badges.stock.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">المخزون المركزي</a>@endcan
-                        @can('badges.handovers.view')<a href="{{ route('badges.handovers.index') }}" class="block px-4 py-1.5 rounded-lg text-sm {{ request()->routeIs('badges.handovers.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">تسليم المعلمون</a>@endcan
+                        @if (auth()->user()->hasRole('admin'))<a href="{{ route('badges.types.index') }}" class="block px-4 py-1.5 rounded-lg text-sm {{ request()->routeIs('badges.types.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">أنواع الأوسمة</a>@endif
+                        @if (auth()->user()->hasRole('admin'))<a href="{{ route('badges.stock.index') }}" class="block px-4 py-1.5 rounded-lg text-sm {{ request()->routeIs('badges.stock.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">المخزون المركزي</a>@endif
+                        @if (auth()->user()->hasRole(['admin', 'general_manager', 'manager', 'supervisor']))<a href="{{ route('badges.handovers.index') }}" class="block px-4 py-1.5 rounded-lg text-sm {{ request()->routeIs('badges.handovers.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">تسليم المعلمون</a>@endif
                         @can('badges.entitlements.view')<a href="{{ route('badges.entitlements.index') }}" class="block px-4 py-1.5 rounded-lg text-sm {{ request()->routeIs('badges.entitlements.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">الاستحقاقات والتوزيعات</a>@endcan
                         @can('badges.shortages.view')<a href="{{ route('badges.shortages.index') }}" class="block px-4 py-1.5 rounded-lg text-sm {{ request()->routeIs('badges.shortages.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">الأوسمة الناقصة</a>@endcan
                         @can('viewAny', \App\Models\Badges\BadgeCollectionRound::class)<a href="{{ route('badges.collections.index') }}" class="block px-4 py-1.5 rounded-lg text-sm {{ request()->routeIs('badges.collections.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">تحصيل الأوسمة</a>@endcan

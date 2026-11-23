@@ -4,9 +4,9 @@
             <h1 class="text-3xl font-black mb-2">المخزون المركزي للأوسمة</h1>
             <p class="text-emerald-100/80 text-sm font-medium">رصيد الإدارة = الحركات المسجلة − المسلّم للمعلمين</p>
         </div>
-        @can('badges.stock.history')
+        @if (auth()->user()->hasRole('admin'))
         <a href="{{ route('badges.stock.history') }}" class="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-2xl">سجل الحركات الكامل</a>
-        @endcan
+        @endif
         <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
     </div>
 
@@ -34,7 +34,7 @@
     </div>
 
     <div class="grid lg:grid-cols-2 gap-6" dir="rtl">
-        @canany(['badges.stock.add', 'badges.stock.adjust'])
+        @if (auth()->user()->hasRole('admin'))
         <form method="POST" action="{{ route('badges.stock.movements.store') }}" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col h-full">
             @csrf
             <h2 class="font-black text-lg mb-4">تسجيل حركة مخزون</h2>
@@ -59,9 +59,9 @@
                 <button class="mt-auto self-start px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl active:scale-95">تسجيل الحركة</button>
             </div>
         </form>
-        @endcanany
+        @endif
 
-        @can('badges.stock.return')
+        @if (auth()->user()->hasRole('admin'))
         <form method="POST" action="{{ route('badges.stock.returns.store') }}" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col h-full">
             @csrf
             <h2 class="font-black text-lg mb-4">إرجاع أوسمة من معلم إلى الإدارة</h2>

@@ -21,7 +21,7 @@
     </div>
 
     {{-- إرجاع ذاتي: كل حامل عهدة يعيد من عهدته هو للإدارة من هنا --}}
-    @can('badges.stock.return')
+    @if (auth()->user()->hasRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher']))
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6" dir="rtl">
             <div class="font-black text-gray-800 mb-1">إرجاع أوسمة للإدارة (من عهدتي)</div>
             <p class="text-xs text-gray-400 mb-4">أعد جزءًا من الأوسمة التي بحوزتك إلى المخزون المركزي للإدارة — الإرجاع يكون من عهدتك أنت فقط.</p>

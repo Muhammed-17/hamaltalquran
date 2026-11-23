@@ -22,14 +22,14 @@ Route::middleware(['auth', 'verified'])
     ->group(function () {
 
         // ─── أنواع الأوسمة ───
-        Route::resource('types', BadgeTypeController::class);
+        Route::resource('types', BadgeTypeController::class)->middleware('role:admin');
 
         // ─── المخزون المركزي ───
         Route::get('stock', [BadgeStockController::class, 'index'])
-            ->middleware('permission:badges.stock.view')
+            ->middleware('role:admin')
             ->name('stock.index');
         Route::get('stock/history', [BadgeStockController::class, 'history'])
-            ->middleware('permission:badges.stock.history')
+            ->middleware('role:admin')
             ->name('stock.history');
         Route::post('stock/movements', [BadgeStockController::class, 'storeMovement'])
             ->name('stock.movements.store');

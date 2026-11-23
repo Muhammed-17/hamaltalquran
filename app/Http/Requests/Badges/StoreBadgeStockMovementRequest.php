@@ -9,10 +9,8 @@ class StoreBadgeStockMovementRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // الصلاحية حسب إشارة الكمية: موجبة (إضافة) ← stock.add، سالبة (تسوية) ← stock.adjust
-        return (int) $this->input('quantity') < 0
-            ? $this->user()->can('badges.stock.adjust')
-            : $this->user()->can('badges.stock.add');
+        // حركات المخزون المركزي (إضافة/تسوية) لمدير النظام وحده — بوابة دور لا صلاحية
+        return $this->user()->hasRole('admin');
     }
 
     public function rules(): array

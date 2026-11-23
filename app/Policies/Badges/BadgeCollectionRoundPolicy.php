@@ -16,31 +16,31 @@ class BadgeCollectionRoundPolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->access->canRunCollections($user) && $user->can('badges.collections.view');
+        return $this->access->canRunCollections($user);
     }
 
     public function view(User $user, BadgeCollectionRound $round): bool
     {
-        return $this->access->canRunCollections($user) && $user->can('badges.collections.view');
+        return $this->access->canRunCollections($user);
     }
 
     public function create(User $user): bool
     {
-        return $this->access->canRunCollections($user) && $user->can('badges.collections.create');
+        return $this->access->canRunCollections($user);
     }
 
     public function update(User $user, BadgeCollectionRound $round): bool
     {
-        return $this->access->canRunCollections($user) && $user->can('badges.collections.update');
+        return $this->access->canRunCollections($user);
     }
 
     public function complete(User $user, BadgeCollectionRound $round): bool
     {
-        return $this->access->canRunCollections($user) && $user->can('badges.collections.complete');
+        return $this->access->canRunCollections($user);
     }
 
     public function cancel(User $user, BadgeCollectionRound $round): bool
     {
-        return $this->access->canRunCollections($user) && $user->can('badges.collections.cancel');
+        return $this->access->canRunCollections($user);
     }
 }

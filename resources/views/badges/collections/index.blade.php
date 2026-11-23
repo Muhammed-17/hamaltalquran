@@ -4,7 +4,7 @@
             <h1 class="text-3xl font-black mb-2">جولات تحصيل الأوسمة</h1>
             <p class="text-emerald-100/80 text-sm font-medium">{{ $rounds->total() }} جولة</p>
         </div>
-        @can('badges.collections.create')
+        @can('create', \App\Models\Badges\BadgeCollectionRound::class)
             <a href="{{ route('badges.collections.create') }}" class="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-2xl shadow-lg active:scale-95">+ جولة جديدة</a>
         @endcan
         <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>

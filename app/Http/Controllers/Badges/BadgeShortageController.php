@@ -60,7 +60,7 @@ class BadgeShortageController extends Controller
         $items = (clone $base)->with(['student', 'teacher', 'badgeType', 'entitlement.circle'])
             ->whereIn('teacher_id', $pageKeys->pluck('key'))
             ->latest('id')->get();
-        $canCreateHandover = $user->can('badges.handovers.create');
+        $canCreateHandover = $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor']);
         $groups = $pageKeys->map(function ($k) use ($items, $user, $badgeAccess, $canCreateHandover, $balances) {
             $groupItems = $items->where('teacher_id', $k['key'])->values();
             $teacher = $groupItems->first()?->teacher;

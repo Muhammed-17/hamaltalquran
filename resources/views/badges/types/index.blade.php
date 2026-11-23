@@ -4,9 +4,9 @@
             <h1 class="text-3xl font-black mb-2">أنواع الأوسمة</h1>
             <p class="text-emerald-100/80 text-sm font-medium">{{ $types->total() }} نوع مسجل</p>
         </div>
-        @can('badges.types.create')
+        @if (auth()->user()->hasRole('admin'))
             <a href="{{ route('badges.types.create') }}" class="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-2xl shadow-lg active:scale-95">+ نوع جديد</a>
-        @endcan
+        @endif
         <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
     </div>
 
@@ -40,9 +40,9 @@
                         <td class="px-6 py-4 text-sm">
                             <span class="flex gap-2">
                                 <a href="{{ route('badges.types.show', $type) }}" class="text-[#0a5c36] font-bold hover:underline">عرض</a>
-                                @can('badges.types.update')
+                                @if (auth()->user()->hasRole('admin'))
                                     <a href="{{ route('badges.types.edit', $type) }}" class="text-blue-600 font-bold hover:underline">تعديل</a>
-                                @endcan
+                                @endif
                                 @can('delete', $type)
                                     <form method="POST" action="{{ route('badges.types.destroy', $type) }}" onsubmit="return confirm('حذف نوع الوسام نهائيًا؟')">
                                         @csrf @method('DELETE')

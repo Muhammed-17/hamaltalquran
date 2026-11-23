@@ -90,7 +90,7 @@ class BadgeEntitlementController extends Controller
             'paginator' => $paginator,
             'distributorBalances' => $distributorBalances,
             // عهدة المشاهد نفسه (لنموذج الإرجاع الذاتي): [badge_type_id => balance] بالموجب فقط
-            'returnBalances' => $user->can('badges.stock.return')
+            'returnBalances' => $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher'])
                 ? collect($balances->teacherBalances($user->id))->filter(fn ($q) => (int) $q > 0)
                 : collect(),
             'distributors' => $distributors,

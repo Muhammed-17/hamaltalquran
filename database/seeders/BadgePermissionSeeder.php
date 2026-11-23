@@ -48,26 +48,22 @@ class BadgePermissionSeeder extends Seeder
             'badges.collections.complete', 'badges.collections.cancel',
         ]);
 
-        // إعادة هيكلة الصلاحيات: أنواع الأوسمة والمخزون المركزي لمدير
-        // النظام وحده، وصلاحيات التقارير حُذفت (بوابتها دور الأدمن)،
-        // وصلاحيات التوزيعات دُمجت في الاستحقاقات، والتسليمات لا يراها
-        // المعلم — تُسحب المنح القديمة من أي دور غير الأدمن صراحة لأن
-        // هذا البذر إضافي بطبيعته ولا يسحب تلقائيًا
-        $adminOnly = [
+        // بوابات الأدوار حلّت محل عائلات كاملة من الصلاحيات (الأنواع،
+        // المخزون، التسليمات، التحصيل، التوزيعات المدموجة، التقارير):
+        // تُسحب منحها القديمة من كل الأدوار صراحة لأن هذا البذر إضافي
+        // بطبيعته ولا يسحب تلقائيًا — وتبقى صفوف الصلاحيات اليتيمة في
+        // القاعدة بلا أثر (لا فحص في الكود يشير إليها)
+        $roleGated = [
             'badges.types.view', 'badges.types.create', 'badges.types.update', 'badges.types.delete',
-            'badges.stock.view', 'badges.stock.add', 'badges.stock.adjust', 'badges.stock.history',
+            'badges.stock.view', 'badges.stock.add', 'badges.stock.adjust', 'badges.stock.return', 'badges.stock.history',
+            'badges.handovers.view', 'badges.handovers.create', 'badges.handovers.cancel',
+            'badges.collections.view', 'badges.collections.create', 'badges.collections.update', 'badges.collections.complete', 'badges.collections.cancel',
+            'badges.distributions.view', 'badges.distributions.create', 'badges.distributions.cancel',
             'badges.reports.view',
         ];
-        $mergedAway = [
-            'badges.distributions.view', 'badges.distributions.create', 'badges.distributions.cancel',
-        ];
-        foreach (Role::where('name', '!=', 'admin')->get() as $role) {
-            $role->revokePermissionTo(array_merge($adminOnly, $mergedAway));
+        foreach (Role::all() as $role) {
+            $role->revokePermissionTo($roleGated);
         }
-        Role::where('name', 'admin')->first()?->revokePermissionTo($mergedAway);
-        $teacherRole?->revokePermissionTo([
-            'badges.handovers.view', 'badges.handovers.create', 'badges.handovers.cancel',
-        ]);
 
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
     }

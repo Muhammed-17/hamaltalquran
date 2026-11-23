@@ -823,12 +823,13 @@ test('collection damaged: settled for the student but never returns to teacher c
 });
 
 test('permissions and policies gate badge operations', function () {
-    expect($this->admin->can('badges.types.create'))->toBeTrue()
-        ->and($this->teacherUser->can('badges.types.create'))->toBeFalse()
+    // الأنواع والتسليمات بوابات أدوار لا صلاحيات: السياسات تتحقق من الدور
+    expect($this->admin->can('create', \App\Models\Badges\BadgeType::class))->toBeTrue()
+        ->and($this->teacherUser->can('create', \App\Models\Badges\BadgeType::class))->toBeFalse()
         ->and($this->teacherUser->can('badges.entitlements.create'))->toBeTrue()
-        ->and($this->teacherUser->can('badges.stock.add'))->toBeFalse()
-        ->and($this->teacherUser->can('badges.handovers.create'))->toBeFalse()
-        ->and($this->managerB->can('badges.handovers.create'))->toBeTrue();
+        ->and($this->teacherUser->can('create', \App\Models\Badges\BadgeTeacherHandover::class))->toBeFalse()
+        ->and($this->managerB->can('create', \App\Models\Badges\BadgeTeacherHandover::class))->toBeTrue()
+        ->and($this->teacherUser->can('create', \App\Models\Badges\BadgeCollectionRound::class))->toBeFalse();
 
     // المعلم لا يفتح صفحة المخزون المركزي
     $this->actingAs($this->teacherUser)->get(route('badges.stock.index'))->assertRedirect();
@@ -1769,7 +1770,11 @@ test('badge access redesign: types and stock are admin-only, reports and statist
             ->not->toContain('badges.distributions.create')
             ->not->toContain('badges.distributions.cancel')
             ->not->toContain('badges.reports.view')
-            ->not->toContain('badges.types.view');
+            ->not->toContain('badges.types.view')
+            ->not->toContain('badges.stock.view')
+            ->not->toContain('badges.stock.return')
+            ->not->toContain('badges.handovers.view')
+            ->not->toContain('badges.collections.view');
     }
     expect(\Spatie\Permission\Models\Role::findByName('teacher')->permissions->pluck('name'))
         ->not->toContain('badges.handovers.view');

@@ -9,28 +9,28 @@ class BadgeTypePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('badges.types.view');
+        return $user->hasRole('admin');
     }
 
     public function view(User $user, BadgeType $type): bool
     {
-        return $user->can('badges.types.view');
+        return $user->hasRole('admin');
     }
 
     public function create(User $user): bool
     {
-        return $user->can('badges.types.create');
+        return $user->hasRole('admin');
     }
 
     public function update(User $user, BadgeType $type): bool
     {
-        return $user->can('badges.types.update');
+        return $user->hasRole('admin');
     }
 
     public function delete(User $user, BadgeType $type): bool
     {
         // لا حذف لنوع مستخدم فعليًا في أي حركة/عملية
-        return $user->can('badges.types.delete')
+        return $user->hasRole('admin')
             && $type->stockMovements()->doesntExist()
             && $type->handovers()->doesntExist()
             && $type->entitlements()->doesntExist()

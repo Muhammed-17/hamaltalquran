@@ -5,7 +5,7 @@
             <p class="text-emerald-100/80 text-sm font-medium">{{ $paginator->total() }} عملية تسليم</p>
         </div>
         <div class="flex flex-wrap gap-2.5 z-10">
-            @can('badges.handovers.create')
+            @can('create', \App\Models\Badges\BadgeTeacherHandover::class)
                 <a href="{{ route('badges.handovers.create') }}" class="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-2xl shadow-lg active:scale-95">+ تسليم جديد</a>
             @endcan
             @if (auth()->user()->hasRole('admin'))

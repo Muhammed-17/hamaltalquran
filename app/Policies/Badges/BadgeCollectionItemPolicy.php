@@ -13,13 +13,12 @@ class BadgeCollectionItemPolicy
 
     public function view(User $user, BadgeCollectionItem $item): bool
     {
-        return $this->access->canRunCollections($user) && $user->can('badges.collections.view');
+        return $this->access->canRunCollections($user);
     }
 
     public function update(User $user, BadgeCollectionItem $item): bool
     {
         return $this->access->canRunCollections($user)
-            && $user->can('badges.collections.update')
             && $item->round->isDraft();
     }
 }

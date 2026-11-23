@@ -11,7 +11,7 @@ class StoreBadgeReturnRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('badges.stock.return');
+        return $this->user()->hasRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher']);
     }
 
     public function rules(): array
