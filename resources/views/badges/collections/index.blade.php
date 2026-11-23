@@ -26,6 +26,10 @@
                     @foreach (\App\Enums\Badges\CollectionRoundStatus::cases() as $s)<option value="{{ $s->value }}" @selected(request('status') === $s->value)>{{ $s->label() }}</option>@endforeach
                 </select>
             </div>
+            <div class="w-full lg:w-44">
+                <label class="block text-xs font-bold text-gray-400 mb-1.5">الشهر</label>
+                <input type="month" name="month" value="{{ request('month') }}" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
+            </div>
             <button class="px-6 py-2.5 bg-[#0a5c36] text-white font-bold rounded-xl text-sm">تصفية</button>
         </form>
     </div>

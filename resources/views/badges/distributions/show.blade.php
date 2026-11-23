@@ -12,7 +12,6 @@
     </div>
 
     <div class="mt-6 flex gap-3" dir="rtl">
-        <a href="{{ route('badges.entitlements.show', $distribution->entitlement) }}" class="px-5 py-2.5 bg-gray-100 rounded-xl font-bold text-sm">فتح الاستحقاق</a>
         @can('cancel', $distribution)
             @if ($distribution->status === 'active')
                 <form method="POST" action="{{ route('badges.distributions.cancel', $distribution) }}" onsubmit="return confirm('إلغاء هذا التوزيع؟')">

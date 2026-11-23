@@ -44,7 +44,7 @@ Route::middleware(['auth', 'verified'])
             ->middleware('role:admin')
             ->name('handovers.statistics');
         Route::resource('handovers', BadgeTeacherHandoverController::class)
-            ->only(['index', 'create', 'store', 'show']);
+            ->only(['index', 'create', 'store']);
         Route::post('handovers/{handover}/cancel', [BadgeTeacherHandoverController::class, 'cancel'])
             ->name('handovers.cancel');
 
@@ -64,7 +64,7 @@ Route::middleware(['auth', 'verified'])
             ->middleware('role:admin')
             ->name('entitlements.report');
         Route::resource('entitlements', BadgeEntitlementController::class)
-            ->except(['destroy']);
+            ->except(['destroy', 'show']);
         Route::post('entitlements/{entitlement}/cancel', [BadgeEntitlementController::class, 'cancel'])
             ->name('entitlements.cancel');
 

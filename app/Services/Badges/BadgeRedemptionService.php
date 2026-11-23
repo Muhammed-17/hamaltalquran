@@ -11,7 +11,6 @@ use App\Models\Badges\BadgeRedemptionItem;
 use App\Models\Badges\BadgeStockMovement;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -94,7 +93,6 @@ class BadgeRedemptionService
                 'status'              => RedemptionStatus::Completed->value,
                 'notes'               => 'خصم مستحق بالاستبدال ضمن جولة تحصيل #' . $round->id,
                 'created_by'          => $actor->id,
-                'batch_id'            => (string) Str::uuid(),
                 'collection_round_id' => $round->id,
             ]);
 
@@ -111,9 +109,7 @@ class BadgeRedemptionService
                     BadgeRedemptionItem::create([
                         'redemption_id'     => $redemption->id,
                         'entitlement_id'    => $e->id,
-                        'distribution_id'   => null,
                         'badge_type_id'     => $typeId,
-                        'held_quantity'     => 0,
                         'shortage_quantity' => $take,
                     ]);
                     $want -= $take;

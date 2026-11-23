@@ -36,7 +36,6 @@
                 </tbody>
             </table>
             <div class="px-6 py-4">
-                <a href="{{ route('badges.entitlements.show', $shortage->entitlement) }}" class="text-[#0a5c36] font-bold text-sm hover:underline">فتح الاستحقاق كاملًا</a>
             </div>
         </div>
 

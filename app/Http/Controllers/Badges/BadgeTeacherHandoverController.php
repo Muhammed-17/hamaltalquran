@@ -196,17 +196,6 @@ class BadgeTeacherHandoverController extends Controller
             ->with('success', 'تم تسليم الأوسمة للمعلم بنجاح (' . count($handovers) . ' من الأنواع).');
     }
 
-    public function show(BadgeTeacherHandover $handover, BadgeBalanceService $balances)
-    {
-        $this->authorize('view', $handover);
-
-        return view('badges.handovers.show', [
-            'handover' => $handover->load(['teacher', 'badgeType', 'creator']),
-            'teacherBalance' => $balances->teacherBalance($handover->teacher_id, $handover->badge_type_id),
-            'adminBalance' => $balances->adminBalance($handover->badge_type_id),
-        ]);
-    }
-
     public function cancel(CancelBadgeOperationRequest $request, BadgeTeacherHandover $handover, BadgeTeacherHandoverService $service)
     {
         $this->authorize('cancel', $handover);

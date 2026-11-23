@@ -177,7 +177,17 @@
                             </div>
                             <span class="text-xs text-gray-500">المتبقي <b class="{{ $remaining > 0 ? 'text-amber-600' : 'text-gray-400' }}">{{ $remaining }}</b></span>
                             <span class="px-2 py-1 rounded-lg text-xs font-bold {{ match($e->status->value) { 'completed' => 'bg-emerald-50 text-emerald-700', 'partial' => 'bg-amber-50 text-amber-700', 'cancelled' => 'bg-red-50 text-red-600', default => 'bg-gray-100 text-gray-600' } }}">{{ $e->status->label() }}</span>
-                            <a href="{{ route('badges.entitlements.show', $e) }}" class="text-[#0a5c36] text-sm font-bold hover:underline">عرض</a>
+                            @can('update', $e)
+                                <a href="{{ route('badges.entitlements.edit', $e) }}" class="text-blue-600 text-sm font-bold hover:underline">تعديل</a>
+                            @endcan
+                            @can('cancel', $e)
+                                @if ($e->status->value !== 'cancelled')
+                                    <form method="POST" action="{{ route('badges.entitlements.cancel', $e) }}" onsubmit="return confirm('إلغاء هذا الاستحقاق؟')">
+                                        @csrf
+                                        <button class="text-red-600 text-sm font-bold hover:underline">إلغاء</button>
+                                    </form>
+                                @endif
+                            @endcan
                             @if ($remaining > 0 && $e->status->value !== 'cancelled')
                                 @can('badges.entitlements.create')
                                     @if ($distributorBalance > 0)

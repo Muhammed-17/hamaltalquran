@@ -25,6 +25,10 @@ class BadgeCollectionRoundController extends Controller
             ->withCount('items')
             ->when($request->filled('circle_id'), fn ($q) => $q->where('circle_id', $request->circle_id))
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
+            ->when($request->filled('month') && preg_match('/^\d{4}-\d{2}$/', (string) $request->month), function ($q) use ($request) {
+                $start = \Carbon\Carbon::createFromFormat('Y-m', $request->month)->startOfMonth();
+                $q->whereBetween('collection_date', [$start->toDateString(), $start->copy()->endOfMonth()->toDateString()]);
+            })
             ->latest('id')
             ->paginate(20)
             ->withQueryString();

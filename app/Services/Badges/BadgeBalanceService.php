@@ -94,14 +94,7 @@ class BadgeBalanceService
             ->whereHas('round', fn ($q) => $q->where('status', 'completed'))
             ->sum('collected_quantity');
 
-        // المستهلك بالاستبدال بلعبة خرج من يد الطالب أيضًا (رُدّ للمخزون المركزي)
-        $redeemed = (int) BadgeRedemptionItem::where('badge_type_id', $badgeTypeId)
-            ->whereHas('redemption', fn ($q) => $q
-                ->where('student_id', $studentId)
-                ->where('status', 'completed'))
-            ->sum('held_quantity');
-
-        return $distributed - $collected - $redeemed;
+        return $distributed - $collected;
     }
 
     /** خريطة أرصدة الإدارة لكل الأنواع: [badge_type_id => balance] */

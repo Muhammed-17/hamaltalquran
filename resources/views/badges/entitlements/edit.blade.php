@@ -24,7 +24,7 @@
             </div>
             <div class="flex gap-3">
                 <button class="px-6 py-3 bg-emerald-600 text-white font-bold rounded-2xl active:scale-95">حفظ التعديل</button>
-                <a href="{{ route('badges.entitlements.show', $entitlement) }}" class="px-6 py-3 bg-gray-100 font-bold rounded-2xl">رجوع</a>
+                <a href="{{ route('badges.entitlements.index') }}" class="px-6 py-3 bg-gray-100 font-bold rounded-2xl">رجوع</a>
             </div>
         </div>
     </form>

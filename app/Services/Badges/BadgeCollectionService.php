@@ -36,17 +36,6 @@ class BadgeCollectionService
     {
         $reserved = $this->reservedByDistribution();
 
-        // المستهلك بالاستبدال بلعبة خرج من يد الطالب للمخزون المركزي —
-        // لا يعود قابلًا للتحصيل من الطالب مرة أخرى
-        $redeemed = \App\Models\Badges\BadgeRedemptionItem::whereNotNull('distribution_id')
-            ->whereHas('redemption', fn ($q) => $q->where('status', 'completed'))
-            ->selectRaw('distribution_id, SUM(held_quantity) as total')
-            ->groupBy('distribution_id')
-            ->pluck('total', 'distribution_id');
-        foreach ($redeemed as $distId => $qty) {
-            $reserved[$distId] = (int) ($reserved[$distId] ?? 0) + (int) $qty;
-        }
-
         return BadgeDistribution::active()
             // التحصيل إداري عابر للفروع والمراكز: يُتجاوز نطاق المركز هنا فقط
             ->whereIn('student_id', $circle->students()->withoutGlobalScope(CenterScope::class)->pluck('id'))

@@ -546,7 +546,7 @@ test('collections create: owed deduction (game exchange) inside the round, cance
     $redemption = \App\Models\Badges\BadgeRedemption::where('collection_round_id', $round->id)->first();
     expect($redemption)->not->toBeNull()
         ->and($redemption->totalShortage())->toBe(10)
-        ->and($redemption->totalHeld())->toBe(0)
+        ->and($redemption->totalConsumed())->toBe(10)
         ->and($e->shortage->fresh()->shortage_quantity)->toBe(33) // 43 − 10
         ->and($e->shortage->fresh()->status->value)->toBe('partial')
         ->and($e->fresh()->distributableRemaining())->toBe(33)
@@ -1780,3 +1780,65 @@ test('badge access redesign: types and stock are admin-only, reports and statist
         ->not->toContain('badges.handovers.view');
 });
 
+
+test('badge permission seeder deletes orphan badge permission rows', function () {
+    // صفوف يتيمة من عائلات محذوفة (أنواع/سجل/استبدالات) ومنح قديم لأحدها
+    foreach (['badges.types.view', 'badges.logs.view', 'badges.redemptions.view'] as $stale) {
+        \Spatie\Permission\Models\Permission::create(['name' => $stale, 'guard_name' => 'web']);
+    }
+    $supervisorRole = \Spatie\Permission\Models\Role::findByName('supervisor');
+    $supervisorRole->givePermissionTo('badges.types.view');
+    expect(\Spatie\Permission\Models\Permission::where('name', 'like', 'badges.%')->count())->toBe(9);
+
+    $this->seed(\Database\Seeders\BadgePermissionSeeder::class);
+
+    // لم يبقَ إلا الست المعرّفة حاليًا، والمنح اليتيم زال مع صفه
+    $remaining = \Spatie\Permission\Models\Permission::where('name', 'like', 'badges.%')->pluck('name')->sort()->values()->all();
+    expect($remaining)->toBe([
+        'badges.entitlements.cancel', 'badges.entitlements.create', 'badges.entitlements.update', 'badges.entitlements.view',
+        'badges.shortages.resolve', 'badges.shortages.view',
+    ])->and($supervisorRole->fresh()->hasPermissionTo('badges.entitlements.view'))->toBeTrue();
+});
+
+test('handover show page is removed', function () {
+    badgeSeedStockAndHandover($this);
+    $handover = \App\Models\Badges\BadgeTeacherHandover::first();
+    // لا صفحة عرض لتسليم مفرد — القائمة تعرض العمليات مجمعة أصلًا
+    $this->actingAs($this->admin)->get('/badges/handovers/' . $handover->id)->assertNotFound();
+    $this->actingAs($this->admin)->get(route('badges.handovers.index'))->assertOk();
+});
+
+test('entitlement show page is removed, edit and cancel live on the index', function () {
+    badgeSeedStockAndHandover($this);
+    $entitlement = $this->entitlementService->create([
+        'student_id' => $this->student1->id, 'circle_id' => $this->circleA->id,
+        'teacher_id' => $this->teacherUser->id, 'badge_type_id' => $this->type->id,
+        'quantity' => 4, 'entitlement_date' => '2026-11-10',
+    ], $this->admin);
+
+    // لا صفحة عرض: نفس العنوان له مسارات تعديل فقط (405 لطلب GET)
+    expect($this->actingAs($this->admin)->get('/badges/entitlements/' . $entitlement->id)->status())->toBeIn([404, 405]);
+    $page = $this->actingAs($this->admin)->get(route('badges.entitlements.index'));
+    $page->assertOk()->assertSee(route('badges.entitlements.edit', $entitlement));
+});
+
+test('فلتر الشهر في صفحة جولات تحصيل الأوسمة', function () {
+    $mk = fn (string $date) => \App\Models\Badges\BadgeCollectionRound::create([
+        'circle_id' => $this->circleA->id,
+        'teacher_id' => $this->admin->id,
+        'collection_date' => $date,
+        'status' => 'completed',
+        'created_by' => $this->admin->id,
+    ]);
+    $nov = $mk('2026-11-15');
+    $oct = $mk('2026-10-15');
+
+    $resp = $this->actingAs($this->admin)->get(route('badges.collections.index', ['month' => '2026-11']));
+    $resp->assertOk();
+    $ids = collect($resp->viewData('rounds')->items())->pluck('id');
+    expect($ids)->toContain($nov->id)->not->toContain($oct->id);
+
+    $all = $this->actingAs($this->admin)->get(route('badges.collections.index'));
+    $allIds = collect($all->viewData('rounds')->items())->pluck('id');
+    expect($allIds)->toContain($nov->id)->toContain($oct->id);
+});

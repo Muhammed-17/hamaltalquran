@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class BadgeRedemption extends Model
 {
     protected $fillable = [
-        'student_id', 'period_month', 'redemption_date', 'status', 'notes', 'created_by', 'batch_id',
+        'student_id', 'period_month', 'redemption_date', 'status', 'notes', 'created_by',
         'collection_round_id',
     ];
 
@@ -52,19 +52,14 @@ class BadgeRedemption extends Model
         return $this->status === RedemptionStatus::Completed;
     }
 
-    /** إجمالي ما استُهلك: في يد الطالب (رُدّ للمخزون) + مستحق لم يُسلَّم */
-    public function totalHeld(): int
-    {
-        return (int) $this->items->sum('held_quantity');
-    }
-
     public function totalShortage(): int
     {
         return (int) $this->items->sum('shortage_quantity');
     }
 
+    /** إجمالي ما استُهلك من المستحق غير المسلّم */
     public function totalConsumed(): int
     {
-        return $this->totalHeld() + $this->totalShortage();
+        return $this->totalShortage();
     }
 }

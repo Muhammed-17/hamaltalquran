@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -63,6 +64,19 @@ class BadgePermissionSeeder extends Seeder
         ];
         foreach (Role::all() as $role) {
             $role->revokePermissionTo($roleGated);
+        }
+
+        // حذف صفوف الصلاحيات اليتيمة نفسها: صفحة إدارة الأدوار تقرأ جدول
+        // الصلاحيات، فبقاء الصف يعني بقاء خانة اختيار قابلة للمنح رغم أن
+        // لا فحص في الكود يشير إليها. يُحذف كل صف أوسمة غير معرّف في
+        // الإعدادات الحالية، مع روابطه بالأدوار والمستخدمين أولًا
+        $orphanIds = Permission::where('name', 'like', 'badges.%')
+            ->whereNotIn('name', array_keys($permissions))
+            ->pluck('id');
+        if ($orphanIds->isNotEmpty()) {
+            DB::table('role_has_permissions')->whereIn('permission_id', $orphanIds)->delete();
+            DB::table('model_has_permissions')->whereIn('permission_id', $orphanIds)->delete();
+            Permission::whereIn('id', $orphanIds)->delete();
         }
 
         app()[PermissionRegistrar::class]->forgetCachedPermissions();

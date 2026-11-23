@@ -15,12 +15,6 @@ class BadgeEntitlementPolicy
         return $user->can('badges.entitlements.view');
     }
 
-    public function view(User $user, BadgeEntitlement $entitlement): bool
-    {
-        return $user->can('badges.entitlements.view')
-            && ($entitlement->teacher_id === $user->id || $this->access->canAccessCircle($user, $entitlement->circle_id));
-    }
-
     public function create(User $user): bool
     {
         return $user->can('badges.entitlements.create');

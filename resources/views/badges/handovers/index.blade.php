@@ -99,7 +99,6 @@
                         <td class="px-6 py-4 text-sm">
                             @foreach ($items as $h)
                                 <span class="flex gap-2 items-center py-0.5">
-                                    <a href="{{ route('badges.handovers.show', $h) }}" class="text-[#0a5c36] font-bold hover:underline">عرض</a>
                                     @can('cancel', $h)
                                         @if ($h->status === 'active')
                                             <form method="POST" action="{{ route('badges.handovers.cancel', $h) }}" onsubmit="return confirm('إلغاء تسليم {{ $h->badgeType->name }}؟ سيُخصم من عهدة المستلم.')">

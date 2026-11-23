@@ -522,21 +522,6 @@ class BadgeEntitlementController extends Controller
         return redirect()->route('badges.entitlements.index')->with('success', $message);
     }
 
-    public function show(BadgeEntitlement $entitlement, BadgeBalanceService $balances)
-    {
-        $this->authorize('view', $entitlement);
-
-        $entitlement->load(['student', 'circle', 'teacher', 'badgeType', 'creator', 'shortage',
-            'distributions' => fn ($q) => $q->with('creator')->latest('id')]);
-
-        return view('badges.entitlements.show', [
-            'entitlement' => $entitlement,
-            'teacherBalance' => $balances->distributorBalance($entitlement->teacher_id, $entitlement->badge_type_id),
-            'delivered' => $entitlement->deliveredQuantity(),
-            'remaining' => $entitlement->distributableRemaining(),
-        ]);
-    }
-
     public function edit(BadgeEntitlement $entitlement)
     {
         $this->authorize('update', $entitlement);
@@ -548,7 +533,7 @@ class BadgeEntitlementController extends Controller
     {
         $service->update($entitlement, $request->only(['quantity', 'entitlement_date', 'notes']), $request->user());
 
-        return redirect()->route('badges.entitlements.show', $entitlement)->with('success', 'تم تحديث الاستحقاق بنجاح.');
+        return redirect()->route('badges.entitlements.index')->with('success', 'تم تحديث الاستحقاق بنجاح.');
     }
 
     public function cancel(CancelBadgeOperationRequest $request, BadgeEntitlement $entitlement, BadgeEntitlementService $service)

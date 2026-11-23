@@ -54,15 +54,6 @@
     <form method="GET" action="{{ route('badges.collections.create') }}" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6" dir="rtl">
         <div class="grid md:grid-cols-4 gap-4">
             <div>
-                <label class="block text-xs font-bold text-gray-400 mb-1.5">الحلقة *</label>
-                <select name="circle_id" onchange="this.form.submit()" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                    @foreach ($circles as $c)
-                        <option value="{{ $c->id }}" @selected($circle?->id === $c->id)>{{ $c->name }}</option>
-                    @endforeach
-                </select>
-                <x-input-error :messages="$errors->get('circle_id')" class="mt-2" />
-            </div>
-            <div>
                 <label class="block text-xs font-bold text-gray-400 mb-1.5">المسؤول عن التحصيل *</label>
                 <select name="teacher_id" onchange="this.form.submit()" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
                     <option value="">— اختر المسؤول —</option>
@@ -75,6 +66,15 @@
             <div>
                 <label class="block text-xs font-bold text-gray-400 mb-1.5">تاريخ التحصيل *</label>
                 <input type="date" name="collection_date" value="{{ $collectionDate }}" onchange="this.form.submit()" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-400 mb-1.5">الحلقة *</label>
+                <select name="circle_id" onchange="this.form.submit()" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
+                    @foreach ($circles as $c)
+                        <option value="{{ $c->id }}" @selected($circle?->id === $c->id)>{{ $c->name }}</option>
+                    @endforeach
+                </select>
+                <x-input-error :messages="$errors->get('circle_id')" class="mt-2" />
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-400 mb-1.5">الطالب *</label>

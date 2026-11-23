@@ -15,12 +15,6 @@ class BadgeTeacherHandoverPolicy
         return $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor']);
     }
 
-    public function view(User $user, BadgeTeacherHandover $handover): bool
-    {
-        return $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor'])
-            && $this->access->teacherInScope($user, $handover->teacher_id);
-    }
-
     public function create(User $user): bool
     {
         return $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor']);

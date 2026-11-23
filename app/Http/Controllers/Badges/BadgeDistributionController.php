@@ -50,7 +50,7 @@ class BadgeDistributionController extends Controller
             $request->notes,
         );
 
-        return redirect()->route('badges.entitlements.show', $entitlement)
+        return redirect()->route('badges.entitlements.index')
             ->with('success', 'تم تسجيل التوزيع بنجاح.');
     }
 
@@ -70,7 +70,7 @@ class BadgeDistributionController extends Controller
 
         $service->cancel($distribution, $request->user(), $request->reason);
 
-        return redirect()->route('badges.entitlements.show', $distribution->entitlement_id)
+        return redirect()->route('badges.entitlements.index')
             ->with('success', 'تم إلغاء التوزيع بنجاح.');
     }
 }

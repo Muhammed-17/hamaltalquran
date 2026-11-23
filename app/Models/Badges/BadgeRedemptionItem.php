@@ -10,8 +10,7 @@ class BadgeRedemptionItem extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'redemption_id', 'entitlement_id', 'distribution_id', 'badge_type_id',
-        'held_quantity', 'shortage_quantity',
+        'redemption_id', 'entitlement_id', 'badge_type_id', 'shortage_quantity',
     ];
 
     public function redemption(): BelongsTo
@@ -22,11 +21,6 @@ class BadgeRedemptionItem extends Model
     public function entitlement(): BelongsTo
     {
         return $this->belongsTo(BadgeEntitlement::class, 'entitlement_id');
-    }
-
-    public function distribution(): BelongsTo
-    {
-        return $this->belongsTo(BadgeDistribution::class, 'distribution_id');
     }
 
     public function badgeType(): BelongsTo
