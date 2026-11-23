@@ -15,7 +15,7 @@ class StoreBadgeDistributionRequest extends FormRequest
 
         return $entitlement
             ? $this->user()->can('create', [BadgeDistribution::class, $entitlement])
-            : $this->user()->can('badges.distributions.create');
+            : $this->user()->can('badges.entitlements.create');
     }
 
     public function rules(): array
