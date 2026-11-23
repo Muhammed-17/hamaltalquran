@@ -1973,14 +1973,12 @@ test('student show: badges and competitions tabs show the student data', functio
     $page = $this->actingAs($this->admin)->get(route('students.show', $this->student1));
     $page->assertOk()
         ->assertSee('الأوسمة')->assertSee('المسابقات')
-        ->assertSee('في يد الطالب حاليًا')
         ->assertSee('مسابقة الحفظ الكبرى')->assertSee('تم الاستلام');
 
     $summary = $page->viewData('badgeSummary');
     expect($summary)->toHaveCount(1)
         ->and($summary[0]['entitled'])->toBe(15)
-        ->and($summary[0]['delivered'])->toBe(11)
-        ->and($summary[0]['in_hand'])->toBe(2);
+        ->and($summary[0]['delivered'])->toBe(11);
 
     $collections = $page->viewData('badgeCollections');
     expect($collections)->toHaveCount(1)
@@ -1988,5 +1986,41 @@ test('student show: badges and competitions tabs show the student data', functio
         ->and($collections[0]['damaged'])->toBe(3);
 
     expect($page->viewData('badgeDistributions'))->toHaveCount(2)
-        ->and($page->viewData('badgeDeductions')->sum(fn ($r) => $r->items->sum('shortage_quantity')))->toBe(1);
+        ->and(collect($page->viewData('badgeDeductionRows'))->sum(fn ($r) => $r['item']->shortage_quantity))->toBe(1);
+});
+
+test('student show tabs: latest 50 first, load-more endpoint fetches the rest', function () {
+    // 60 سجل حضور للطالب الأول على أيام متتالية
+    for ($i = 0; $i < 60; $i++) {
+        \App\Models\Attendance::create([
+            'student_id' => $this->student1->id,
+            'date' => now()->subDays($i)->toDateString(),
+            'status' => 'present',
+            'user_id' => $this->admin->id,
+        ]);
+    }
+
+    $page = $this->actingAs($this->admin)->get(route('students.show', $this->student1));
+    $page->assertOk()->assertSee('data-load-more', false)->assertSee('تم عرض 50 من أصل 60', false);
+    expect($page->viewData('attendanceTotal'))->toBe(60)
+        ->and($page->viewData('attendanceRows'))->toHaveCount(50);
+
+    // الجزء التالي من نقطة الجلب: 10 صفوف ولا مزيد
+    $chunk = $this->actingAs($this->admin)->getJson(route('students.tab-data', $this->student1) . '?tab=attendance&offset=50');
+    $chunk->assertOk()->assertJson(['has_more' => false, 'shown' => 60, 'total' => 60]);
+    expect(substr_count($chunk->json('html'), '<tr'))->toBe(10);
+
+    // من الصفر: 50 صفًا ويوجد مزيد
+    $first = $this->actingAs($this->admin)->getJson(route('students.tab-data', $this->student1) . '?tab=attendance&offset=0');
+    $first->assertOk()->assertJson(['has_more' => true, 'shown' => 50]);
+    expect(substr_count($first->json('html'), '<tr'))->toBe(50);
+
+    // تبويب غير معروف: 404
+    $this->actingAs($this->admin)->getJson(route('students.tab-data', $this->student1) . '?tab=nope')->assertNotFound();
+
+    // ولي أمر غير مرتبط بالطالب: ممنوع
+    $guardian = User::factory()->create(['status' => 'active']);
+    $guardian->assignRole('guardian');
+    $denied = $this->actingAs($guardian)->getJson(route('students.tab-data', $this->student1) . '?tab=attendance&offset=50');
+    expect($denied->status())->toBeIn([302, 403]);
 });

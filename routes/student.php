@@ -23,7 +23,6 @@ Route::middleware(['auth', 'verified', 'permission:view students'])->group(funct
         Route::post('/students', [StudentController::class, 'store'])->name('students.store');
     });
 
-    Route::get('/students/{student}', [StudentController::class, 'show'])->name('students.show');
 
     Route::middleware('permission:edit students')->group(function () {
         Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
@@ -36,4 +35,11 @@ Route::middleware(['auth', 'verified', 'permission:view students'])->group(funct
 
     // ملحوظة: كان هنا مسار assign-circle يشير لدالة غير موجودة في الكنترولر (500 عند الاستدعاء) —
     // تعيين الحلقة يتم فعليًا من تحديث الطالب مع فحص صلاحية assign student to circle داخله.
+});
+
+// عرض طالب واحد وبيانات تبويباته: متاحان أيضًا لولي الأمر صاحب صلاحية «عرض تفاصيل الأبناء» —
+// السياسة وحدها تحسم من يرى أي طالب (الولي: أبناؤه غير المتوقفين فقط).
+Route::middleware(['auth', 'verified', 'permission:view students|view own children'])->group(function () {
+    Route::get('/students/{student}', [StudentController::class, 'show'])->name('students.show');
+    Route::get('/students/{student}/tab-data', [StudentController::class, 'tabData'])->name('students.tab-data');
 });

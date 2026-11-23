@@ -21,6 +21,8 @@ use \App\Services\EducationStageExclusionService;
 
 class StudentController extends Controller
 {
+    /** عدد سجلات كل قائمة في تبويبات صفحة الطالب قبل «عرض المزيد» */
+    private const TAB_PAGE_SIZE = 50;
     public function __construct(protected UserAccessService $access) {}
 
     private array $constructionFields = [
@@ -349,6 +351,64 @@ class StudentController extends Controller
             ? round((($presentCount + $lateCount) / $totalAttendance) * 100)
             : 0;
 
+        $feeTimeline = $this->feeTimelineFor($student);
+
+        $surahTestResults = \App\Models\StudentSurahTestResult::where('student_id', $student->id)
+            ->with(['surahTest.surah', 'surahTest.circle', 'surahTest.teacher.user'])
+            ->whereHas('surahTest')
+            ->get()
+            ->sortByDesc(fn($result) => $result->surahTest->test_date);
+
+        $attendanceRows = $this->attendanceRows($student);
+        $weeklyRows = $this->weeklyRows($student);
+        $badgeLists = $this->badgeLists($student);
+
+        return view('students.show', [
+            'student'           => $student,
+            'attendanceRate'    => $attendanceRate,
+            'presentCount'      => $presentCount,
+            'lateCount'         => $lateCount,
+            'absentCount'       => $absentCount,
+            'excusedCount'      => $excusedCount,
+            'unpaidMonthsCount' => $student->overdue_months_count,
+            'paidMonthsCount'   => $student->subscriptions->where('status', 'مدفوع')->count(),
+            'feeTimeline'       => $feeTimeline->take(self::TAB_PAGE_SIZE),
+            'feeTimelineTotal'  => $feeTimeline->count(),
+            'suspendedPastDebt' => $student->suspended_past_debt,
+            'surahTestResults'  => $surahTestResults,
+            'badgeSummary'      => $badgeLists['summary'],
+            'badgeDistributions' => $badgeLists['distributions']->take(self::TAB_PAGE_SIZE),
+            'badgeDistributionsTotal' => $badgeLists['distributions']->count(),
+            'badgeCollections'  => $badgeLists['collections']->take(self::TAB_PAGE_SIZE),
+            'badgeCollectionsTotal' => $badgeLists['collections']->count(),
+            'badgeDeductionRows' => $badgeLists['deductionRows']->take(self::TAB_PAGE_SIZE),
+            'badgeDeductionsTotal' => $badgeLists['deductionRows']->count(),
+            'attendanceRows'    => $attendanceRows->take(self::TAB_PAGE_SIZE),
+            'attendanceTotal'   => $attendanceRows->count(),
+            'weeklyRows'        => $weeklyRows->take(self::TAB_PAGE_SIZE),
+            'weeklyTotal'       => $weeklyRows->count(),
+        ]);
+    }
+
+    /** سجلات حضور الطالب مرتبة من الأحدث (تاريخ ثم رقم) */
+    private function attendanceRows(Student $student): \Illuminate\Support\Collection
+    {
+        return $student->attendances
+            ->sortByDesc(fn ($a) => [$a->date?->timestamp ?? 0, $a->id])
+            ->values();
+    }
+
+    /** متابعات الطالب الأسبوعية مرتبة من الأحدث (بداية الأسبوع ثم الرقم) */
+    private function weeklyRows(Student $student): \Illuminate\Support\Collection
+    {
+        return $student->weeklyFollowups
+            ->sortByDesc(fn ($f) => [$f->week_start?->timestamp ?? 0, $f->id])
+            ->values();
+    }
+
+    /** الخط الزمني الشهري لرسوم الطالب من الالتحاق حتى الآن، من الأحدث */
+    private function feeTimelineFor(Student $student): \Illuminate\Support\Collection
+    {
         $startDate = $student->join_date
             ? $student->join_date->copy()->startOfMonth()
             : $student->created_at->copy()->startOfMonth();
@@ -357,7 +417,7 @@ class StudentController extends Controller
             ? $student->suspended_at->copy()->startOfMonth()
             : now()->startOfMonth();
 
-        $subscriptionIndex = $student->subscriptions->keyBy(fn($s) => $s->month->format('Y-m'));
+        $subscriptionIndex = $student->subscriptions->keyBy(fn ($s) => $s->month->format('Y-m'));
         $feeTimeline       = collect();
         $checkDate         = $startDate->copy();
 
@@ -371,14 +431,13 @@ class StudentController extends Controller
             $checkDate->addMonth();
         }
 
-        $surahTestResults = \App\Models\StudentSurahTestResult::where('student_id', $student->id)
-            ->with(['surahTest.surah', 'surahTest.circle', 'surahTest.teacher.user'])
-            ->whereHas('surahTest')
-            ->get()
-            ->sortByDesc(fn($result) => $result->surahTest->test_date);
+        return $feeTimeline->sortByDesc('month')->values();
+    }
 
+    /** قوائم تبويب الأوسمة لطالب: الملخص والتوزيعات والتحصيلات وصفوف خصومات المستحق */
+    private function badgeLists(Student $student): array
+    {
         // تبويب الأوسمة: ملخص لكل نوع (المستحق/المسلّم/في يد الطالب حاليًا) + سجل الحركات
-        $badgeBalances = app(\App\Services\Badges\BadgeBalanceService::class);
         $badgeEntitled = \App\Models\Badges\BadgeEntitlement::where('student_id', $student->id)
             ->where('status', '!=', \App\Enums\Badges\EntitlementStatus::Cancelled->value)
             ->selectRaw('badge_type_id, SUM(quantity) as total')->groupBy('badge_type_id')->pluck('total', 'badge_type_id');
@@ -391,7 +450,6 @@ class StudentController extends Controller
                 'type' => $t,
                 'entitled' => (int) ($badgeEntitled[$t->id] ?? 0),
                 'delivered' => (int) ($badgeDelivered[$t->id] ?? 0),
-                'in_hand' => $badgeBalances->studentBalance($student->id, $t->id),
             ]);
         $badgeDistributions = \App\Models\Badges\BadgeDistribution::active()
             ->where('student_id', $student->id)->with('badgeType')
@@ -410,23 +468,49 @@ class StudentController extends Controller
         $badgeDeductions = \App\Models\Badges\BadgeRedemption::where('student_id', $student->id)
             ->where('status', \App\Enums\Badges\RedemptionStatus::Completed->value)
             ->with(['items.badgeType'])->orderByDesc('redemption_date')->orderByDesc('id')->get();
+        $badgeDeductionRows = $badgeDeductions->flatMap(fn ($r) => $r->items->map(fn ($i) => ['redemption' => $r, 'item' => $i]))->values();
 
-        return view('students.show', [
-            'student'           => $student,
-            'attendanceRate'    => $attendanceRate,
-            'presentCount'      => $presentCount,
-            'lateCount'         => $lateCount,
-            'absentCount'       => $absentCount,
-            'excusedCount'      => $excusedCount,
-            'unpaidMonthsCount' => $student->overdue_months_count,
-            'paidMonthsCount'   => $student->subscriptions->where('status', 'مدفوع')->count(),
-            'feeTimeline'       => $feeTimeline->sortByDesc('month'),
-            'suspendedPastDebt' => $student->suspended_past_debt,
-            'surahTestResults'  => $surahTestResults,
-            'badgeSummary'      => $badgeSummary,
-            'badgeDistributions' => $badgeDistributions,
-            'badgeCollections'  => $badgeCollections,
-            'badgeDeductions'   => $badgeDeductions,
+        return [
+            'summary' => $badgeSummary,
+            'distributions' => $badgeDistributions,
+            'collections' => $badgeCollections,
+            'deductionRows' => $badgeDeductionRows,
+        ];
+    }
+
+    /** جلب الجزء التالي من إحدى قوائم تبويبات صفحة الطالب (زر «عرض المزيد») */
+    public function tabData(Request $request, $id)
+    {
+        $student = Student::withoutGlobalScope(CenterScope::class)->findOrFail($id);
+        $this->authorize('view', $student);
+        $this->authorizeStudentCenter($student);
+        $student->load([
+            'attendances',
+            'subscriptions',
+            'weeklyFollowups.teacher.user',
+            'weeklyFollowups.newMemorizations.toSurah',
+            'weeklyFollowups.revisions.toSurah',
+        ]);
+
+        $offset = max(0, (int) $request->query('offset', self::TAB_PAGE_SIZE));
+        [$rows, $view] = match ((string) $request->query('tab')) {
+            'attendance' => [$this->attendanceRows($student), 'students.partials.attendance_rows'],
+            'weekly' => [$this->weeklyRows($student), 'students.partials.weekly_rows'],
+            'fees' => [$this->feeTimelineFor($student), 'students.partials.fees_rows'],
+            'badge_distributions' => [$this->badgeLists($student)['distributions'], 'students.partials.badge_distribution_rows'],
+            'badge_collections' => [$this->badgeLists($student)['collections'], 'students.partials.badge_collection_rows'],
+            'badge_deductions' => [$this->badgeLists($student)['deductionRows'], 'students.partials.badge_deduction_rows'],
+            default => abort(404),
+        };
+
+        $total = $rows->count();
+        $slice = $rows->slice($offset, self::TAB_PAGE_SIZE)->values();
+
+        return response()->json([
+            'html' => view($view, ['rows' => $slice])->render(),
+            'has_more' => $offset + $slice->count() < $total,
+            'shown' => min($offset + $slice->count(), $total),
+            'total' => $total,
         ]);
     }
 

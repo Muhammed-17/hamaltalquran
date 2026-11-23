@@ -71,16 +71,6 @@
                     @enderror
                 </div>
 
-                <!-- Card -->
-                <div class="mb-4">
-                    <label for="card" class="block text-sm font-medium text-gray-700 mb-1">الأوسمة</label>
-                    <input type="number" name="card" id="card" min="0" step="1"
-                        value="{{ old('card', $attendance->card ?? 0) }}"
-                        class="w-full rounded-lg border-gray-300 focus:border-emerald-500 focus:ring-emerald-500">
-                    @error('card')
-                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
 
                 <!-- Notes -->
                 <div class="mb-6">

@@ -774,31 +774,18 @@
                                     <th class="px-6 py-5">الملاحظات</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-50">
-                                @php
-                                $statusClasses = ['present' => 'bg-emerald-100 text-emerald-700', 'absent' => 'bg-rose-100 text-rose-700', 'late' => 'bg-amber-100 text-amber-700', 'excused' => 'bg-blue-100 text-blue-700'];
-                                $statusLabels = ['present' => 'حاضر', 'absent' => 'غائب', 'late' => 'متأخر', 'excused' => 'بعذر'];
-                                @endphp
-                                @forelse($student->attendances->sortByDesc('date') as $att)
-                                <tr class="hover:bg-emerald-50/30 transition-all">
-                                    <td class="px-6 py-5 font-medium text-gray-800">
-                                        {{ $att->date->locale('ar')->isoFormat('dddd، D MMMM YYYY') }}
-                                    </td>
-                                    <td class="px-6 py-5">
-                                        <span class="px-3 py-1 rounded-lg text-xs font-bold {{ $statusClasses[$att->status] ?? 'bg-gray-100 text-gray-700' }}">
-                                            {{ $statusLabels[$att->status] ?? $att->status }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-5 text-gray-500 text-sm">{{ $att->notes ?? '—' }}</td>
-                                </tr>
-                                @empty
+                            <tbody class="divide-y divide-gray-50" id="attendance-rows">
+                                @if($attendanceTotal === 0)
                                 <tr>
                                     <td colspan="3" class="px-6 py-12 text-center text-gray-400 font-medium">لا توجد سجلات حضور</td>
                                 </tr>
-                                @endforelse
+                                @else
+                                @include('students.partials.attendance_rows', ['rows' => $attendanceRows])
+                                @endif
                             </tbody>
                         </table>
                     </div>
+                                @include('students.partials.load_more', ['tab' => 'attendance', 'total' => $attendanceTotal, 'target' => 'attendance-rows'])
                 </div>
             </div>
 
@@ -852,41 +839,18 @@
                                     <th class="px-6 py-5">الحالة</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-50">
-                                @forelse($feeTimeline ?? [] as $entry)
-                                <tr class="{{ $entry->is_paid ? 'hover:bg-emerald-50/30' : 'bg-rose-50/40 hover:bg-rose-50/60' }} transition-all">
-                                    <td class="px-6 py-5 font-medium {{ $entry->is_paid ? 'text-gray-800' : 'text-rose-800' }}">
-                                        {{ $entry->month->locale('ar')->isoFormat('MMMM YYYY') }}
-                                    </td>
-                                    <td class="px-6 py-5 font-black {{ $entry->is_paid ? 'text-gray-800' : 'text-rose-600' }}">
-                                        {{ $entry->subscription ? number_format($entry->subscription->amount, 2) : '—' }} ج.م
-                                    </td>
-                                    <td class="px-6 py-5 text-gray-500 text-sm">{{ $entry->subscription?->paid_at?->format('Y/m/d') ?? '—' }}</td>
-                                    <td class="px-6 py-5">
-                                        @if($entry->subscription)
-                                        <span class="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold">
-                                            {{ ['cash' => 'نقدي', 'transfer' => 'تحويل بنكي'][$entry->subscription->payment_method] ?? $entry->subscription->payment_method }}
-                                        </span>
-                                        @else
-                                        <span class="text-gray-300">—</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-5">
-                                        @if($entry->is_paid)
-                                        <span class="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold">مدفوع</span>
-                                        @else
-                                        <span class="px-3 py-1 bg-rose-100 text-rose-700 rounded-lg text-xs font-bold">غير مدفوع</span>
-                                        @endif
-                                    </td>
-                                </tr>
-                                @empty
+                            <tbody class="divide-y divide-gray-50" id="fees-rows">
+                                @if($feeTimelineTotal === 0)
                                 <tr>
                                     <td colspan="5" class="px-6 py-12 text-center text-gray-400 font-medium">لا توجد اشتراكات مسجلة</td>
                                 </tr>
-                                @endforelse
+                                @else
+                                @include('students.partials.fees_rows', ['rows' => $feeTimeline])
+                                @endif
                             </tbody>
                         </table>
                     </div>
+                                @include('students.partials.load_more', ['tab' => 'fees', 'total' => $feeTimelineTotal, 'target' => 'fees-rows'])
                 </div>
             </div>
 
@@ -996,64 +960,12 @@
                                     <th class="px-6 py-5">الإجراءات</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-50">
-                                @foreach($student->weeklyFollowups->sortByDesc('week_start') as $followup)
-                                <tr class="hover:bg-emerald-50/30 transition-all">
-                                    <td class="px-6 py-5 font-medium text-gray-800">
-                                        {{ $followup->week_start?->format('Y-m-d') }} — {{ $followup->week_end?->format('Y-m-d') }}
-                                    </td>
-                                    <td class="px-6 py-5">
-                                        @if($followup->plan_type === 'group')
-                                        <span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold">جماعي</span>
-                                        @else
-                                        <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold">فردي</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-6 py-5 text-gray-600">{{ $followup->teacher?->user?->name ?? '-' }}</td>
-                                    <td class="px-6 py-5 text-gray-600 text-sm">
-                                        {{ $followup->newMemorizations?->toSurah?->name_arabic ?? '—' }}
-                                    </td>
-                                    <td class="px-6 py-5 text-gray-600 text-sm">
-                                        {{ $followup->revisions?->toSurah?->name_arabic ?? '—' }}
-                                    </td>
-                                    <td class="px-6 py-5">
-                                        <div class="flex items-center gap-1.5">
-                                            @can('view', $followup)
-                                            <a href="{{ route('student-weekly-followups.show', $followup) }}" class="w-7 h-7 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center"><i class="fas fa-eye text-xs"></i></a>
-                                            @endcan
-
-                                            @can('update', $followup)
-                                            <a href="{{ route('student-weekly-followups.edit', $followup) }}" class="w-7 h-7 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center"><i class="fas fa-edit text-xs"></i></a>
-                                            @endcan
-
-                                            @can('delete', $followup)
-                                            @if($followup->plan_type === 'group')
-                                            <form action="{{ route('student-weekly-followups.destroy-group', $followup->batch_id) }}" method="POST" class="inline" id="delete-followup-{{ $followup->id }}">
-                                                @csrf @method('DELETE')
-                                                <button type="button"
-                                                    onclick="confirmDelete(event, { name: '{{ $followup->week_start?->format('Y-m-d') }}', type: 'المتابعة الأسبوعية', form: document.getElementById('delete-followup-{{ $followup->id }}') })"
-                                                    class="w-7 h-7 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg flex items-center justify-center">
-                                                    <i class="fas fa-trash text-xs"></i>
-                                                </button>
-                                            </form>
-                                            @else
-                                            <form action="{{ route('student-weekly-followups.destroy', $followup) }}" method="POST" class="inline" id="delete-followup-{{ $followup->id }}">
-                                                @csrf @method('DELETE')
-                                                <button type="button"
-                                                    onclick="confirmDelete(event, { name: '{{ $followup->week_start?->format('Y-m-d') }}', type: 'المتابعة الأسبوعية', form: document.getElementById('delete-followup-{{ $followup->id }}') })"
-                                                    class="w-7 h-7 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg flex items-center justify-center">
-                                                    <i class="fas fa-trash text-xs"></i>
-                                                </button>
-                                            </form>
-                                            @endif
-                                            @endcan
-                                        </div>
-                                    </td>
-                                </tr>
-                                @endforeach
+                            <tbody class="divide-y divide-gray-50" id="weekly-rows">
+                                @include('students.partials.weekly_rows', ['rows' => $weeklyRows])
                             </tbody>
                         </table>
                     </div>
+                                @include('students.partials.load_more', ['tab' => 'weekly', 'total' => $weeklyTotal, 'target' => 'weekly-rows'])
                     @else
                     <div class="text-center py-16">
                         <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-calendar-check text-2xl text-gray-300"></i></div>
@@ -1082,7 +994,6 @@
                                         <th class="px-6 py-5">نوع الوسام</th>
                                         <th class="px-6 py-5">المستحق</th>
                                         <th class="px-6 py-5">المسلّم</th>
-                                        <th class="px-6 py-5">في يد الطالب حاليًا</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-50">
@@ -1091,7 +1002,6 @@
                                             <td class="px-6 py-5 font-bold text-gray-800">{{ $row['type']->name }}</td>
                                             <td class="px-6 py-5 font-black text-gray-800">{{ $row['entitled'] }}</td>
                                             <td class="px-6 py-5 font-black text-gray-800">{{ $row['delivered'] }}</td>
-                                            <td class="px-6 py-5 font-black text-gray-800">{{ $row['in_hand'] }}</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -1116,17 +1026,12 @@
                                         <th class="px-6 py-5">الكمية</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-gray-50">
-                                    @foreach($badgeDistributions as $d)
-                                        <tr class="hover:bg-emerald-50/30 transition-all">
-                                            <td class="px-6 py-5 text-gray-500 text-sm">{{ \Carbon\Carbon::parse($d->distribution_date)->format('Y/m/d') }}</td>
-                                            <td class="px-6 py-5 font-bold text-gray-800">{{ $d->badgeType?->name ?? '—' }}</td>
-                                            <td class="px-6 py-5 font-black text-gray-800">{{ $d->quantity }}</td>
-                                        </tr>
-                                    @endforeach
+                                <tbody class="divide-y divide-gray-50" id="badge-distribution-rows">
+                                    @include('students.partials.badge_distribution_rows', ['rows' => $badgeDistributions])
                                 </tbody>
                             </table>
                         </div>
+                                @include('students.partials.load_more', ['tab' => 'badge_distributions', 'total' => $badgeDistributionsTotal, 'target' => 'badge-distribution-rows'])
                     @endif
                 </div>
 
@@ -1148,23 +1053,16 @@
                                         <th class="px-6 py-5">تالف/مفقود</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-gray-50">
-                                    @foreach($badgeCollections as $row)
-                                        <tr class="hover:bg-emerald-50/30 transition-all">
-                                            <td class="px-6 py-5 text-gray-500 text-sm">{{ $row['round']->collection_date->format('Y/m/d') }}</td>
-                                            <td class="px-6 py-5 font-bold text-gray-800">{{ $row['round']->teacher?->name ?? '—' }}</td>
-                                            <td class="px-6 py-5 font-bold text-gray-800">{{ $row['type']?->name ?? '—' }}</td>
-                                            <td class="px-6 py-5 font-black text-gray-800">{{ $row['good'] }}</td>
-                                            <td class="px-6 py-5 font-black text-gray-800">{{ $row['damaged'] }}</td>
-                                        </tr>
-                                    @endforeach
+                                <tbody class="divide-y divide-gray-50" id="badge-collection-rows">
+                                    @include('students.partials.badge_collection_rows', ['rows' => $badgeCollections])
                                 </tbody>
                             </table>
                         </div>
+                                @include('students.partials.load_more', ['tab' => 'badge_collections', 'total' => $badgeCollectionsTotal, 'target' => 'badge-collection-rows'])
                     @endif
                 </div>
 
-                @if($badgeDeductions->isNotEmpty())
+                @if($badgeDeductionsTotal > 0)
                     <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
                         <div class="p-6 lg:p-8 border-b border-gray-50">
                             <h3 class="text-[#0a5c36] font-black text-xl">خصومات المستحق (استبدال بلعبة)</h3>
@@ -1178,19 +1076,12 @@
                                         <th class="px-6 py-5">الكمية المخصومة</th>
                                     </tr>
                                 </thead>
-                                <tbody class="divide-y divide-gray-50">
-                                    @foreach($badgeDeductions as $redemption)
-                                        @foreach($redemption->items as $item)
-                                            <tr class="hover:bg-emerald-50/30 transition-all">
-                                                <td class="px-6 py-5 text-gray-500 text-sm">{{ \Carbon\Carbon::parse($redemption->redemption_date)->format('Y/m/d') }}</td>
-                                                <td class="px-6 py-5 font-bold text-gray-800">{{ $item->badgeType?->name ?? '—' }}</td>
-                                                <td class="px-6 py-5 font-black text-gray-800">{{ $item->shortage_quantity }}</td>
-                                            </tr>
-                                        @endforeach
-                                    @endforeach
+                                <tbody class="divide-y divide-gray-50" id="badge-deduction-rows">
+                                    @include('students.partials.badge_deduction_rows', ['rows' => $badgeDeductionRows])
                                 </tbody>
                             </table>
                         </div>
+                                @include('students.partials.load_more', ['tab' => 'badge_deductions', 'total' => $badgeDeductionsTotal, 'target' => 'badge-deduction-rows'])
                     </div>
                 @endif
             </div>
@@ -1317,6 +1208,34 @@
         </div>
 
         </div>
+
+        @push('scripts')
+        <script>
+            // «عرض المزيد» في تبويبات صفحة الطالب: جلب الجزء التالي وإلحاقه دون إعادة تحميل الصفحة
+            document.addEventListener('click', function (e) {
+                var btn = e.target.closest('[data-load-more]');
+                if (!btn) { return; }
+                var wrap = btn.closest('[data-load-more-wrap]');
+                var target = document.getElementById(btn.dataset.target);
+                if (!wrap || !target) { return; }
+                btn.disabled = true;
+                var original = btn.textContent;
+                btn.textContent = 'جارٍ التحميل…';
+                var url = btn.dataset.url + '?tab=' + encodeURIComponent(btn.dataset.tab) + '&offset=' + encodeURIComponent(btn.dataset.offset);
+                fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        target.insertAdjacentHTML('beforeend', data.html);
+                        btn.dataset.offset = parseInt(btn.dataset.offset, 10) + 50;
+                        var count = wrap.querySelector('[data-load-more-count]');
+                        if (count) { count.textContent = 'تم عرض ' + data.shown + ' من أصل ' + data.total; }
+                        if (!data.has_more) { wrap.style.display = 'none'; }
+                    })
+                    .catch(function () { })
+                    .finally(function () { btn.disabled = false; btn.textContent = original; });
+            });
+        </script>
+        @endpush
 
         @push('styles')
         <style>
