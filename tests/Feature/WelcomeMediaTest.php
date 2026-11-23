@@ -121,3 +121,23 @@ test('welcome page renders the three sections only with active items', function 
         ->assertSee('فيديو ظاهر')
         ->assertDontSee('شريحة مخفية');
 });
+
+test('section does not appear at all when the image file is missing', function () {
+    Storage::fake('public');
+
+    // عنصر نشط في قاعدة البيانات لكن ملف صورته غير موجود على القرص
+    WelcomeMediaItem::create(['type' => 'slider', 'title' => 'صورة مفقودة', 'image_path' => 'welcome-media/missing.jpg', 'is_active' => true]);
+    WelcomeMediaItem::create(['type' => 'gallery', 'title' => 'معرض مفقود', 'image_path' => 'welcome-media/missing2.jpg', 'is_active' => true]);
+
+    $this->get('/')
+        ->assertOk()
+        ->assertDontSee('من أجواء المركز')
+        ->assertDontSee('معرض الصور')
+        ->assertDontSee('صورة مفقودة');
+
+    // وبمجرد وجود ملف حقيقي يظهر القسم
+    $path = fakeImageUpload('real.jpg')->store('welcome-media', 'public');
+    WelcomeMediaItem::create(['type' => 'slider', 'title' => 'صورة حقيقية', 'image_path' => $path, 'is_active' => true]);
+
+    $this->get('/')->assertOk()->assertSee('من أجواء المركز')->assertSee('صورة حقيقية');
+});
