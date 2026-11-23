@@ -145,14 +145,12 @@ $hasFilters = request()->anyFilled([
                 @if($centers->count() > 1)
                 <div>
                     <label class="block text-xs font-bold text-gray-500 mb-1">الفرع</label>
-                    <select name="center_id" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#10b981]/50">
-                        <option value="">كل الفروع</option>
-                        @foreach($centers as $center)
-                        <option value="{{ $center->id }}" @selected((string) request('center_id')===(string) $center->id)>
-                            {{ $center->name }}
-                        </option>
-                        @endforeach
-                    </select>
+                    <x-searchable-select
+                        name="center_id"
+                        :options="$centers->map(fn($center) => ['value' => $center->id, 'label' => $center->name])->values()"
+                        placeholder="كل الفروع"
+                        searchPlaceholder="ابحث عن فرع..."
+                        :defaultValue="request('center_id', '')" />
                 </div>
                 @endif
 

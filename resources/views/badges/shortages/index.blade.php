@@ -17,30 +17,30 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-400 mb-1.5">الموزّع</label>
-                    <select name="teacher_id" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                        <option value="">كل الموزّعين</option>
-                        @foreach ($filterTeachers as $ft)
-                            <option value="{{ $ft->id }}" @selected((string) request('teacher_id') === (string) $ft->id)>{{ $ft->name }}</option>
-                        @endforeach
-                    </select>
+                    <x-searchable-select
+                        name="teacher_id"
+                        :options="$filterTeachers->map(fn($ft) => ['value' => $ft->id, 'label' => $ft->name])->values()"
+                        placeholder="كل الموزّعين"
+                        searchPlaceholder="ابحث عن موزّع..."
+                        :defaultValue="request('teacher_id', '')" />
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-400 mb-1.5">الحلقة</label>
-                    <select name="circle_id" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                        <option value="">كل الحلقات</option>
-                        @foreach ($filterCircles as $fc)
-                            <option value="{{ $fc->id }}" @selected((string) request('circle_id') === (string) $fc->id)>{{ $fc->name }}</option>
-                        @endforeach
-                    </select>
+                    <x-searchable-select
+                        name="circle_id"
+                        :options="$filterCircles->map(fn($fc) => ['value' => $fc->id, 'label' => $fc->name])->values()"
+                        placeholder="كل الحلقات"
+                        searchPlaceholder="ابحث عن حلقة..."
+                        :defaultValue="request('circle_id', '')" />
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-400 mb-1.5">نوع الوسام</label>
-                    <select name="badge_type_id" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                        <option value="">كل الأنواع</option>
-                        @foreach ($filterTypes as $ft)
-                            <option value="{{ $ft->id }}" @selected((string) request('badge_type_id') === (string) $ft->id)>{{ $ft->name }}</option>
-                        @endforeach
-                    </select>
+                    <x-searchable-select
+                        name="badge_type_id"
+                        :options="$filterTypes->map(fn($ft) => ['value' => $ft->id, 'label' => $ft->name])->values()"
+                        placeholder="كل الأنواع"
+                        searchPlaceholder="ابحث عن نوع وسام..."
+                        :defaultValue="request('badge_type_id', '')" />
                 </div>
                 <div class="flex items-end gap-2">
                     <button class="px-6 py-2.5 bg-[#0a5c36] text-white font-bold rounded-xl text-sm">تصفية</button>

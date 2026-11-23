@@ -6,20 +6,12 @@
 
             <form action="{{ route('group-session-plans.index') }}" method="GET" class="flex flex-wrap gap-3 flex-1">
 
-                <select
+                <x-searchable-select
                     name="circle_id"
-                    class="border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#0a5c36] outline-none">
-
-                    <option value="">جميع الحلقات</option>
-
-                    @foreach($circles ?? [] as $circle)
-                    <option value="{{ $circle->id }}"
-                        {{ request('circle_id') == $circle->id ? 'selected' : '' }}>
-                        {{ $circle->name }}
-                    </option>
-                    @endforeach
-
-                </select>
+                    :options="collect($circles ?? [])->map(fn($circle) => ['value' => $circle->id, 'label' => $circle->name])->values()"
+                    placeholder="جميع الحلقات"
+                    searchPlaceholder="ابحث عن حلقة..."
+                    :defaultValue="request('circle_id', '')" />
 
                 <button
                     type="submit"

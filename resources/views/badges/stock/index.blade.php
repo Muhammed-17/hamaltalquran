@@ -41,9 +41,12 @@
             <div class="space-y-4 flex flex-col flex-1">
                 <div>
                     <label class="block text-xs font-bold text-gray-400 mb-1.5">نوع الوسام *</label>
-                    <select name="badge_type_id" required class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                        @foreach ($types as $type)<option value="{{ $type->id }}">{{ $type->name }} (الرصيد: {{ $adminBalances[$type->id] ?? 0 }})</option>@endforeach
-                    </select>
+                    <x-searchable-select
+                        name="badge_type_id"
+                        :options="$types->map(fn($type) => ['value' => $type->id, 'label' => $type->name . ' (الرصيد: ' . ($adminBalances[$type->id] ?? 0) . ')'])->values()"
+                        placeholder="اختر نوع الوسام"
+                        searchPlaceholder="ابحث عن نوع وسام..."
+                        :defaultValue="old('badge_type_id', '')" />
                     <x-input-error :messages="$errors->get('badge_type_id')" class="mt-2" />
                 </div>
                 <div>
@@ -68,16 +71,22 @@
             <div class="space-y-4 flex flex-col flex-1">
                 <div>
                     <label class="block text-xs font-bold text-gray-400 mb-1.5">المعلم *</label>
-                    <select name="teacher_id" required class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                        @foreach ($teachers as $teacher)<option value="{{ $teacher->id }}">{{ $teacher->name }}</option>@endforeach
-                    </select>
+                    <x-searchable-select
+                        name="teacher_id"
+                        :options="$teachers->map(fn($teacher) => ['value' => $teacher->id, 'label' => $teacher->name])->values()"
+                        placeholder="اختر المعلم"
+                        searchPlaceholder="ابحث عن معلم..."
+                        :defaultValue="old('teacher_id', '')" />
                     <x-input-error :messages="$errors->get('teacher_id')" class="mt-2" />
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-400 mb-1.5">نوع الوسام *</label>
-                    <select name="badge_type_id" required class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                        @foreach ($types as $type)<option value="{{ $type->id }}">{{ $type->name }}</option>@endforeach
-                    </select>
+                    <x-searchable-select
+                        name="badge_type_id"
+                        :options="$types->map(fn($type) => ['value' => $type->id, 'label' => $type->name])->values()"
+                        placeholder="اختر نوع الوسام"
+                        searchPlaceholder="ابحث عن نوع وسام..."
+                        :defaultValue="old('badge_type_id', '')" />
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-400 mb-1.5">الكمية المرجعة *</label>

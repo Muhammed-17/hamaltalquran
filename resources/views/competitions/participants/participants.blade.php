@@ -48,28 +48,22 @@
                     class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-[#0a5c36] focus:border-[#0a5c36] transition-all bg-white text-right">
             </div>
             <div class="w-full lg:w-48">
-                <label for="filter_level" class="block text-xs font-bold text-gray-400 mb-1.5">المستوى</label>
-                <select id="filter_level" name="level_id"
-                    class="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-[#0a5c36] focus:border-[#0a5c36] transition-all bg-white appearance-none">
-                    <option value="">كل المستويات</option>
-                    @foreach ($levels as $competitionLevel)
-                    <option value="{{ $competitionLevel->id }}" @selected(request('level_id')==$competitionLevel->id)>
-                        {{ $competitionLevel->level->name ?? '-' }}
-                    </option>
-                    @endforeach
-                </select>
+                <label class="block text-xs font-bold text-gray-400 mb-1.5">المستوى</label>
+                <x-searchable-select
+                    name="level_id"
+                    :options="$levels->map(fn($competitionLevel) => ['value' => $competitionLevel->id, 'label' => $competitionLevel->level->name ?? '-'])->values()"
+                    placeholder="كل المستويات"
+                    searchPlaceholder="ابحث عن مستوى..."
+                    :defaultValue="request('level_id', '')" />
             </div>
             <div class="w-full lg:w-48">
-                <label for="filter_center" class="block text-xs font-bold text-gray-400 mb-1.5">المركز</label>
-                <select id="filter_center" name="center_id"
-                    class="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-[#0a5c36] focus:border-[#0a5c36] transition-all bg-white appearance-none">
-                    <option value="">كل المراكز</option>
-                    @foreach ($centers as $center)
-                    <option value="{{ $center->id }}" @selected(request('center_id')==$center->id)>
-                        {{ $center->name }}
-                    </option>
-                    @endforeach
-                </select>
+                <label class="block text-xs font-bold text-gray-400 mb-1.5">المركز</label>
+                <x-searchable-select
+                    name="center_id"
+                    :options="$centers->map(fn($center) => ['value' => $center->id, 'label' => $center->name])->values()"
+                    placeholder="كل المراكز"
+                    searchPlaceholder="ابحث عن مركز..."
+                    :defaultValue="request('center_id', '')" />
             </div>
             <button type="submit"
                 class="w-full lg:w-auto px-5 py-2.5 bg-[#0a5c36] hover:bg-[#08492a] text-white font-bold rounded-xl text-sm transition-all text-center">

@@ -66,17 +66,12 @@ $action = $isEdit
                 {{-- الفرع --}}
                 <div class="space-y-2">
                     <label class="block text-sm font-bold text-gray-700">الفرع</label>
-                    <select name="center_id"
-                        class="w-full p-3 bg-white border rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all appearance-none
-                            {{ $errors->has('center_id') ? 'border-red-400 bg-red-50' : 'border-gray-200' }}">
-                        <option value="">— بدون فرع محدد —</option>
-                        @foreach($centers ?? [] as $center)
-                        <option value="{{ $center->id }}"
-                            @selected(old('center_id', $guardian->center_id ?? '') == $center->id)>
-                            {{ $center->name }}
-                        </option>
-                        @endforeach
-                    </select>
+                    <x-searchable-select
+                        name="center_id"
+                        :options="collect($centers ?? [])->map(fn($center) => ['value' => $center->id, 'label' => $center->name])->values()"
+                        placeholder="— بدون فرع محدد —"
+                        searchPlaceholder="ابحث عن فرع..."
+                        :defaultValue="old('center_id', $guardian->center_id ?? '')" />
                     @error('center_id')
                     <p class="text-red-500 text-xs font-semibold">{{ $message }}</p>
                     @enderror

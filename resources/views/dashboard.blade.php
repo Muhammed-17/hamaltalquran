@@ -47,23 +47,15 @@ $isGuardian = Auth::user()->hasRole('guardian');
 {{-- ═══════════════════════════════════════════════════════════ --}}
 @if($isAdmin && $centers->count() > 0)
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-6">
-    <form method="GET" action="{{ route('dashboard') }}" class="flex flex-wrap items-end gap-4">
+    <form id="dashboard-center-form" method="GET" action="{{ route('dashboard') }}" class="flex flex-wrap items-end gap-4">
         <div class="flex-1 min-w-[200px]">
             <label class="block text-xs font-bold text-gray-500 mb-1.5">تصفية حسب الفرع</label>
-            <div class="relative">
-                <select name="center_id" onchange="this.form.submit()"
-                    class="w-full p-2.5 pr-10 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#0a5c36] focus:border-[#0a5c36] transition-all appearance-none bg-white cursor-pointer">
-                    <option value="">📍 جميع الفروع</option>
-                    @foreach($centers as $center)
-                    <option value="{{ $center->id }}" {{ $selectedCenterId == $center->id ? 'selected' : '' }}>
-                        {{ $center->name }}
-                    </option>
-                    @endforeach
-                </select>
-                <svg class="w-4 h-4 absolute left-3 top-3 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-            </div>
+            <x-searchable-select
+                name="center_id"
+                :options="$centers->map(fn($center) => ['value' => $center->id, 'label' => $center->name])->values()"
+                placeholder="جميع الفروع"
+                searchPlaceholder="ابحث عن فرع..."
+                :defaultValue="$selectedCenterId ?? ''" />
         </div>
 
         @if($selectedCenterId)
@@ -697,4 +689,15 @@ $isGuardian = Auth::user()->hasRole('guardian');
     });
 </script>
 @endif
+@push('scripts')
+<script>
+    // إرسال فلتر الفرع في لوحة التحكم عند اختيار مركز من القائمة القابلة للبحث
+    window.addEventListener('searchable-change', function (e) {
+        if (e.detail.name === 'center_id') {
+            document.getElementById('dashboard-center-form').submit();
+        }
+    });
+</script>
+@endpush
+
 </x-layouts.markaz-layout>

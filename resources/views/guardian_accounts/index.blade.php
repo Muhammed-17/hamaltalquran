@@ -55,15 +55,12 @@
                 {{-- فلترة الفرع --}}
                 <div class="w-full lg:w-48">
                     <label class="block text-xs font-bold text-gray-400 mb-1.5">حسب الفرع</label>
-                    <select name="center_id"
-                        class="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-[#0a5c36] focus:border-[#0a5c36] transition-all bg-white appearance-none">
-                        <option value="">كل الفروع</option>
-                        @foreach($centers ?? [] as $center)
-                        <option value="{{ $center->id }}" @selected((string) request('center_id')===(string) $center->id)>
-                            {{ $center->name }}
-                        </option>
-                        @endforeach
-                    </select>
+                    <x-searchable-select
+                        name="center_id"
+                        :options="collect($centers ?? [])->map(fn($center) => ['value' => $center->id, 'label' => $center->name])->values()"
+                        placeholder="كل الفروع"
+                        searchPlaceholder="ابحث عن فرع..."
+                        :defaultValue="request('center_id', '')" />
                 </div>
 
                 {{-- زر البحث --}}

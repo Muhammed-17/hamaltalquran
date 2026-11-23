@@ -33,13 +33,12 @@
                     <input type="hidden" name="teacher_id" value="{{ auth()->id() }}">
                     <div class="w-full lg:w-64">
                         <label class="block text-xs font-bold text-gray-400 mb-1.5">نوع الوسام</label>
-                        <select name="badge_type_id" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                            @foreach ($types as $t)
-                                @if ($returnBalances->has($t->id))
-                                    <option value="{{ $t->id }}">{{ $t->name }} — رصيد عهدتك: {{ $returnBalances[$t->id] }}</option>
-                                @endif
-                            @endforeach
-                        </select>
+                        <x-searchable-select
+                            name="badge_type_id"
+                            :options="$types->filter(fn($t) => $returnBalances->has($t->id))->map(fn($t) => ['value' => $t->id, 'label' => $t->name . ' — رصيد عهدتك: ' . $returnBalances[$t->id]])->values()"
+                            placeholder="اختر نوع الوسام"
+                            searchPlaceholder="ابحث عن نوع وسام..."
+                            :defaultValue="old('badge_type_id', '')" />
                         <x-input-error :messages="$errors->get('badge_type_id')" class="mt-2" />
                     </div>
                     <div class="w-full lg:w-40">
@@ -67,17 +66,21 @@
             <div class="flex flex-col lg:flex-row lg:flex-wrap gap-3 items-end">
             <div class="w-full lg:flex-1 lg:min-w-[150px]">
                 <label class="block text-xs font-bold text-gray-400 mb-1.5">الحلقة</label>
-                <select name="circle_id" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                    <option value="">كل الحلقات</option>
-                    @foreach ($circles as $c)<option value="{{ $c->id }}" @selected(request('circle_id') == $c->id)>{{ $c->name }}</option>@endforeach
-                </select>
+                <x-searchable-select
+                    name="circle_id"
+                    :options="$circles->map(fn($c) => ['value' => $c->id, 'label' => $c->name])->values()"
+                    placeholder="كل الحلقات"
+                    searchPlaceholder="ابحث عن حلقة..."
+                    :defaultValue="request('circle_id', '')" />
             </div>
             <div class="w-full lg:flex-1 lg:min-w-[150px]">
                 <label class="block text-xs font-bold text-gray-400 mb-1.5">المسؤول عن التوزيع</label>
-                <select name="teacher_id" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                    <option value="">كل المسؤولين</option>
-                    @foreach ($distributors as $d)<option value="{{ $d->id }}" @selected((string) request('teacher_id') === (string) $d->id)>{{ $d->name }}</option>@endforeach
-                </select>
+                <x-searchable-select
+                    name="teacher_id"
+                    :options="$distributors->map(fn($d) => ['value' => $d->id, 'label' => $d->name])->values()"
+                    placeholder="كل المسؤولين"
+                    searchPlaceholder="ابحث عن مسؤول..."
+                    :defaultValue="request('teacher_id', '')" />
             </div>
             <div class="w-full lg:flex-1 lg:min-w-[150px]">
                 <label class="block text-xs font-bold text-gray-400 mb-1.5">الشهر</label>

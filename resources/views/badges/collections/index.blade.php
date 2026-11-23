@@ -14,10 +14,12 @@
         <form method="GET" class="flex flex-col lg:flex-row gap-4 items-end">
             <div class="w-full lg:w-56">
                 <label class="block text-xs font-bold text-gray-400 mb-1.5">الحلقة</label>
-                <select name="circle_id" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                    <option value="">كل الحلقات</option>
-                    @foreach ($circles as $c)<option value="{{ $c->id }}" @selected(request('circle_id') == $c->id)>{{ $c->name }}</option>@endforeach
-                </select>
+                <x-searchable-select
+                    name="circle_id"
+                    :options="$circles->map(fn($c) => ['value' => $c->id, 'label' => $c->name])->values()"
+                    placeholder="كل الحلقات"
+                    searchPlaceholder="ابحث عن حلقة..."
+                    :defaultValue="request('circle_id', '')" />
             </div>
             <div class="w-full lg:w-44">
                 <label class="block text-xs font-bold text-gray-400 mb-1.5">الحالة</label>

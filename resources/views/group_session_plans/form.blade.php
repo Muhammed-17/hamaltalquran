@@ -31,14 +31,12 @@ $icon = $isEdit ? 'fa-edit' : 'fa-plus-circle';
                     {{-- الحلقة (الدائرة) --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">الحلقة <span class="text-red-500">*</span></label>
-                        <select name="circle_id" class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#0a5c36] outline-none @error('circle_id') border-red-300 @enderror" required>
-                            <option value="">اختر الحلقة</option>
-                            @foreach($circles ?? [] as $circle)
-                            <option value="{{ $circle->id }}" {{ old('circle_id', $session->circle_id ?? request('circle_id')) == $circle->id ? 'selected' : '' }}>
-                                {{ $circle->name }}
-                            </option>
-                            @endforeach
-                        </select>
+                        <x-searchable-select
+                            name="circle_id"
+                            :options="collect($circles ?? [])->map(fn($circle) => ['value' => $circle->id, 'label' => $circle->name])->values()"
+                            placeholder="اختر الحلقة"
+                            searchPlaceholder="ابحث عن حلقة..."
+                            :defaultValue="old('circle_id', $session->circle_id ?? request('circle_id', ''))" />
                         @error('circle_id')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
 

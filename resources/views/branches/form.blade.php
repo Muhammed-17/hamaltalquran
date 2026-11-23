@@ -26,16 +26,12 @@ $isEdit = isset($branch) && $branch->exists;
 
         <div class="space-y-2">
             <label for="center_id" class="block text-sm font-bold text-gray-700">المركز <span class="text-red-500">*</span></label>
-            <select id="center_id" name="center_id" autocomplete="off"
-                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 focus:bg-white focus:ring-2 focus:ring-emerald-100 focus:border-[#0a5c36] rounded-2xl outline-none transition-all appearance-none">
-                <option value="">-- اختر المركز --</option>
-                @foreach($centers ?? [] as $center)
-                <option value="{{ $center->id }}"
-                    {{ old('center_id', $branch->center_id ?? '') == $center->id ? 'selected' : '' }}>
-                    {{ $center->name }}
-                </option>
-                @endforeach
-            </select>
+            <x-searchable-select
+                name="center_id"
+                :options="collect($centers ?? [])->map(fn($center) => ['value' => $center->id, 'label' => $center->name])->values()"
+                placeholder="-- اختر المركز --"
+                searchPlaceholder="ابحث عن مركز..."
+                :defaultValue="old('center_id', $branch->center_id ?? '')" />
             @error('center_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
         </div>
 

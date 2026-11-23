@@ -59,28 +59,25 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                     </div>
                     <input type="hidden" name="supervisor_id" value="{{ $lockedSupervisor->id }}">
                     @else
-                    <select name="supervisor_id" data-field="supervisor_id"
-                        class="w-full p-3 border rounded-2xl text-sm font-medium focus:outline-none focus:ring-1 transition-all">
-                        <option value="{{ old('supervisor_id', $student->supervisor_id ?? '') == '' ? 'selected' : '' }}">
-                            -- اختر المشرف --
-                        </option>
-                        @foreach ($supervisors ?? [] as $supervisor)
-                        @php
-                        $roleName = $supervisor->user?->roles?->first()?->name ?? '';
-                        $roleLabel = match($roleName) {
-                        'admin' => 'المسؤول',
-                        'general_manager' => 'المدير العام',
-                        'manager' => 'مدير فرع',
-                        'supervisor' => 'مشرف',
-                        default => 'مشرف',
-                        };
-                        @endphp
-                        <option value="{{ $supervisor->id }}"
-                            {{ old('supervisor_id', $student->supervisor_id ?? '') == $supervisor->id ? 'selected' : '' }}>
-                            {{ $supervisor->user?->name ?? $supervisor->name }} ({{ $roleLabel }})
-                        </option>
-                        @endforeach
-                    </select>
+                    @php
+                        $supervisorOptions = collect($supervisors ?? [])->map(function ($supervisor) {
+                            $roleName = $supervisor->user?->roles?->first()?->name ?? '';
+                            $roleLabel = match($roleName) {
+                                'admin' => 'المسؤول',
+                                'general_manager' => 'المدير العام',
+                                'manager' => 'مدير فرع',
+                                'supervisor' => 'مشرف',
+                                default => 'مشرف',
+                            };
+                            return ['value' => $supervisor->id, 'label' => ($supervisor->user?->name ?? $supervisor->name) . ' (' . $roleLabel . ')'];
+                        })->values();
+                    @endphp
+                    <x-searchable-select
+                        name="supervisor_id"
+                        :options="$supervisorOptions"
+                        placeholder="-- اختر المشرف --"
+                        searchPlaceholder="ابحث عن مشرف..."
+                        :defaultValue="old('supervisor_id', $student->supervisor_id ?? '')" />
 
                     @if(($supervisors ?? collect())->isEmpty())
                     <p class="text-xs text-amber-500 mt-1">لا يوجد مشرفون متاحون</p>
@@ -203,14 +200,12 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                     </div>
                     <div class="space-y-2">
                         <label class="block text-sm font-bold text-gray-700">المركز فرع <span class="text-red-500">*</span></label>
-                        <select name="center_id" class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all appearance-none">
-                            @foreach($centers ?? [] as $center)
-                            <option value="{{ $center->id }}"
-                                @selected(old('center_id', $student->center_id ?? '') == $center->id)>
-                                {{ $center->name }}
-                            </option>
-                            @endforeach
-                        </select>
+                        <x-searchable-select
+                            name="center_id"
+                            :options="collect($centers ?? [])->map(fn($center) => ['value' => $center->id, 'label' => $center->name])->values()"
+                            placeholder="-- اختر المركز --"
+                            searchPlaceholder="ابحث عن مركز..."
+                            :defaultValue="old('center_id', $student->center_id ?? (collect($centers ?? [])->first()?->id ?? ''))" />
                         <span data-error-for="center_id" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                         @error('center_id')
                         <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
@@ -739,16 +734,24 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                 {{-- الحلقة --}}
                 <div class="space-y-2">
                     <label class="block text-sm font-bold text-gray-700">الحلقة <span class="text-red-500">*</span></label>
-                    <select name="circle_id" id="circleSelect" data-field="circle_id"
-                        class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all appearance-none">
-                        <option value="" @selected(old('circle_id', $construction->circle_id ?? '') == '')>-- اختر الحلقة --</option>
-                        @foreach($circles as $circle)
-                        <option value="{{ $circle->id }}" data-type="{{ $circle->type }}" data-url="{{ $circle->url }}"
-                            @selected(old('circle_id', $construction->circle_id ?? '') == $circle->id)>
-                            {{ $circle->name }}
-                        </option>
-                        @endforeach
-                    </select>
+                    @php
+                        $initialSystem = old('study_system', $construction->study_system ?? 'group');
+                        $selectedCircleId = old('circle_id', $construction->circle_id ?? '');
+                        $circleOptions = $circles->filter(fn($c) => $c->type === $initialSystem)
+                            ->map(fn($c) => ['value' => $c->id, 'label' => $c->name])->values();
+                        if ($selectedCircleId !== '' && $selectedCircleId !== null && !$circleOptions->contains('value', (int) $selectedCircleId)) {
+                            $selectedCircle = $circles->firstWhere('id', (int) $selectedCircleId);
+                            if ($selectedCircle) {
+                                $circleOptions->push(['value' => $selectedCircle->id, 'label' => $selectedCircle->name]);
+                            }
+                        }
+                    @endphp
+                    <x-searchable-select
+                        name="circle_id"
+                        :options="$circleOptions"
+                        placeholder="-- اختر الحلقة --"
+                        searchPlaceholder="ابحث عن حلقة..."
+                        :defaultValue="$selectedCircleId" />
                     <span data-error-for="circle_id" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                     @error('circle_id')
                     <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
@@ -775,15 +778,12 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                 <div x-show="studySystem === 'individual'" x-transition class="space-y-6">
                     <div class="space-y-2">
                         <label class="block text-sm font-bold text-gray-700">السورة الحالية</label>
-                        <select name="current_surah_id" data-field="current_surah_id"
-                            class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all appearance-none">
-                            <option value="" @selected(old('current_surah_id', $construction->current_surah_id ?? '') == '')>-- اختر السورة --</option>
-                            @foreach($surahs ?? [] as $surah)
-                            <option value="{{ $surah->id }}" @selected(old('current_surah_id', $construction->current_surah_id ?? '') == $surah->id)>
-                                {{ $surah->number }}. {{ $surah->name_arabic }}
-                            </option>
-                            @endforeach
-                        </select>
+                        <x-searchable-select
+                            name="current_surah_id"
+                            :options="collect($surahs ?? [])->map(fn($surah) => ['value' => $surah->id, 'label' => $surah->number . '. ' . $surah->name_arabic])->values()"
+                            placeholder="-- اختر السورة --"
+                            searchPlaceholder="ابحث عن سورة..."
+                            :defaultValue="old('current_surah_id', $construction->current_surah_id ?? '')" />
                         <span data-error-for="current_surah_id" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                         @error('current_surah_id')
                         <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
@@ -940,17 +940,12 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                 </div>
                 
                 <label class="block mb-2 text-sm font-bold text-gray-700">المعلم <span class="text-red-500">*</span></label>
-                <select name="teacher_name" data-field="teacher_name"
-                    x-bind:disabled="selectedLevel !== 'mastery'"
-                    class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all appearance-none">
-                    <option value="" @selected(old('teacher_name', $itqan->teacher_name ?? '') == '')>-- اختر المعلم --</option>
-                    <option value="بدون تحديد" @selected(old('teacher_name', $itqan->teacher_name ?? '') == 'بدون تحديد')>بدون تحديد (حسب المتاح)</option>
-                    @foreach ($teachers ?? [] as $teacherItem)
-                    <option value="{{ $teacherItem->name }}" @selected(old('teacher_name', $itqan->teacher_name ?? '') == $teacherItem->name)>
-                        {{ $teacherItem->name }}
-                    </option>
-                    @endforeach
-                </select>
+                <x-searchable-select
+                    name="teacher_name"
+                    :options="collect([['value' => 'بدون تحديد', 'label' => 'بدون تحديد (حسب المتاح)']])->merge(collect($teachers ?? [])->map(fn($teacherItem) => ['value' => $teacherItem->name, 'label' => $teacherItem->name]))->values()"
+                    placeholder="-- اختر المعلم --"
+                    searchPlaceholder="ابحث عن معلم..."
+                    :defaultValue="old('teacher_name', $itqan->teacher_name ?? '')" />
                 <span data-error-for="teacher_name" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                 @error('teacher_name')
                 <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
@@ -1004,16 +999,12 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                     @enderror
                     
                     <label class="block text-sm font-bold text-gray-700">المعلم <span class="text-red-500">*</span></label>
-                    <select name="supervisor_name" data-field="supervisor_name"
-                        x-bind:disabled="selectedLevel !== 'creativity'"
-                        class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all appearance-none">
-                        <option value="">-- اختر المعلم --</option>
-                        @foreach ($teachers ?? [] as $teacherItem)
-                        <option value="{{ $teacherItem->name }}" @selected(old('supervisor_name', $ibda->supervisor_name ?? '') == $teacherItem->name)>
-                            {{ $teacherItem->name }}
-                        </option>
-                        @endforeach
-                    </select>
+                    <x-searchable-select
+                        name="supervisor_name"
+                        :options="collect($teachers ?? [])->map(fn($teacherItem) => ['value' => $teacherItem->name, 'label' => $teacherItem->name])->values()"
+                        placeholder="-- اختر المعلم --"
+                        searchPlaceholder="ابحث عن معلم..."
+                        :defaultValue="old('supervisor_name', $ibda->supervisor_name ?? '')" />
                     <span data-error-for="supervisor_name" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
                     @error('supervisor_name')
                     <span class="text-red-500 text-xs mt-1 block font-semibold">{{ $message }}</span>
@@ -1135,6 +1126,9 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
     {{-- ============================================================
         JavaScript
     ============================================================ --}}
+    @php
+        $circlesJsonData = $circles->map(fn($c) => ['value' => $c->id, 'label' => $c->name, 'type' => $c->type, 'url' => $c->url])->values();
+    @endphp
     <script>
         document.addEventListener('DOMContentLoaded', function() {
 
@@ -1169,7 +1163,26 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
             document.querySelectorAll('[data-show-when]').forEach(initShowWhen);
 
             // ── 3) فلترة الحلقات حسب النظام + عرض بطاقة معلومات الجماعي ─
-            const circleSelect = document.getElementById('circleSelect');
+            // الحلقة الآن مكوّن searchable-select: تُبدَّل خياراته بحدث update-options
+            // عند تغيير نظام الدراسة، ويصل اختياره بحدث searchable-change،
+            // وبيانات الحلقات (النوع + رابط الواتساب) مضمّنة هنا للبحث المحلي.
+            const ALL_CIRCLES = @json($circlesJsonData, JSON_UNESCAPED_UNICODE);
+            const CIRCLE_TYPES = {};
+            const CIRCLE_URLS = {};
+            ALL_CIRCLES.forEach(c => {
+                CIRCLE_TYPES[c.value] = c.type;
+                CIRCLE_URLS[c.value] = c.url;
+            });
+
+            // واجهة صغيرة تستخدمها صفحتا الإنشاء والتعديل لقراءة اختيار الحلقة الحالي
+            window.StudentFormCircles = {
+                selectedId: () => document.querySelector('input[name="circle_id"]')?.value ?? '',
+                selectedUrl: () => {
+                    const url = CIRCLE_URLS[window.StudentFormCircles.selectedId()];
+                    return url && String(url).trim() !== '' ? String(url).trim() : null;
+                },
+            };
+
             const groupPlanInfo = document.getElementById('groupPlanInfo');
             const groupPlanEmpty = document.getElementById('groupPlanEmpty');
             const groupPlanSurah = document.getElementById('groupPlanSurah');
@@ -1177,30 +1190,25 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
             const groupPlanRevision = document.getElementById('groupPlanRevision');
             const groupPlanOld = document.getElementById('groupPlanOld');
 
-            // ✅ فلاج لمنع مسح قيمة الحلقة المحفوظة عند أول تحميل لصفحة التعديل
-            let isFirstCircleFilterRun = true;
+            function circleOptionsFor(system) {
+                return ALL_CIRCLES.filter(c => c.type === system).map(c => ({ value: c.value, label: c.label }));
+            }
 
             function filterCirclesBySystem() {
-                if (!circleSelect) return;
                 const selectedSystem = document.querySelector('input[name="study_system"]:checked')?.value;
                 if (!selectedSystem) return;
 
-                let currentValueStillValid = false;
-                Array.from(circleSelect.options).forEach(opt => {
-                    if (!opt.value) return;
-                    const matches = opt.getAttribute('data-type') === selectedSystem;
-                    opt.hidden = !matches;
-                    if (matches && opt.value === circleSelect.value) currentValueStillValid = true;
-                });
+                const options = circleOptionsFor(selectedSystem);
+                const current = window.StudentFormCircles.selectedId();
 
-                // ✅ في أول تشغيل (تحميل الصفحة)، لا نمسح القيمة القادمة من السيرفر
-                // حتى لو data-type مش متطابق، عشان نضمن ظهور بيانات التعديل
-                // المسح يحصل فقط لما المستخدم يغيّر نظام الدراسة يدويًا بعد كده
-                if (!currentValueStillValid && !isFirstCircleFilterRun) {
-                    circleSelect.value = '';
+                // المكوّن يمسح الاختيار تلقائيًا إذا لم يعد ضمن الخيارات الجديدة
+                window.dispatchEvent(new CustomEvent('update-options', {
+                    detail: { name: 'circle_id', options: options }
+                }));
+
+                if (current && !options.some(o => String(o.value) === String(current))) {
                     hideGroupPlanInfo();
                 }
-                isFirstCircleFilterRun = false;
             }
 
             function hideGroupPlanInfo() {
@@ -1208,22 +1216,14 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                 groupPlanEmpty?.classList.add('hidden');
             }
 
-            async function showGroupPlanInfo() {
-                if (!circleSelect || !circleSelect.value) {
-                    hideGroupPlanInfo();
-                    return;
-                }
-
-                const opt = circleSelect.options[circleSelect.selectedIndex];
-                const circleType = opt?.getAttribute('data-type');
-
-                if (circleType !== 'group') {
+            async function showGroupPlanInfo(circleId) {
+                if (!circleId || CIRCLE_TYPES[circleId] !== 'group') {
                     hideGroupPlanInfo();
                     return;
                 }
 
                 try {
-                    const res = await fetch(`/circles/${circleSelect.value}/group-plan`, {
+                    const res = await fetch(`/circles/${circleId}/group-plan`, {
                         headers: {
                             'Accept': 'application/json'
                         }
@@ -1254,12 +1254,17 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                 radio.addEventListener('change', filterCirclesBySystem);
             });
 
-            if (circleSelect) {
-                circleSelect.addEventListener('change', showGroupPlanInfo);
-            }
+            window.addEventListener('searchable-change', function(e) {
+                if (e.detail.name === 'circle_id') {
+                    showGroupPlanInfo(e.detail.value);
+                }
+            });
 
-            filterCirclesBySystem();
-            showGroupPlanInfo(); // في حالة edit لو الحلقة محددة مسبقًا
+            // في حالة edit لو الحلقة محددة مسبقًا: إظهار خطتها من قيمتها المحفوظة بالسيرفر
+            const initialCircleId = '{{ old('circle_id', $construction->circle_id ?? '') }}';
+            if (initialCircleId) {
+                showGroupPlanInfo(initialCircleId);
+            }
 
             // ── 4) guardian_id قبل الإرسال ────────────────────────────
             const studentForm = document.querySelector('form');

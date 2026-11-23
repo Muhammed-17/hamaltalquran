@@ -10,10 +10,12 @@
             <div class="space-y-4 sm:space-y-5">
                 <div>
                     <label class="block text-xs font-bold text-gray-400 mb-1.5">المستلم *</label>
-                    <select name="teacher_id" required class="w-full p-3 sm:p-2.5 px-4 border border-gray-200 rounded-xl text-base sm:text-sm bg-white">
-                        <option value="">— اختر المستلم —</option>
-                        @foreach ($teachers as $t)<option value="{{ $t->id }}" @selected(old('teacher_id', $prefillTeacherId ?? null) == $t->id)>{{ $t->name }} ({{ $access->custodyRoleLabel($t) }})</option>@endforeach
-                    </select>
+                    <x-searchable-select
+                        name="teacher_id"
+                        :options="$teachers->map(fn($t) => ['value' => $t->id, 'label' => $t->name . ' (' . $access->custodyRoleLabel($t) . ')'])->values()"
+                        placeholder="— اختر المستلم —"
+                        searchPlaceholder="ابحث عن مستلم..."
+                        :defaultValue="old('teacher_id', $prefillTeacherId ?? '')" />
                     <x-input-error :messages="$errors->get('teacher_id')" class="mt-2" />
                 </div>
 

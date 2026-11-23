@@ -23,17 +23,21 @@
                 </div>
                 <div class="w-full lg:flex-1 lg:min-w-[140px]">
                     <label class="block text-xs font-bold text-gray-400 mb-1.5">المستلم</label>
-                    <select name="teacher_id" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                        <option value="">كل المستلمين</option>
-                        @foreach ($recipients as $r)<option value="{{ $r->id }}" @selected((string) request('teacher_id') === (string) $r->id)>{{ $r->name }}</option>@endforeach
-                    </select>
+                    <x-searchable-select
+                        name="teacher_id"
+                        :options="$recipients->map(fn($r) => ['value' => $r->id, 'label' => $r->name])->values()"
+                        placeholder="كل المستلمين"
+                        searchPlaceholder="ابحث عن مستلم..."
+                        :defaultValue="request('teacher_id', '')" />
                 </div>
                 <div class="w-full lg:flex-1 lg:min-w-[140px]">
                     <label class="block text-xs font-bold text-gray-400 mb-1.5">نوع الوسام</label>
-                    <select name="badge_type_id" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                        <option value="">كل الأنواع</option>
-                        @foreach ($types as $t)<option value="{{ $t->id }}" @selected((string) request('badge_type_id') === (string) $t->id)>{{ $t->name }}</option>@endforeach
-                    </select>
+                    <x-searchable-select
+                        name="badge_type_id"
+                        :options="$types->map(fn($t) => ['value' => $t->id, 'label' => $t->name])->values()"
+                        placeholder="كل الأنواع"
+                        searchPlaceholder="ابحث عن نوع وسام..."
+                        :defaultValue="request('badge_type_id', '')" />
                 </div>
                 <div class="w-full lg:flex-1 lg:min-w-[140px]">
                     <label class="block text-xs font-bold text-gray-400 mb-1.5">الحالة</label>

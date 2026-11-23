@@ -108,14 +108,12 @@ default => url()->previous(),
                     {{-- السورة الحالية --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">السورة الحالية</label>
-                        <select name="current_surah_id" class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-[#0a5c36] outline-none @error('current_surah_id') border-red-300 @enderror">
-                            <option value="">اختر السورة</option>
-                            @foreach($surahs ?? [] as $surah)
-                            <option value="{{ $surah->id }}" {{ old('current_surah_id', $detail->current_surah_id ?? '') == $surah->id ? 'selected' : '' }}>
-                                {{ $surah->number }}. {{ $surah->name_arabic }}
-                            </option>
-                            @endforeach
-                        </select>
+                        <x-searchable-select
+                            name="current_surah_id"
+                            :options="collect($surahs ?? [])->map(fn($surah) => ['value' => $surah->id, 'label' => $surah->number . '. ' . $surah->name_arabic])->values()"
+                            placeholder="اختر السورة"
+                            searchPlaceholder="ابحث عن سورة..."
+                            :defaultValue="old('current_surah_id', $detail->current_surah_id ?? '')" />
                         @error('current_surah_id')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
 

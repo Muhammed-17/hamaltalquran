@@ -1278,8 +1278,8 @@ test('shortages index filters: month, distributor, circle, type and student sear
 
     // حقول الفلاتر موجودة وبلا فلتر حالة
     $idx()->assertOk()
-        ->assertSee('name="month"', false)->assertSee('name="teacher_id"', false)
-        ->assertSee('name="circle_id"', false)->assertSee('name="badge_type_id"', false)
+        ->assertSee('name="month"', false)->assertSee("searchableSelect('teacher_id'", false)
+        ->assertSee("searchableSelect('circle_id'", false)->assertSee("searchableSelect('badge_type_id'", false)
         ->assertDontSee('name="status"', false);
 
     // نوع الوسام: سجل واحد فقط (عجز النوع الثاني)

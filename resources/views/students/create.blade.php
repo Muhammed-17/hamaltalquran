@@ -66,16 +66,13 @@
             const textarea = document.getElementById('whatsappMessageTextarea');
             const sendInput = document.getElementById('sendWhatsappMessageInput');
             const textInput = document.getElementById('whatsappMessageTextInput');
-            const circleSelect = document.getElementById('circleSelect');
             const whatsappInput = document.getElementById('whatsappInput');
             const btnSaveAndSend = document.getElementById('btnSaveAndSend');
             const btnSaveWithoutSend = document.getElementById('btnSaveWithoutSend');
 
             function getCircleUrl() {
-                if (!circleSelect || !circleSelect.value) return null;
-                const opt = circleSelect.options[circleSelect.selectedIndex];
-                const url = opt?.getAttribute('data-url');
-                return url && url.trim() !== '' ? url.trim() : null;
+                // الحلقة الآن مكوّن searchable-select — رابطها يأتي من خريطة الحلقات في نموذج الطالب
+                return window.StudentFormCircles?.selectedUrl() ?? null;
             }
 
             function openModal(defaultMessage) {
