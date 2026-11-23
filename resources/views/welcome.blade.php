@@ -88,6 +88,120 @@
             </div>
         </div>
 
+        <!-- Media Slider Section -->
+        @if($sliderItems->isNotEmpty())
+        <div id="media-slider" class="max-w-7xl mx-auto px-6 pt-24 lg:px-20">
+            <div class="text-center mb-10">
+                <h2 class="text-4xl font-black text-gray-900 mb-4">من أجواء المركز</h2>
+                <p class="text-gray-500 font-medium text-lg">لقطات من حلقاتنا وأنشطتنا</p>
+            </div>
+
+            <div class="relative rounded-[2rem] overflow-hidden shadow-xl bg-[#0b3d2c]"
+                x-data="{ active: 0, total: {{ $sliderItems->count() }}, timer: null,
+                          start() { if (this.total > 1) this.timer = setInterval(() => this.next(), 5000) },
+                          stop() { clearInterval(this.timer) },
+                          next() { this.active = (this.active + 1) % this.total },
+                          prev() { this.active = (this.active - 1 + this.total) % this.total },
+                          touchX: null,
+                          onTouchStart(e) { this.touchX = e.touches[0].clientX },
+                          onTouchEnd(e) { if (this.touchX === null) return; const dx = e.changedTouches[0].clientX - this.touchX; if (Math.abs(dx) > 40) { dx > 0 ? this.next() : this.prev() } this.touchX = null } }"
+                x-init="start()" @mouseenter="stop()" @mouseleave="start()"
+                @touchstart="onTouchStart($event)" @touchend="onTouchEnd($event)">
+                <div class="relative h-[320px] md:h-[480px]">
+                    @foreach($sliderItems as $slide)
+                        <div class="absolute inset-0 transition-opacity duration-700" x-show="active === {{ $loop->index }}" x-cloak>
+                            <img src="{{ $slide->imageUrl() }}" alt="{{ $slide->title }}" class="w-full h-full object-cover"
+                                @if(!$loop->first) loading="lazy" @endif>
+                            @if($slide->title)
+                                <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-6 pt-16">
+                                    <p class="text-white text-xl md:text-2xl font-black">{{ $slide->title }}</p>
+                                </div>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+
+                @if($sliderItems->count() > 1)
+                    <button type="button" @click="prev()" aria-label="السابق"
+                        class="absolute top-1/2 -translate-y-1/2 right-4 w-11 h-11 rounded-full bg-white/15 hover:bg-white/30 border border-white/30 text-white text-2xl leading-none backdrop-blur transition">‹</button>
+                    <button type="button" @click="next()" aria-label="التالي"
+                        class="absolute top-1/2 -translate-y-1/2 left-4 w-11 h-11 rounded-full bg-white/15 hover:bg-white/30 border border-white/30 text-white text-2xl leading-none backdrop-blur transition">›</button>
+                    <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
+                        @foreach($sliderItems as $slide)
+                            <button type="button" @click="active = {{ $loop->index }}" aria-label="شريحة {{ $loop->iteration }}"
+                                class="h-2.5 rounded-full transition-all" :class="active === {{ $loop->index }} ? 'w-8 bg-emerald-400' : 'w-2.5 bg-white/50'"></button>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        </div>
+        @endif
+
+        <!-- Gallery Section -->
+        @if($galleryItems->isNotEmpty())
+        <div id="gallery" class="max-w-7xl mx-auto px-6 pt-24 lg:px-20" x-data="{ lightbox: null }">
+            <div class="text-center mb-10">
+                <h2 class="text-4xl font-black text-gray-900 mb-4">معرض الصور</h2>
+                <p class="text-gray-500 font-medium text-lg">صور من فعاليات المركز وحلقاته</p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                @foreach($galleryItems as $photo)
+                    <button type="button" @click="lightbox = '{{ $photo->imageUrl() }}'" class="group relative rounded-3xl overflow-hidden shadow-sm focus:outline-none">
+                        <img src="{{ $photo->imageUrl() }}" alt="{{ $photo->title }}" loading="lazy"
+                            class="w-full h-44 md:h-52 object-cover transition duration-500 group-hover:scale-105">
+                        @if($photo->title)
+                            <span class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent text-white text-sm font-bold text-right p-3 pt-8">{{ $photo->title }}</span>
+                        @endif
+                    </button>
+                @endforeach
+            </div>
+
+            {{-- عارض الصورة المكبرة --}}
+            <div x-show="lightbox" x-cloak @click="lightbox = null" @keydown.escape.window="lightbox = null"
+                class="fixed inset-0 z-[70] bg-black/85 flex items-center justify-center p-4">
+                <img :src="lightbox" alt="" class="max-w-full max-h-[90vh] rounded-2xl shadow-2xl">
+                <span class="absolute top-5 left-6 text-white text-4xl leading-none cursor-pointer">&times;</span>
+            </div>
+        </div>
+        @endif
+
+        <!-- Videos Section -->
+        @if($videoItems->isNotEmpty())
+        <div id="videos" class="max-w-7xl mx-auto px-6 pt-24 lg:px-20">
+            <div class="text-center mb-10">
+                <h2 class="text-4xl font-black text-gray-900 mb-4">فيديوهات المركز</h2>
+                <p class="text-gray-500 font-medium text-lg">شاهد مقاطع من أنشطة المركز وحلقاته</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                @foreach($videoItems as $video)
+                    @if($video->youtubeEmbedUrl())
+                        <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100" x-data="{ playing: false }">
+                            <div class="relative aspect-video bg-black">
+                                <template x-if="!playing">
+                                    <button type="button" @click="playing = true" class="absolute inset-0 w-full h-full group">
+                                        <img src="{{ $video->youtubeThumbnailUrl() }}" alt="{{ $video->title }}" loading="lazy" class="w-full h-full object-cover opacity-90">
+                                        <span class="absolute inset-0 flex items-center justify-center">
+                                            <span class="w-16 h-16 rounded-full bg-red-600 text-white flex items-center justify-center text-2xl shadow-xl transition group-hover:scale-110">▶</span>
+                                        </span>
+                                    </button>
+                                </template>
+                                <template x-if="playing">
+                                    <iframe src="{{ $video->youtubeEmbedUrl() }}&autoplay=1" class="absolute inset-0 w-full h-full"
+                                        title="{{ $video->title }}" frameborder="0" allowfullscreen
+                                        allow="accelerometer; autoplay; encrypted-media; picture-in-picture"></iframe>
+                                </template>
+                            </div>
+                            @if($video->title)
+                                <p class="p-4 font-bold text-gray-800">{{ $video->title }}</p>
+                            @endif
+                        </div>
+                    @endif
+                @endforeach
+            </div>
+        </div>
+        @endif
 
         <!-- Features Section -->
         <div id="features" class="max-w-7xl mx-auto px-6 py-32 lg:px-20">

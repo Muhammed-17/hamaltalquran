@@ -58,6 +58,7 @@ require __DIR__ . '/attendance.php';
 require __DIR__ . '/teacher.php';
 require __DIR__ . '/subscription.php';
 require __DIR__ . '/badges.php';
+require __DIR__ . '/welcome_media.php';
 require __DIR__ . '/center.php';
 require __DIR__ . '/branch.php';
 require __DIR__ . '/guardian_account.php';

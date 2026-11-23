@@ -350,6 +350,10 @@
                             class="block px-4 py-2 rounded-lg text-[13px] {{ request()->routeIs('branches.*') ? 'bg-[#0d7a48] font-bold' : 'hover:bg-[#0d7a48]' }}">
                             المقرات
                         </a>
+                        <a href="{{ route('welcome-media.index') }}"
+                            class="block px-4 py-2 rounded-lg text-[13px] {{ request()->routeIs('welcome-media.*') ? 'bg-[#0d7a48] font-bold' : 'hover:bg-[#0d7a48]' }}">
+                            محتوى الصفحة الرئيسية
+                        </a>
                         @endrole
                         @can('view subscription prices')
                         <a href="{{ route('subscription-prices.index') }}"

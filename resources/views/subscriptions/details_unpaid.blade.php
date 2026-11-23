@@ -126,7 +126,7 @@ $overdueText = empty($parts) ? 'اليوم' : implode(' و', $parts);
                 </div>
 
                 {{-- Progress Bar --}}
-                <div class="col-span-3 bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                <div class="col-span-1 sm:col-span-3 bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                     <div class="flex items-center justify-between mb-3">
                         <span class="text-sm font-bold text-gray-700">معدل السداد</span>
                         <span class="text-sm font-black text-emerald-600">{{ $paymentRate }}%</span>
