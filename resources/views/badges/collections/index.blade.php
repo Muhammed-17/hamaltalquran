@@ -52,7 +52,14 @@
                         <td class="px-6 py-4 text-sm">
                             <span class="px-2 py-1 rounded-lg text-xs font-bold {{ match($r->status->value) { 'completed' => 'bg-emerald-50 text-emerald-700', 'cancelled' => 'bg-red-50 text-red-600', default => 'bg-amber-50 text-amber-700' } }}">{{ $r->status->label() }}</span>
                         </td>
-                        <td class="px-6 py-4 text-sm"><a href="{{ route('badges.collections.show', $r) }}" class="text-[#0a5c36] font-bold hover:underline">فتح</a></td>
+                        <td class="px-6 py-4 text-sm">
+                            {{-- المسودة تُفتح في صفحة التحصيل نفسها لاستكمالها أو تصحيحها، والمعتمدة/الملغاة تفتح سجلها --}}
+                            @if ($r->isDraft())
+                                <a href="{{ route('badges.collections.create', ['circle_id' => $r->circle_id, 'teacher_id' => $r->teacher_id, 'collection_date' => $r->collection_date->format('Y-m-d')]) }}" class="text-[#0a5c36] font-bold hover:underline">فتح</a>
+                            @else
+                                <a href="{{ route('badges.collections.show', $r) }}" class="text-[#0a5c36] font-bold hover:underline">فتح</a>
+                            @endif
+                        </td>
                     </tr>
                 @empty
                     <tr><td colspan="6" class="px-6 py-10 text-center text-gray-400 text-sm">لا جولات مطابقة</td></tr>

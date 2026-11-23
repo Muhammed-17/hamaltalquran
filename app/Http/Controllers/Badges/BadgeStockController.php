@@ -73,6 +73,8 @@ class BadgeStockController extends Controller
 
         $stock->returnFromTeacher($teacher, $type, (int) $request->quantity, $request->user(), $request->notes);
 
-        return redirect()->route('badges.stock.index')->with('success', 'تم تسجيل الإرجاع إلى الإدارة بنجاح.');
+        // العودة لصفحة المنشأ: نموذج الإرجاع موجود في صفحة المخزون وفي صفحة
+        // التسليمات (إرجاع ذاتي) — ومن لا يصل لصفحة المخزون لا يُدفع إليها
+        return redirect()->back()->with('success', 'تم تسجيل الإرجاع إلى الإدارة بنجاح.');
     }
 }

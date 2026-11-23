@@ -3,7 +3,6 @@
 use App\Http\Controllers\Badges\BadgeCollectionRoundController;
 use App\Http\Controllers\Badges\BadgeDistributionController;
 use App\Http\Controllers\Badges\BadgeEntitlementController;
-use App\Http\Controllers\Badges\BadgeLogController;
 use App\Http\Controllers\Badges\BadgeShortageController;
 use App\Http\Controllers\Badges\BadgeStockController;
 use App\Http\Controllers\Badges\BadgeTeacherHandoverController;
@@ -39,10 +38,10 @@ Route::middleware(['auth', 'verified'])
 
         // ─── تسليم الأوسمة للمعلمين ───
         Route::get('handovers/report', [BadgeTeacherHandoverController::class, 'report'])
-            ->middleware('permission:badges.reports.view')
+            ->middleware('role:admin')
             ->name('handovers.report');
         Route::get('handovers/statistics', [BadgeTeacherHandoverController::class, 'statistics'])
-            ->middleware('permission:badges.handovers.view')
+            ->middleware('role:admin')
             ->name('handovers.statistics');
         Route::resource('handovers', BadgeTeacherHandoverController::class)
             ->only(['index', 'create', 'store', 'show']);
@@ -50,13 +49,19 @@ Route::middleware(['auth', 'verified'])
             ->name('handovers.cancel');
 
         // ─── استحقاقات الطلاب ───
-        Route::get('entitlements/circle-data', [BadgeEntitlementController::class, 'circleData'])
-            ->name('entitlements.circle-data');
+        Route::post('entitlements/daily', [BadgeEntitlementController::class, 'storeDaily'])
+            ->name('entitlements.daily-store');
         Route::get('entitlements/statistics', [BadgeEntitlementController::class, 'statistics'])
-            ->middleware('permission:badges.entitlements.view')
+            ->middleware('role:admin')
             ->name('entitlements.statistics');
+        Route::get('entitlements/statistics/distributors', [BadgeEntitlementController::class, 'statisticsDistributors'])
+            ->middleware('role:admin')
+            ->name('entitlements.statistics-distributors');
+        Route::get('entitlements/statistics/students', [BadgeEntitlementController::class, 'statisticsStudents'])
+            ->middleware('role:admin')
+            ->name('entitlements.statistics-students');
         Route::get('entitlements/report', [BadgeEntitlementController::class, 'report'])
-            ->middleware('permission:badges.reports.view')
+            ->middleware('role:admin')
             ->name('entitlements.report');
         Route::resource('entitlements', BadgeEntitlementController::class)
             ->except(['destroy']);
@@ -70,8 +75,10 @@ Route::middleware(['auth', 'verified'])
             ->name('distributions.cancel');
 
         // ─── الأوسمة الناقصة ───
-        Route::post('shortages/distribute-student', [BadgeShortageController::class, 'distributeStudent'])
-            ->name('shortages.distribute-student');
+        Route::get('shortages/deliver', [BadgeShortageController::class, 'deliver'])
+            ->name('shortages.deliver');
+        Route::post('shortages/deliver', [BadgeShortageController::class, 'deliverStore'])
+            ->name('shortages.deliver-store');
         Route::get('shortages', [BadgeShortageController::class, 'index'])
             ->name('shortages.index');
         Route::get('shortages/{shortage}', [BadgeShortageController::class, 'show'])
@@ -79,18 +86,15 @@ Route::middleware(['auth', 'verified'])
         Route::post('shortages/{shortage}/resolve', [BadgeShortageController::class, 'resolve'])
             ->name('shortages.resolve');
 
-        // ─── جولات تحصيل الأوسمة ───
+        // ─── جولات تحصيل الأوسمة (جلسة: تسوية طالب طالب ثم اعتماد) ───
+        Route::post('collections/settle-student', [BadgeCollectionRoundController::class, 'settleStudent'])
+            ->name('collections.settle-student');
         Route::resource('collections', BadgeCollectionRoundController::class)
-            ->except(['destroy']);
+            ->except(['destroy', 'store']);
         Route::put('collections/items/{item}', [BadgeCollectionRoundController::class, 'updateItem'])
             ->name('collections.items.update');
         Route::post('collections/{collection}/complete', [BadgeCollectionRoundController::class, 'complete'])
             ->name('collections.complete');
         Route::post('collections/{collection}/cancel', [BadgeCollectionRoundController::class, 'cancel'])
             ->name('collections.cancel');
-
-        // ─── سجل العمليات (التقارير مدمجة في لوحة الإحصائيات) ───
-        Route::get('logs', [BadgeLogController::class, 'index'])
-            ->middleware('permission:badges.logs.view')
-            ->name('logs.index');
     });

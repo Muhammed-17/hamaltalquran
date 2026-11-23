@@ -8,15 +8,16 @@
             @can('badges.handovers.create')
                 <a href="{{ route('badges.handovers.create') }}" class="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-2xl shadow-lg active:scale-95">+ تسليم جديد</a>
             @endcan
-            @can('badges.handovers.view')
+            @if (auth()->user()->hasRole('admin'))
                 <a href="{{ route('badges.handovers.statistics', array_filter(['month' => request('month'), 'teacher_id' => request('teacher_id'), 'badge_type_id' => request('badge_type_id'), 'status' => request('status')])) }}" class="px-5 py-3 bg-white/10 hover:bg-white/20 border border-white/25 text-white font-bold rounded-2xl transition active:scale-95">الإحصائيات</a>
-            @endcan
-            @can('badges.reports.view')
+            @endif
+            @if (auth()->user()->hasRole('admin'))
                 <a href="{{ route('badges.handovers.report', array_filter(['month' => request('month'), 'teacher_id' => request('teacher_id'), 'badge_type_id' => request('badge_type_id'), 'status' => request('status')])) }}" class="px-5 py-3 bg-white/10 hover:bg-white/20 border border-white/25 text-white font-bold rounded-2xl transition active:scale-95">التقرير</a>
-            @endcan
+            @endif
         </div>
         <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
     </div>
+
 
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6" dir="rtl">
         <form method="GET" class="flex flex-col lg:flex-row gap-4 items-end">

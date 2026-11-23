@@ -13,12 +13,12 @@ class BadgeDistributionPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->can('badges.distributions.view');
+        return $user->can('badges.entitlements.view');
     }
 
     public function view(User $user, BadgeDistribution $distribution): bool
     {
-        return $user->can('badges.distributions.view')
+        return $user->can('badges.entitlements.view')
             && ($distribution->teacher_id === $user->id
                 || $this->access->canAccessCircle($user, $distribution->entitlement->circle_id));
     }
@@ -29,7 +29,7 @@ class BadgeDistributionPolicy
      */
     public function create(User $user, ?BadgeEntitlement $entitlement = null): bool
     {
-        if (!$user->can('badges.distributions.create')) {
+        if (!$user->can('badges.entitlements.create')) {
             return false;
         }
         if (!$entitlement) {
@@ -45,7 +45,7 @@ class BadgeDistributionPolicy
 
     public function cancel(User $user, BadgeDistribution $distribution): bool
     {
-        return $user->can('badges.distributions.cancel')
+        return $user->can('badges.entitlements.cancel')
             && ($distribution->teacher_id === $user->id
                 || $this->access->canAccessCircle($user, $distribution->entitlement->circle_id));
     }

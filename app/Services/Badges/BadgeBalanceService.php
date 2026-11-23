@@ -4,8 +4,10 @@ namespace App\Services\Badges;
 
 use App\Models\Badges\BadgeCollectionItem;
 use App\Models\Badges\BadgeDistribution;
+use App\Models\Badges\BadgeRedemptionItem;
 use App\Models\Badges\BadgeStockMovement;
 use App\Models\Badges\BadgeTeacherHandover;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -35,7 +37,13 @@ class BadgeBalanceService
             ->whereNull('source_user_id')
             ->sum('quantity');
 
-        return $movements - $handedOver;
+        // وتوزيعات الأدمن المباشرة للطلاب تخرج من المركزي أيضًا
+        $distributedByAdmin = (int) BadgeDistribution::active()
+            ->where('badge_type_id', $badgeTypeId)
+            ->whereIn('teacher_id', $this->adminUserIds())
+            ->sum('quantity');
+
+        return $movements - $handedOver - $distributedByAdmin;
     }
 
     public function teacherBalance(int $teacherUserId, int $badgeTypeId): int
@@ -86,7 +94,14 @@ class BadgeBalanceService
             ->whereHas('round', fn ($q) => $q->where('status', 'completed'))
             ->sum('collected_quantity');
 
-        return $distributed - $collected;
+        // المستهلك بالاستبدال بلعبة خرج من يد الطالب أيضًا (رُدّ للمخزون المركزي)
+        $redeemed = (int) BadgeRedemptionItem::where('badge_type_id', $badgeTypeId)
+            ->whereHas('redemption', fn ($q) => $q
+                ->where('student_id', $studentId)
+                ->where('status', 'completed'))
+            ->sum('held_quantity');
+
+        return $distributed - $collected - $redeemed;
     }
 
     /** خريطة أرصدة الإدارة لكل الأنواع: [badge_type_id => balance] */
@@ -100,9 +115,14 @@ class BadgeBalanceService
             ->selectRaw('badge_type_id, SUM(quantity) as total')
             ->groupBy('badge_type_id')->pluck('total', 'badge_type_id');
 
+        $distributedByAdmin = BadgeDistribution::active()
+            ->whereIn('teacher_id', $this->adminUserIds())
+            ->selectRaw('badge_type_id, SUM(quantity) as total')
+            ->groupBy('badge_type_id')->pluck('total', 'badge_type_id');
+
         $result = [];
-        foreach ($movements->keys()->merge($handedOver->keys())->unique() as $typeId) {
-            $result[$typeId] = (int) ($movements[$typeId] ?? 0) - (int) ($handedOver[$typeId] ?? 0);
+        foreach ($movements->keys()->merge($handedOver->keys())->merge($distributedByAdmin->keys())->unique() as $typeId) {
+            $result[$typeId] = (int) ($movements[$typeId] ?? 0) - (int) ($handedOver[$typeId] ?? 0) - (int) ($distributedByAdmin[$typeId] ?? 0);
         }
 
         return $result;
@@ -123,6 +143,36 @@ class BadgeBalanceService
         }
 
         return $result;
+    }
+
+    /** معرّفات مستخدمي الإدارة — الأدمن يوزّع من المخزون المركزي لا من عهدة شخصية */
+    private function adminUserIds(): array
+    {
+        return User::role('admin')->pluck('id')->map(fn ($id) => (int) $id)->all();
+    }
+
+    /**
+     * رصيد الموزّع الفعلي لنوع واحد: الأدمن من المخزون المركزي، وأي موزّع
+     * آخر من عهدته الشخصية. هذا هو الرصيد الذي تُبنى عليه قرارات التوزيع
+     * وفتح العجز وما تعرضه الصفحات من «رصيد الموزّع».
+     */
+    public function distributorBalance(int $userId, int $badgeTypeId): int
+    {
+        $user = User::find($userId);
+
+        return ($user && $user->hasRole('admin'))
+            ? $this->adminBalance($badgeTypeId)
+            : $this->teacherBalance($userId, $badgeTypeId);
+    }
+
+    /** خريطة أرصدة الموزّع لكل الأنواع: [badge_type_id => balance] */
+    public function distributorBalances(int $userId): array
+    {
+        $user = User::find($userId);
+
+        return ($user && $user->hasRole('admin'))
+            ? $this->adminBalances()
+            : $this->teacherBalances($userId);
     }
 
     /** إجمالي المحصَّل فعليًا (جولات معتمدة فقط) */

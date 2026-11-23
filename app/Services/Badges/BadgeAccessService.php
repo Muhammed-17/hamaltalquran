@@ -190,6 +190,28 @@ class BadgeAccessService
         return $this->teacherResponsibleForCircle($user->id, $circleId);
     }
 
+    /** هل يدير المستخدم جولات التحصيل؟ التحصيل وظيفة إدارية: مدير النظام والمدير العام ومدير المركز والمشرف — المعلم لا يراها أصلًا */
+    public function canRunCollections(User $user): bool
+    {
+        return $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor']);
+    }
+
+    /**
+     * المسؤولون المحتملون عن التحصيل: كل المشرفين ومديري المراكز والمديرين
+     * العامين النشطين — بلا قيد حلقة أو فرع أو مركز (يرون كل الحلقات)،
+     * وعدا حسابات مدير النظام التي لا تُسند إليها جولات باسمها.
+     */
+    public function selectableCollectors()
+    {
+        return User::with('roles')
+            ->where('status', 'active')
+            ->whereDoesntHave('roles', fn ($q) => $q->where('name', 'admin'))
+            ->orderBy('name')
+            ->get()
+            ->filter(fn (User $u) => $u->hasRole(['supervisor', 'manager', 'general_manager']))
+            ->values();
+    }
+
     /** قائمة المعلمين (مستخدمين) القابلين للاختيار في النماذج حسب نطاق المستخدم */
     public function selectableTeachers(User $user)
     {

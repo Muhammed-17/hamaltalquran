@@ -37,14 +37,15 @@ class BadgeDistributionService
                 throw ValidationException::withMessages(['quantity' => 'الكمية يجب أن تكون أكبر من صفر.']);
             }
 
-            $remaining = $entitlement->remainingQuantity();
+            // المتبقي القابل للتوزيع يخصم المستهلك بالاستبدال (الكلي أو الجزئي)
+            $remaining = $entitlement->distributableRemaining();
             if ($quantity > $remaining) {
                 throw ValidationException::withMessages(['quantity' => "الكمية أكبر من المتبقي من الاستحقاق ({$remaining})."]);
             }
 
-            $teacherBalance = $this->balances->teacherBalance($entitlement->teacher_id, $entitlement->badge_type_id);
-            if ($quantity > $teacherBalance) {
-                throw ValidationException::withMessages(['quantity' => "الكمية أكبر من رصيد المعلم الحالي ({$teacherBalance})."]);
+            $distributorBalance = $this->balances->distributorBalance($entitlement->teacher_id, $entitlement->badge_type_id);
+            if ($quantity > $distributorBalance) {
+                throw ValidationException::withMessages(['quantity' => "الكمية أكبر من رصيد الموزّع الحالي ({$distributorBalance})."]);
             }
 
             $shortage = $entitlement->shortage;

@@ -8,6 +8,7 @@ enum ShortageStatus: string
     case Partial = 'partial';
     case Resolved = 'resolved';
     case Cancelled = 'cancelled';
+    case Redeemed = 'redeemed';
 
     public function label(): string
     {
@@ -16,6 +17,7 @@ enum ShortageStatus: string
             self::Partial => 'سُلّم جزئيًا',
             self::Resolved => 'تم الاستكمال',
             self::Cancelled => 'ملغي',
+            self::Redeemed => 'مستهلك بالاستبدال',
         };
     }
 }

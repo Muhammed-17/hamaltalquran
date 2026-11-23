@@ -72,4 +72,19 @@ class BadgeEntitlement extends Model
     {
         return max(0, $this->quantity - $this->deliveredQuantity());
     }
+
+    /** المستحق المستهلك بالاستبدال بلعبة في استبدالات مكتملة */
+    public function redeemedShortageQuantity(): int
+    {
+        return (int) BadgeRedemptionItem::where('entitlement_id', $this->id)
+            ->where('shortage_quantity', '>', 0)
+            ->whereHas('redemption', fn ($q) => $q->where('status', 'completed'))
+            ->sum('shortage_quantity');
+    }
+
+    /** المتبقي القابل للتوزيع فعليًا — بعد خصم المستهلك بالاستبدال */
+    public function distributableRemaining(): int
+    {
+        return max(0, $this->remainingQuantity() - $this->redeemedShortageQuantity());
+    }
 }

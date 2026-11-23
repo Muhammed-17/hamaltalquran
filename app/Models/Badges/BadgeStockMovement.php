@@ -43,6 +43,10 @@ class BadgeStockMovement extends Model
             return 'إرجاع من معلم';
         }
 
+        if ($this->source_type === 'redemption') {
+            return 'إرجاع استبدال بلعبة';
+        }
+
         return $this->quantity < 0 ? 'تسوية / تصحيح' : 'إضافة مخزون';
     }
 

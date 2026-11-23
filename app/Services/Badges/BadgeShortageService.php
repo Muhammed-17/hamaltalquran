@@ -9,18 +9,37 @@ use App\Models\Badges\BadgeShortage;
 
 /**
  * مزامنة حالة الاستحقاق والعجز من التوزيعات النشطة الفعلية.
- * العجز يعكس دائمًا الكمية غير المسلّمة من الاستحقاق:
- * shortage_quantity = required − delivered
+ * سجل العجز/المتبقّي يعكس دائمًا الكمية غير المسلّمة من الاستحقاق:
+ * shortage_quantity = required − delivered − redeemed
+ * ويوجد سجل لكل استحقاق له متبقٍّ غير مسلّم بغض النظر عن رصيد الموزّع —
+ * صفحة النواقص تعرض كل ما لم يصل إلى الطالب بعد (قرار عباس 2026-11-23).
  */
 class BadgeShortageService
 {
-    /**
-     * يُستدعى عند إنشاء الاستحقاق: إن لم يكفِ رصيد المعلم لتغطية الاستحقاق
-     * كاملًا يُفتح سجل عجز (واحد فقط لكل استحقاق — قيد فرادة في القاعدة).
-     */
-    public function openIfUnderstocked(BadgeEntitlement $entitlement, int $teacherBalance): ?BadgeShortage
+    /** المستهلك من هذا الاستحقاق بالاستبدال بلعبة (خصومات مكتملة فقط) */
+    private function redeemedQuantity(BadgeEntitlement $entitlement): int
     {
-        if ($teacherBalance >= $entitlement->quantity) {
+        return (int) \App\Models\Badges\BadgeRedemptionItem::where('entitlement_id', $entitlement->id)
+            ->where('shortage_quantity', '>', 0)
+            ->whereHas('redemption', fn ($q) => $q->where('status', 'completed'))
+            ->sum('shortage_quantity');
+    }
+
+    /**
+     * يُستدعى عند إنشاء الاستحقاق: يُفتح سجل متبقٍّ لأي استحقاق غير مكتمل
+     * التسليم (واحد فقط لكل استحقاق — قيد فرادة في القاعدة)، سواء أكان لدى
+     * الموزّع رصيد يكفي أم لا؛ فالنواقص تتبع ما لم يصل للطالب لا رصيد الموزّع.
+     */
+    public function openForEntitlement(BadgeEntitlement $entitlement): ?BadgeShortage
+    {
+        if ($entitlement->status === EntitlementStatus::Cancelled) {
+            return null;
+        }
+
+        $delivered = $entitlement->deliveredQuantity();
+        $redeemed = $this->redeemedQuantity($entitlement);
+        $remaining = max(0, $entitlement->quantity - $delivered - $redeemed);
+        if ($remaining <= 0) {
             return null;
         }
 
@@ -31,9 +50,9 @@ class BadgeShortageService
                 'teacher_id'         => $entitlement->teacher_id,
                 'badge_type_id'      => $entitlement->badge_type_id,
                 'required_quantity'  => $entitlement->quantity,
-                'delivered_quantity' => 0,
-                'shortage_quantity'  => $entitlement->quantity,
-                'status'             => ShortageStatus::Pending->value,
+                'delivered_quantity' => $delivered,
+                'shortage_quantity'  => $remaining,
+                'status'             => ($delivered > 0 || $redeemed > 0) ? ShortageStatus::Partial->value : ShortageStatus::Pending->value,
             ]
         );
     }
@@ -53,15 +72,25 @@ class BadgeShortageService
             $entitlement->save();
         }
 
+        // المتبقي الحقيقي يخصم المستهلك بالاستبدال أيضًا: الاستحقاق
+        // المسلّم جزئيًا والمستهلك جزئيًا يبقى عجزه مفتوحًا بالصافي فقط
+        $redeemed = $this->redeemedQuantity($entitlement);
+        $remaining = max(0, $entitlement->quantity - $delivered - $redeemed);
+
         $shortage = $entitlement->shortage;
+        if (!$shortage && $entitlement->status !== EntitlementStatus::Cancelled && $remaining > 0) {
+            // لا سجل بعد (استحقاق سُجّل قبل هذا التعميم أو زادت كميته): يُفتح الآن
+            $shortage = $this->openForEntitlement($entitlement);
+        }
+
         if ($shortage && $shortage->status !== ShortageStatus::Cancelled) {
-            $remaining = max(0, $entitlement->quantity - $delivered);
             $shortage->required_quantity = $entitlement->quantity;
             $shortage->delivered_quantity = $delivered;
             $shortage->shortage_quantity = $remaining;
             $shortage->status = match (true) {
-                $remaining === 0 => ShortageStatus::Resolved,
-                $delivered > 0 => ShortageStatus::Partial,
+                $remaining === 0 && $delivered >= $entitlement->quantity => ShortageStatus::Resolved,
+                $remaining === 0 => ShortageStatus::Redeemed,
+                $delivered > 0 || $redeemed > 0 => ShortageStatus::Partial,
                 default => ShortageStatus::Pending,
             };
             $shortage->save();

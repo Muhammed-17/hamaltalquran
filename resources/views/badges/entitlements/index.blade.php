@@ -9,14 +9,54 @@
                 <a href="{{ route('badges.entitlements.create') }}" class="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-2xl shadow-lg active:scale-95">+ استحقاق وتوزيع جديد</a>
             @endcan
             <div class="flex flex-wrap gap-2.5 ms-3 ps-5 border-s border-white/25">
-                <a href="{{ route('badges.entitlements.statistics', array_filter(['month' => request('month'), 'teacher_id' => request('teacher_id'), 'circle_id' => request('circle_id'), 'status' => request('status')])) }}" class="px-5 py-3 bg-white/10 hover:bg-white/20 border border-white/25 text-white font-bold rounded-2xl transition active:scale-95">الإحصائيات</a>
-                @can('badges.reports.view')
+                @if (auth()->user()->hasRole('admin'))
+                    <a href="{{ route('badges.entitlements.statistics', array_filter(['month' => request('month'), 'teacher_id' => request('teacher_id'), 'circle_id' => request('circle_id'), 'status' => request('status')])) }}" class="px-5 py-3 bg-white/10 hover:bg-white/20 border border-white/25 text-white font-bold rounded-2xl transition active:scale-95">الإحصائيات</a>
+                @endif
+                @if (auth()->user()->hasRole('admin'))
                     <a href="{{ route('badges.entitlements.report', array_filter(['month' => request('month'), 'teacher_id' => request('teacher_id'), 'circle_id' => request('circle_id'), 'status' => request('status'), 'q' => request('q')])) }}" class="px-5 py-3 bg-white/10 hover:bg-white/20 border border-white/25 text-white font-bold rounded-2xl transition active:scale-95">التقرير</a>
-                @endcan
+                @endif
             </div>
         </div>
         <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
     </div>
+
+    {{-- إرجاع ذاتي: كل حامل عهدة يعيد من عهدته هو للإدارة من هنا --}}
+    @can('badges.stock.return')
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6" dir="rtl">
+            <div class="font-black text-gray-800 mb-1">إرجاع أوسمة للإدارة (من عهدتي)</div>
+            <p class="text-xs text-gray-400 mb-4">أعد جزءًا من الأوسمة التي بحوزتك إلى المخزون المركزي للإدارة — الإرجاع يكون من عهدتك أنت فقط.</p>
+            @if ($returnBalances->isEmpty())
+                <p class="text-sm text-gray-400">لا توجد عهدة بحوزتك حاليًا.</p>
+            @else
+                <form method="POST" action="{{ route('badges.stock.returns.store') }}" class="flex flex-col lg:flex-row gap-4 items-end">
+                    @csrf
+                    <input type="hidden" name="teacher_id" value="{{ auth()->id() }}">
+                    <div class="w-full lg:w-64">
+                        <label class="block text-xs font-bold text-gray-400 mb-1.5">نوع الوسام</label>
+                        <select name="badge_type_id" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
+                            @foreach ($types as $t)
+                                @if ($returnBalances->has($t->id))
+                                    <option value="{{ $t->id }}">{{ $t->name }} — رصيد عهدتك: {{ $returnBalances[$t->id] }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('badge_type_id')" class="mt-2" />
+                    </div>
+                    <div class="w-full lg:w-40">
+                        <label class="block text-xs font-bold text-gray-400 mb-1.5">الكمية المرجعة</label>
+                        <input type="number" name="quantity" min="1" value="1" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm">
+                        <x-input-error :messages="$errors->get('quantity')" class="mt-2" />
+                    </div>
+                    <div class="flex-1 w-full">
+                        <label class="block text-xs font-bold text-gray-400 mb-1.5">ملاحظات</label>
+                        <input type="text" name="notes" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm" placeholder="اختياري">
+                    </div>
+                    <button class="px-6 py-2.5 bg-[#0a5c36] hover:bg-[#0b3d2c] text-white rounded-xl font-bold text-sm whitespace-nowrap">تسجيل الإرجاع</button>
+                </form>
+                <x-input-error :messages="$errors->get('teacher_id')" class="mt-2" />
+            @endif
+        </div>
+    @endcan
 
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6" dir="rtl">
         <form method="GET" class="space-y-3">
@@ -139,7 +179,7 @@
                             <span class="px-2 py-1 rounded-lg text-xs font-bold {{ match($e->status->value) { 'completed' => 'bg-emerald-50 text-emerald-700', 'partial' => 'bg-amber-50 text-amber-700', 'cancelled' => 'bg-red-50 text-red-600', default => 'bg-gray-100 text-gray-600' } }}">{{ $e->status->label() }}</span>
                             <a href="{{ route('badges.entitlements.show', $e) }}" class="text-[#0a5c36] text-sm font-bold hover:underline">عرض</a>
                             @if ($remaining > 0 && $e->status->value !== 'cancelled')
-                                @can('badges.distributions.create')
+                                @can('badges.entitlements.create')
                                     @if ($distributorBalance > 0)
                                         <form method="POST" action="{{ route('badges.distributions.store') }}" class="flex items-center gap-1.5">
                                             @csrf

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Badges;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Badges\CancelBadgeOperationRequest;
+use App\Http\Requests\Badges\StoreBadgeDailyEntitlementRequest;
 use App\Http\Requests\Badges\StoreBadgeEntitlementRequest;
 use App\Http\Requests\Badges\UpdateBadgeEntitlementRequest;
 use App\Models\Badges\BadgeEntitlement;
@@ -81,64 +82,178 @@ class BadgeEntitlementController extends Controller
         $distributorBalances = [];
         foreach ($items as $e) {
             $key = $e->teacher_id . '_' . $e->badge_type_id;
-            $distributorBalances[$key] ??= $balances->teacherBalance($e->teacher_id, $e->badge_type_id);
+            $distributorBalances[$key] ??= $balances->distributorBalance($e->teacher_id, $e->badge_type_id);
         }
 
         return view('badges.entitlements.index', [
             'groups' => $groups,
             'paginator' => $paginator,
             'distributorBalances' => $distributorBalances,
+            // عهدة المشاهد نفسه (لنموذج الإرجاع الذاتي): [badge_type_id => balance] بالموجب فقط
+            'returnBalances' => $user->can('badges.stock.return')
+                ? collect($balances->teacherBalances($user->id))->filter(fn ($q) => (int) $q > 0)
+                : collect(),
             'distributors' => $distributors,
             'circles' => $access->accessibleCircles($user)->get(),
             'types' => BadgeType::orderBy('name')->get(),
         ]);
     }
 
-    public function create(UserAccessService $access)
+    /**
+     * صفحة التسليم اليومي (تحل محل نموذج إنشاء الاستحقاق): ورقة عمل يوم
+     * (تاريخ + حلقة + موزّع) — صف لكل طالب مقيّد وعمود لكل نوع نشط،
+     * والخانة تحمل إجمالي ما سُجّل للطالب من النوع في هذا اليوم عند هذا
+     * الموزّع، بجانب إجمالي مستحقه ومسلّمه ومتبقّيه عبر كل الأيام.
+     */
+    public function create(Request $request, UserAccessService $access, BadgeAccessService $badgeAccess, BadgeBalanceService $balances)
     {
         $this->authorize('create', BadgeEntitlement::class);
 
+        $user = $request->user();
+        $date = (string) $request->get('date', now()->toDateString());
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            $date = now()->toDateString();
+        }
+
+        $circles = $access->accessibleCircles($user)->get();
+        $circle = $circles->firstWhere('id', (int) $request->get('circle_id')) ?? $circles->first();
+        $types = BadgeType::active()->orderBy('name')->get();
+
+        $distributors = collect();
+        $distributor = null;
+        $students = collect();
+        $distributorBalances = [];
+        $sheet = [];
+
+        if ($circle) {
+            // الموزّعون المرشحون للحلقة: معلمو الحلقة والفرع + المستخدم الحالي إن كان مسؤولًا عنها
+            $teacherUserIds = \App\Models\Teacher::whereIn('id', collect()
+                ->merge(DB::table('circle_teacher')->where('circle_id', $circle->id)->pluck('teacher_id'))
+                ->merge(DB::table('branch_teacher')->where('branch_id', $circle->branch_id)->pluck('teacher_id'))
+                ->unique())->pluck('user_id');
+            if ($badgeAccess->staffResponsibleForCircle($user, $circle->id)) {
+                $teacherUserIds->push($user->id);
+            }
+            $distributors = \App\Models\User::whereIn('id', $teacherUserIds->unique())
+                ->orderBy('name')->get(['id', 'name']);
+            $distributor = $distributors->firstWhere('id', (int) $request->get('teacher_id'))
+                ?? $distributors->firstWhere('id', $user->id)
+                ?? $distributors->first();
+
+            $students = Student::withoutGlobalScopes()
+                ->where('circle_id', $circle->id)
+                ->where('status', 'مقيد')
+                ->orderBy('name')
+                ->get(['id', 'name']);
+
+            if ($distributor) {
+                $distributorBalances = $balances->distributorBalances($distributor->id);
+
+                $ents = BadgeEntitlement::query()
+                    ->where('circle_id', $circle->id)
+                    ->where('teacher_id', $distributor->id)
+                    ->where('status', '!=', \App\Enums\Badges\EntitlementStatus::Cancelled->value)
+                    ->get(['id', 'student_id', 'badge_type_id', 'quantity', 'entitlement_date']);
+                $entIds = $ents->pluck('id');
+                $deliveredByEnt = \App\Models\Badges\BadgeDistribution::active()
+                    ->whereIn('entitlement_id', $entIds)
+                    ->selectRaw('entitlement_id, SUM(quantity) as qty')
+                    ->groupBy('entitlement_id')->pluck('qty', 'entitlement_id');
+                $deliveredTodayByEnt = \App\Models\Badges\BadgeDistribution::active()
+                    ->whereIn('entitlement_id', $entIds)
+                    ->whereDate('distribution_date', $date)
+                    ->selectRaw('entitlement_id, SUM(quantity) as qty')
+                    ->groupBy('entitlement_id')->pluck('qty', 'entitlement_id');
+
+                foreach ($ents as $ent) {
+                    $cell = &$sheet[$ent->student_id][$ent->badge_type_id];
+                    $cell['total'] = ($cell['total'] ?? 0) + (int) $ent->quantity;
+                    $cell['delivered'] = ($cell['delivered'] ?? 0) + (int) ($deliveredByEnt[$ent->id] ?? 0);
+                    $cell['delivered_today'] = ($cell['delivered_today'] ?? 0) + (int) ($deliveredTodayByEnt[$ent->id] ?? 0);
+                    if ($ent->entitlement_date?->toDateString() === $date) {
+                        $cell['today'] = ($cell['today'] ?? 0) + (int) $ent->quantity;
+                    }
+                    unset($cell);
+                }
+                foreach ($sheet as &$typesOfStudent) {
+                    foreach ($typesOfStudent as &$cell) {
+                        $cell['remaining'] = max(0, ($cell['total'] ?? 0) - ($cell['delivered'] ?? 0));
+                    }
+                }
+                unset($typesOfStudent, $cell);
+            }
+        }
+
         return view('badges.entitlements.create', [
-            'circles' => $access->accessibleCircles(auth()->user())->get(),
-            'types' => BadgeType::active()->orderBy('name')->get(),
+            'date' => $date,
+            'circles' => $circles,
+            'circle' => $circle,
+            'types' => $types,
+            'distributors' => $distributors,
+            'distributor' => $distributor,
+            'students' => $students,
+            'distributorBalances' => $distributorBalances,
+            'sheet' => $sheet,
         ]);
     }
 
-    /** طلاب الحلقة + المسؤولون عنها + أرصدة عهدتهم لكل نوع (لنموذج الإنشاء الموحد) */
-    public function circleData(Request $request, BadgeAccessService $badgeAccess, BadgeBalanceService $balances)
+    /** حفظ صفحة التسليم اليومي: تُطبَّق فروقات الصفوف المعدّلة فقط، بترتيب تعديلها */
+    public function storeDaily(StoreBadgeDailyEntitlementRequest $request, BadgeEntitlementService $service)
     {
-        $user = $request->user();
-        abort_unless($user->can('badges.entitlements.create') || $user->can('badges.collections.create'), 403);
+        $order = array_values(array_filter(array_map('intval', explode(',', (string) $request->input('order', '')))));
 
-        $circleId = (int) $request->get('circle_id');
-        abort_unless($circleId && $badgeAccess->canAccessCircle($user, $circleId), 403);
+        $result = $service->processDailySheet(
+            $request->only(['date', 'circle_id', 'teacher_id']),
+            (array) $request->input('rows', []),
+            $request->boolean('instant'),
+            $request->user(),
+            $order,
+            (array) $request->input('deliver', []),
+        );
 
-        $students = Student::withoutGlobalScopes()
-            ->where('circle_id', $circleId)
-            ->where('status', 'مقيد')
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        $params = $request->only(['date', 'circle_id', 'teacher_id']);
 
-        $teacherRecordIds = collect()
-            ->merge(DB::table('circle_teacher')->where('circle_id', $circleId)->pluck('teacher_id'))
-            ->merge(DB::table('branch_teacher')->where('branch_id', \App\Models\Circle::find($circleId)?->branch_id)->pluck('teacher_id'))
-            ->unique();
-
-        $teachers = \App\Models\Teacher::with('user:id,name')
-            ->whereIn('id', $teacherRecordIds)
-            ->get()
-            ->map(fn ($t) => ['id' => $t->user_id, 'name' => $t->user?->name])
-            ->filter(fn ($t) => $t['name'])
-            ->values();
-
-        // أرصدة العهدة لكل مسؤول + المستخدم الحالي (لخيار «أنا»)، تظهر بجانب كل نوع في النموذج
-        $balancesByUser = [];
-        foreach ($teachers as $t) {
-            $balancesByUser[$t['id']] = $balances->teacherBalances($t['id']);
+        if ($result['students'] === 0 && $result['floored'] === []) {
+            return redirect()->route('badges.entitlements.create', $params)
+                ->with('success', 'لا توجد تعديلات — لم يُسجَّل شيء.');
         }
-        $balancesByUser[$user->id] = $balances->teacherBalances($user->id);
 
-        return response()->json(['students' => $students, 'teachers' => $teachers, 'balances' => $balancesByUser]);
+        // تعذّر تطبيق كل شيء (حذف/تقليل محظور فقط): نبقى في الورقة مع التفاصيل
+        if ($result['students'] === 0) {
+            return redirect()->route('badges.entitlements.create', $params)
+                ->with('error', 'تعذّر تطبيق التعديلات — التفاصيل في التنبيه بالأسفل.')
+                ->with('sheet_floored', $result['floored']);
+        }
+
+        $message = 'تم حفظ صفحة التسليم اليومي: ' . $result['students'] . ' طالب';
+        if ($result['created'] > 0) {
+            $message .= '، ' . $result['created'] . ' استحقاق جديد';
+        }
+        if ($result['distributed'] > 0) {
+            $message .= '، وسُلّم ' . $result['distributed'] . ' وسامًا';
+        }
+        $message .= '.';
+
+        // زر «تسليم فوري» في البطاقة يبقى في الورقة لخدمة الطالب التالي
+        if ($request->boolean('stay')) {
+            $redirect = redirect()->route('badges.entitlements.create', $params)->with('success', $message);
+            if ($result['floored'] !== []) {
+                $redirect->with('sheet_floored', $result['floored']);
+            }
+
+            return $redirect;
+        }
+
+        // الحفظ الجماعي: انتقال لقائمة الاستحقاقات كما في حفظ الغياب، والتنبيهات في رسالة مرافقة
+        $redirect = redirect()->route('badges.entitlements.index')->with('success', $message);
+        if ($result['floored'] !== []) {
+            $lines = collect($result['floored'])
+                ->map(fn ($f) => $f['student'] . ' — ' . $f['type'] . ': بمقدار ' . $f['quantity'])
+                ->implode('؛ ');
+            $redirect->with('error', 'تعذّر تقليل كميات سُلّمت فعليًا: ' . $lines);
+        }
+
+        return $redirect;
     }
 
     /**
@@ -183,7 +298,12 @@ class BadgeEntitlementController extends Controller
         $totalEntitled = (int) (clone $base)->sum('quantity');
         $totalDelivered = (int) \App\Models\Badges\BadgeDistribution::active()
             ->whereIn('entitlement_id', $ids)->sum('quantity');
-        $totalRemaining = $totalEntitled - $totalDelivered;
+        // المستحق المستهلك بالاستبدال بلعبة لم يعد متبقيًا على المركز
+        $redeemedShortage = (int) \App\Models\Badges\BadgeRedemptionItem::where('shortage_quantity', '>', 0)
+            ->whereIn('entitlement_id', $ids)
+            ->whereHas('redemption', fn ($q) => $q->where('status', 'completed'))
+            ->sum('shortage_quantity');
+        $totalRemaining = $totalEntitled - $totalDelivered - $redeemedShortage;
 
         $perTypeEntitled = (clone $base)
             ->selectRaw('badge_type_id, COUNT(*) as ops, SUM(quantity) as qty')
@@ -200,6 +320,11 @@ class BadgeEntitlementController extends Controller
             ->whereIn('entitlement_id', $ids)
             ->selectRaw('teacher_id, SUM(quantity) as qty')
             ->groupBy('teacher_id')->pluck('qty', 'teacher_id');
+
+        // أكثر الطلاب حصولًا على الأوسمة (بإجمالي الموزّع فعليًا) لقسم الإحصائيات
+        $topStudents = array_slice($this->statisticsMatrix($request, $access, 'student_id'), 0, 10, true);
+        $topStudentModels = \App\Models\Student::withoutGlobalScopes()->with('circle:id,name')
+            ->whereIn('id', array_keys($topStudents))->get()->keyBy('id');
 
         $user = $request->user();
         $distributors = \App\Models\User::whereIn('id',
@@ -229,11 +354,140 @@ class BadgeEntitlementController extends Controller
             'perTypeDelivered' => $perTypeDelivered,
             'perDistributorEntitled' => $perDistributorEntitled,
             'perDistributorDelivered' => $perDistributorDelivered,
+            'topStudents' => $topStudents,
+            'topStudentModels' => $topStudentModels,
             'types' => BadgeType::orderBy('name')->get(),
             'distributors' => $distributors,
             'distributorUsers' => \App\Models\User::whereIn('id', $perDistributorEntitled->keys())->get(['id', 'name'])->keyBy('id'),
             'circles' => $access->accessibleCircles($user)->get(),
         ]);
+    }
+
+    /**
+     * مصفوفة (مستحق/موزّع) لكل نوع، مجمّعة بعمود تجميع (teacher_id للموزّعين أو
+     * student_id للطلاب) ومرتّبة بإجمالي الموزّع تنازليًا — حسب فلاتر الإحصائيات.
+     *
+     * @return array<int, array{entitled: array<int, int>, delivered: array<int, int>, total_entitled: int, total_delivered: int}>
+     */
+    private function statisticsMatrix(Request $request, UserAccessService $access, string $groupColumn): array
+    {
+        $base = $this->entitlementFilterQuery($request, $access);
+        $ids = (clone $base)->select('id');
+
+        $rows = [];
+        (clone $base)
+            ->selectRaw("{$groupColumn} as gid, badge_type_id, SUM(quantity) as qty")
+            ->groupBy('gid', 'badge_type_id')->get()
+            ->each(function ($r) use (&$rows) {
+                $rows[(int) $r->gid]['entitled'][(int) $r->badge_type_id] = (int) $r->qty;
+            });
+        \App\Models\Badges\BadgeDistribution::active()
+            ->whereIn('entitlement_id', $ids)
+            ->selectRaw("{$groupColumn} as gid, badge_type_id, SUM(quantity) as qty")
+            ->groupBy('gid', 'badge_type_id')->get()
+            ->each(function ($r) use (&$rows) {
+                $rows[(int) $r->gid]['delivered'][(int) $r->badge_type_id] = (int) $r->qty;
+            });
+        // المستحق المستهلك بالاستبدال لكل مجموعة (يُخصم من المتبقي لا من المستحق)
+        \App\Models\Badges\BadgeRedemptionItem::query()
+            ->join('badge_entitlements', 'badge_entitlements.id', '=', 'badge_redemption_items.entitlement_id')
+            ->whereIn('badge_redemption_items.entitlement_id', $ids)
+            ->where('badge_redemption_items.shortage_quantity', '>', 0)
+            ->whereHas('redemption', fn ($q) => $q->where('status', 'completed'))
+            ->selectRaw("badge_entitlements.{$groupColumn} as gid, SUM(badge_redemption_items.shortage_quantity) as qty")
+            ->groupBy('gid')->get()
+            ->each(function ($r) use (&$rows) {
+                $rows[(int) $r->gid]['redeemed'] = (int) $r->qty;
+            });
+
+        foreach ($rows as &$row) {
+            $row += ['entitled' => [], 'delivered' => [], 'redeemed' => 0];
+            $row['total_entitled'] = array_sum($row['entitled']);
+            $row['total_delivered'] = array_sum($row['delivered']);
+        }
+        unset($row);
+
+        uasort($rows, fn ($a, $b) => [$b['total_delivered'], $b['total_entitled']] <=> [$a['total_delivered'], $a['total_entitled']]);
+
+        return $rows;
+    }
+
+    /** الأنواع الظاهرة فعليًا في مصفوفة إحصائية (بها بيانات) مرتّبة بالاسم */
+    private function matrixTypes(array $matrix): \Illuminate\Database\Eloquent\Collection
+    {
+        $usedTypeIds = collect($matrix)
+            ->flatMap(fn ($r) => array_merge(array_keys($r['entitled']), array_keys($r['delivered'])))
+            ->unique()->all();
+
+        return BadgeType::whereIn('id', $usedTypeIds)->orderBy('name')->get();
+    }
+
+    /** قوائم فلاتر صفحات الإحصائيات التفصيلية (المسؤولون والحلقات والأنواع) */
+    private function statisticsFilterData(Request $request, UserAccessService $access): array
+    {
+        $user = $request->user();
+        $distributors = \App\Models\User::whereIn('id',
+            BadgeEntitlement::query()
+                ->when(!$user->hasRole(['admin', 'general_manager']), function ($q) use ($access, $user) {
+                    $q->whereIn('circle_id', $access->accessibleCircles($user)->pluck('id'))->orWhere('teacher_id', $user->id);
+                })
+                ->distinct()->pluck('teacher_id')
+        )->orderBy('name')->get(['id', 'name']);
+
+        return [
+            'distributors' => $distributors,
+            'circles' => $access->accessibleCircles($user)->get(),
+            'filterTypes' => BadgeType::orderBy('name')->get(),
+        ];
+    }
+
+    /** طلب المصفوفة دون حقل البحث (يُطبَّق البحث بالاسم على الصفوف نفسها) */
+    private function matrixRequest(Request $request): Request
+    {
+        $clone = clone $request;
+        $clone->query->remove('q');
+        $clone->request->remove('q');
+
+        return $clone;
+    }
+
+    /** صفحة تفاصيل «حسب المسؤول عن التوزيع»: المستحق والموزّع لكل نوع لكل مسؤول */
+    public function statisticsDistributors(Request $request, UserAccessService $access)
+    {
+        $this->authorize('viewAny', BadgeEntitlement::class);
+
+        $matrix = $this->statisticsMatrix($this->matrixRequest($request), $access, 'teacher_id');
+        $users = \App\Models\User::whereIn('id', array_keys($matrix))->get(['id', 'name'])->keyBy('id');
+        if ($request->filled('q')) {
+            $q = (string) $request->q;
+            $matrix = array_filter($matrix, fn ($row, $gid) => isset($users[$gid]) && mb_stripos($users[$gid]->name, $q) !== false, ARRAY_FILTER_USE_BOTH);
+        }
+
+        return view('badges.entitlements.statistics-distributors', [
+            'matrix' => $matrix,
+            'types' => $this->matrixTypes($matrix),
+            'users' => $users,
+        ] + $this->statisticsFilterData($request, $access));
+    }
+
+    /** صفحة تفاصيل الطلاب: المستحق والموزّع لكل نوع لكل طالب مع حلقته */
+    public function statisticsStudents(Request $request, UserAccessService $access)
+    {
+        $this->authorize('viewAny', BadgeEntitlement::class);
+
+        $matrix = $this->statisticsMatrix($this->matrixRequest($request), $access, 'student_id');
+        $students = \App\Models\Student::withoutGlobalScopes()->with('circle:id,name')
+            ->whereIn('id', array_keys($matrix))->get()->keyBy('id');
+        if ($request->filled('q')) {
+            $q = (string) $request->q;
+            $matrix = array_filter($matrix, fn ($row, $gid) => isset($students[$gid]) && mb_stripos($students[$gid]->name, $q) !== false, ARRAY_FILTER_USE_BOTH);
+        }
+
+        return view('badges.entitlements.statistics-students', [
+            'matrix' => $matrix,
+            'types' => $this->matrixTypes($matrix),
+            'students' => $students,
+        ] + $this->statisticsFilterData($request, $access));
     }
 
     /** زر التقرير: ملف Excel بالاستحقاقات والتوزيعات حسب الفلاتر الحالية */
@@ -277,9 +531,9 @@ class BadgeEntitlementController extends Controller
 
         return view('badges.entitlements.show', [
             'entitlement' => $entitlement,
-            'teacherBalance' => $balances->teacherBalance($entitlement->teacher_id, $entitlement->badge_type_id),
+            'teacherBalance' => $balances->distributorBalance($entitlement->teacher_id, $entitlement->badge_type_id),
             'delivered' => $entitlement->deliveredQuantity(),
-            'remaining' => $entitlement->remainingQuantity(),
+            'remaining' => $entitlement->distributableRemaining(),
         ]);
     }
 

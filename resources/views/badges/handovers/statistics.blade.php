@@ -10,9 +10,9 @@
                 <h1 class="text-xl sm:text-2xl font-black">إحصائيات تسليمات العهدة</h1>
                 <p class="text-sm text-gray-500 mt-0.5">كل الأرقام محسوبة حسب الفلاتر الحالية</p>
             </div>
-            @can('badges.reports.view')
+            @if (auth()->user()->hasRole('admin'))
                 <a href="{{ route('badges.handovers.report', request()->query()) }}" class="mr-auto px-5 py-2.5 bg-[#0a5c36] hover:bg-[#0b3d2c] text-white font-bold rounded-xl text-sm transition active:scale-95">تنزيل التقرير (Excel)</a>
-            @endcan
+            @endif
         </div>
 
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6">

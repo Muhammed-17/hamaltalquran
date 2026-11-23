@@ -5,12 +5,50 @@
     </div>
 
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6" dir="rtl">
-        <form method="GET" class="flex flex-col lg:flex-row gap-4 items-end">
-            <div class="w-full lg:flex-1">
-                <label class="block text-xs font-bold text-gray-400 mb-1.5">بحث باسم الطالب</label>
-                <input type="search" name="q" value="{{ request('q') }}" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm">
+        <form method="GET">
+            <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1.5">بحث باسم الطالب</label>
+                    <input type="search" name="q" value="{{ request('q') }}" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1.5">الشهر (تاريخ الاستحقاق)</label>
+                    <input type="month" name="month" value="{{ request('month') }}" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1.5">الموزّع</label>
+                    <select name="teacher_id" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
+                        <option value="">كل الموزّعين</option>
+                        @foreach ($filterTeachers as $ft)
+                            <option value="{{ $ft->id }}" @selected((string) request('teacher_id') === (string) $ft->id)>{{ $ft->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1.5">الحلقة</label>
+                    <select name="circle_id" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
+                        <option value="">كل الحلقات</option>
+                        @foreach ($filterCircles as $fc)
+                            <option value="{{ $fc->id }}" @selected((string) request('circle_id') === (string) $fc->id)>{{ $fc->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1.5">نوع الوسام</label>
+                    <select name="badge_type_id" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
+                        <option value="">كل الأنواع</option>
+                        @foreach ($filterTypes as $ft)
+                            <option value="{{ $ft->id }}" @selected((string) request('badge_type_id') === (string) $ft->id)>{{ $ft->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="flex items-end gap-2">
+                    <button class="px-6 py-2.5 bg-[#0a5c36] text-white font-bold rounded-xl text-sm">تصفية</button>
+                    @if (request()->hasAny(['q', 'month', 'teacher_id', 'circle_id', 'badge_type_id']))
+                        <a href="{{ route('badges.shortages.index') }}" class="px-4 py-2.5 bg-gray-100 text-gray-600 font-bold rounded-xl text-sm">مسح الفلاتر</a>
+                    @endif
+                </div>
             </div>
-            <button class="px-6 py-2.5 bg-[#0a5c36] text-white font-bold rounded-xl text-sm">تصفية</button>
         </form>
     </div>
 
@@ -80,12 +118,7 @@
                                     <td class="px-6 py-3 text-sm">
                                         @php $meta = $group['studentMeta'][$s0->student_id] ?? ['resolvable' => false, 'deliverable' => false]; @endphp
                                         @if ($meta['resolvable'] && $meta['deliverable'])
-                                            <form method="POST" action="{{ route('badges.shortages.distribute-student') }}" onsubmit="return confirm('تسليم كل الأوسمة المتاحة لهذا الطالب الآن؟')">
-                                                @csrf
-                                                <input type="hidden" name="teacher_id" value="{{ $teacher->id }}">
-                                                <input type="hidden" name="student_id" value="{{ $s0->student_id }}">
-                                                <button class="px-4 py-1.5 bg-[#0a5c36] hover:bg-[#0b3d2c] text-white text-xs font-black rounded-lg transition active:scale-95">تسليم</button>
-                                            </form>
+                                            <a href="{{ route('badges.shortages.deliver', ['teacher_id' => $teacher->id, 'student_id' => $s0->student_id]) }}" class="inline-block px-4 py-1.5 bg-[#0a5c36] hover:bg-[#0b3d2c] text-white text-xs font-black rounded-lg transition active:scale-95">تسليم</a>
                                         @elseif ($meta['resolvable'])
                                             <span class="text-[11px] font-bold text-gray-400">لا رصيد عند الموزّع</span>
                                         @endif

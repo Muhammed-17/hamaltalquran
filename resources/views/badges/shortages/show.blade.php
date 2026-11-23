@@ -8,7 +8,7 @@
         <div class="bg-white rounded-2xl border shadow-sm p-5"><div class="text-xs font-bold text-gray-400 mb-1">المستحق</div><div class="text-2xl font-black">{{ $shortage->required_quantity }}</div></div>
         <div class="bg-white rounded-2xl border shadow-sm p-5"><div class="text-xs font-bold text-gray-400 mb-1">المسلّم</div><div class="text-2xl font-black text-emerald-700">{{ $shortage->delivered_quantity }}</div></div>
         <div class="bg-white rounded-2xl border shadow-sm p-5"><div class="text-xs font-bold text-gray-400 mb-1">الناقص</div><div class="text-2xl font-black text-red-600">{{ $shortage->shortage_quantity }}</div></div>
-        <div class="bg-white rounded-2xl border shadow-sm p-5"><div class="text-xs font-bold text-gray-400 mb-1">رصيد المعلم الحالي</div><div class="text-2xl font-black">{{ $teacherBalance }}</div></div>
+        <div class="bg-white rounded-2xl border shadow-sm p-5"><div class="text-xs font-bold text-gray-400 mb-1">رصيد الموزّع الحالي</div><div class="text-2xl font-black">{{ $teacherBalance }}</div></div>
         <div class="bg-white rounded-2xl border shadow-sm p-5"><div class="text-xs font-bold text-gray-400 mb-1">حالة العجز</div><div class="text-xl font-black">{{ $shortage->status->label() }}</div></div>
     </div>
 
@@ -47,7 +47,7 @@
                     <h2 class="font-black text-lg mb-4">استكمال التسليم</h2>
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-xs font-bold text-gray-400 mb-1.5">الكمية (الناقص {{ $shortage->shortage_quantity }} — رصيد المعلم {{ $teacherBalance }})</label>
+                            <label class="block text-xs font-bold text-gray-400 mb-1.5">الكمية (الناقص {{ $shortage->shortage_quantity }} — رصيد الموزّع {{ $teacherBalance }})</label>
                             <input type="number" name="quantity" min="1" max="{{ $shortage->shortage_quantity }}" value="{{ min($shortage->shortage_quantity, max($teacherBalance, 0)) }}" required class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm">
                             <x-input-error :messages="$errors->get('quantity')" class="mt-2" />
                         </div>

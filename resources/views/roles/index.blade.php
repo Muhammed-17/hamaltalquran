@@ -13,6 +13,7 @@ $groupLabels = [
 'group session plans' => '🗓️ خطط الحصص الجماعية',
 'student weekly followups' => '📅 المتابعة الأسبوعية للطلاب',
 'behavioral notes' => '📝 الملاحظات السلوكية',
+'badges' => '🏅 الأوسمة',
 'surah tests' => '📖 اختبارات السور',
 'competitions' => '🏆 المسابقات',
 'levels' => '📊 المستويات',

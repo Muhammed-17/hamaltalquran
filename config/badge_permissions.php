@@ -34,16 +34,12 @@ return [
         'badges.handovers.create'     => ['تسليم أوسمة للمعلمين', 'badges'],
         'badges.handovers.cancel'     => ['إلغاء تسليم أوسمة للمعلمين', 'badges'],
 
-        // استحقاقات الطلاب
+        // استحقاقات الطلاب وتوزيعاتهم (صفحة واحدة — صلاحيات واحدة:
+        // التوزيع يعمل بصلاحيات الاستحقاقات منذ توحيد الصفحة)
         'badges.entitlements.view'    => ['عرض استحقاقات الأوسمة', 'badges'],
         'badges.entitlements.create'  => ['تسجيل استحقاقات الأوسمة', 'badges'],
         'badges.entitlements.update'  => ['تعديل استحقاقات الأوسمة', 'badges'],
         'badges.entitlements.cancel'  => ['إلغاء استحقاقات الأوسمة', 'badges'],
-
-        // توزيع الأوسمة
-        'badges.distributions.view'   => ['عرض توزيعات الأوسمة', 'badges'],
-        'badges.distributions.create' => ['توزيع الأوسمة على الطلاب', 'badges'],
-        'badges.distributions.cancel' => ['إلغاء توزيعات الأوسمة', 'badges'],
 
         // الأوسمة الناقصة
         'badges.shortages.view'       => ['عرض الأوسمة الناقصة', 'badges'],
@@ -56,61 +52,51 @@ return [
         'badges.collections.complete' => ['اعتماد جولات تحصيل الأوسمة', 'badges'],
         'badges.collections.cancel'   => ['إلغاء جولات تحصيل الأوسمة', 'badges'],
 
-        // التقارير وسجل العمليات
-        'badges.reports.view'         => ['عرض تقارير الأوسمة', 'badges'],
-        'badges.logs.view'            => ['عرض سجل عمليات الأوسمة', 'badges'],
+        // التقارير والإحصائيات: لا صلاحية لها — بوابتها دور مدير النظام
+        // (role:admin على المسارات) فلا تظهر ولا تعمل لغيره أصلًا
     ],
 
     /*
     | المنح الافتراضية للأدوار الموجودة (لا تُنشأ أدوار جديدة).
-    | الأدمن يأخذ الكل. المدير العام يدير النظام مركزيًا.
-    | مدير المركز يدير دورة الأوسمة داخل نطاقه.
-    | المعلم يسجل الاستحقاقات ويوزع ويحصّل داخل حلقاته فقط.
+    | مدير النظام يأخذ الكل: أنواع الأوسمة والمخزون المركزي إدارته وحده،
+    | والتقارير والإحصائيات بوابتها دوره لا صلاحية.
+    | بقية الأدوار تعمل في دورة الأوسمة اليومية داخل نطاقها: تسليمات
+    | (لا يراها المعلم)، استحقاقات وتوزيعات، نواقص، وتحصيل — والتحصيل
+    | وظيفة إدارية (مشرف/مدير فرع/مدير عام) فلا صلاحيات تحصيل للمعلم.
+    | صلاحية stock.return وحدها تبقى لحاملي العهدة: بها يُرجع كل حامل
+    | عهدته للإدارة (نموذج الإرجاع الذاتي في صفحة الاستحقاقات).
     */
     'grants' => [
         'admin' => ['*'],
 
         'general_manager' => [
-            'badges.types.view', 'badges.types.create', 'badges.types.update',
-            'badges.stock.view', 'badges.stock.add', 'badges.stock.adjust', 'badges.stock.return', 'badges.stock.history',
+            'badges.stock.return',
             'badges.handovers.view', 'badges.handovers.create', 'badges.handovers.cancel',
             'badges.entitlements.view', 'badges.entitlements.create', 'badges.entitlements.update', 'badges.entitlements.cancel',
-            'badges.distributions.view', 'badges.distributions.create', 'badges.distributions.cancel',
             'badges.shortages.view', 'badges.shortages.resolve',
             'badges.collections.view', 'badges.collections.create', 'badges.collections.update', 'badges.collections.complete', 'badges.collections.cancel',
-            'badges.reports.view', 'badges.logs.view',
         ],
 
         'manager' => [
-            'badges.types.view',
-            'badges.stock.view', 'badges.stock.history', 'badges.stock.return',
+            'badges.stock.return',
             'badges.handovers.view', 'badges.handovers.create', 'badges.handovers.cancel',
             'badges.entitlements.view', 'badges.entitlements.create', 'badges.entitlements.update', 'badges.entitlements.cancel',
-            'badges.distributions.view', 'badges.distributions.create', 'badges.distributions.cancel',
             'badges.shortages.view', 'badges.shortages.resolve',
             'badges.collections.view', 'badges.collections.create', 'badges.collections.update', 'badges.collections.complete', 'badges.collections.cancel',
-            'badges.reports.view', 'badges.logs.view',
         ],
 
         'supervisor' => [
-            'badges.types.view',
-            'badges.stock.view', 'badges.stock.return',
+            'badges.stock.return',
             'badges.handovers.view', 'badges.handovers.create', 'badges.handovers.cancel',
             'badges.entitlements.view', 'badges.entitlements.create', 'badges.entitlements.update', 'badges.entitlements.cancel',
-            'badges.distributions.view', 'badges.distributions.create', 'badges.distributions.cancel',
             'badges.shortages.view', 'badges.shortages.resolve',
             'badges.collections.view', 'badges.collections.create', 'badges.collections.update', 'badges.collections.complete', 'badges.collections.cancel',
-            'badges.reports.view',
         ],
 
         'teacher' => [
-            'badges.types.view',
             'badges.stock.return',
-            'badges.handovers.view',
             'badges.entitlements.view', 'badges.entitlements.create',
-            'badges.distributions.view', 'badges.distributions.create',
             'badges.shortages.view', 'badges.shortages.resolve',
-            'badges.collections.view', 'badges.collections.create', 'badges.collections.update', 'badges.collections.complete',
         ],
     ],
 ];

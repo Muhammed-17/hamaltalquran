@@ -8,7 +8,7 @@
         <div class="bg-white rounded-2xl border shadow-sm p-5"><div class="text-xs font-bold text-gray-400 mb-1">المستحق</div><div class="text-2xl font-black">{{ $entitlement->quantity }}</div></div>
         <div class="bg-white rounded-2xl border shadow-sm p-5"><div class="text-xs font-bold text-gray-400 mb-1">المسلّم فعليًا</div><div class="text-2xl font-black text-emerald-700">{{ $delivered }}</div></div>
         <div class="bg-white rounded-2xl border shadow-sm p-5"><div class="text-xs font-bold text-gray-400 mb-1">المتبقي</div><div class="text-2xl font-black text-amber-600">{{ $remaining }}</div></div>
-        <div class="bg-white rounded-2xl border shadow-sm p-5"><div class="text-xs font-bold text-gray-400 mb-1">رصيد المعلم من النوع</div><div class="text-2xl font-black">{{ $teacherBalance }}</div></div>
+        <div class="bg-white rounded-2xl border shadow-sm p-5"><div class="text-xs font-bold text-gray-400 mb-1">رصيد الموزّع من النوع</div><div class="text-2xl font-black">{{ $teacherBalance }}</div></div>
         <div class="bg-white rounded-2xl border shadow-sm p-5"><div class="text-xs font-bold text-gray-400 mb-1">الحالة</div><div class="text-xl font-black">{{ $entitlement->status->label() }}</div></div>
     </div>
 
@@ -67,7 +67,7 @@
                         <h2 class="font-black text-lg mb-4">تسجيل تسليم فعلي</h2>
                         <div class="space-y-4">
                             <div>
-                                <label class="block text-xs font-bold text-gray-400 mb-1.5">الكمية (المتبقي {{ $remaining }} — رصيد المعلم {{ $teacherBalance }})</label>
+                                <label class="block text-xs font-bold text-gray-400 mb-1.5">الكمية (المتبقي {{ $remaining }} — رصيد الموزّع {{ $teacherBalance }})</label>
                                 <input type="number" name="quantity" min="1" max="{{ $remaining }}" value="{{ min($remaining, max($teacherBalance, 0)) }}" required class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm">
                                 <x-input-error :messages="$errors->get('quantity')" class="mt-2" />
                             </div>
