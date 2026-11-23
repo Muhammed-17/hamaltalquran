@@ -56,7 +56,9 @@ class CalculateUnpaidMonths implements ShouldQueue
             $studentAssignments = $assignments->get($studentId, collect());
             $paidSet            = $paidMonths->get($studentId, []);
 
-            $unpaidCount = 0;
+            // شهور الالتحاق كمجموعة بلا تكرار: شهر يقع في فترتي إسناد متداخلتين
+            // (نقل بين حلقتين في نفس الشهر) يُحسب مرة واحدة فقط
+            $enrolledMonths = [];
 
             foreach ($studentAssignments as $assignment) {
                 $start       = $assignment->from_date->copy()->startOfMonth();
@@ -66,10 +68,14 @@ class CalculateUnpaidMonths implements ShouldQueue
                 $totalMonths = $start->diffInMonths($end) + 1;
 
                 for ($i = 0; $i < $totalMonths; $i++) {
-                    $monthKey = $start->copy()->addMonths($i)->format('Y-m');
-                    if (!isset($paidSet[$monthKey])) {
-                        $unpaidCount++;
-                    }
+                    $enrolledMonths[$start->copy()->addMonths($i)->format('Y-m')] = true;
+                }
+            }
+
+            $unpaidCount = 0;
+            foreach (array_keys($enrolledMonths) as $monthKey) {
+                if (!isset($paidSet[$monthKey])) {
+                    $unpaidCount++;
                 }
             }
 
