@@ -218,7 +218,7 @@ class SubscriptionController extends Controller
                 ->select('id', 'circle_id', 'educational_stage')
                 ->chunk(500, function ($chunk) use (&$unpaidAmount, $priceMap, $paidSubscriptionsMap) {
                     foreach ($chunk as $student) {
-                        $key      = ($student->circle?->level) . '|' . $student->educational_stage;
+                        $key      = ($student->circle?->level) . '|' . $student->educational_stage?->value;
                         $expected = $priceMap[$key] ?? 60.00;
                         $paid     = $paidSubscriptionsMap[$student->id] ?? 0;
                         $unpaidAmount += max(0, $expected - $paid);

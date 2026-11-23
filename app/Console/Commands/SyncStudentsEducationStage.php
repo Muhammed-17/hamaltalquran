@@ -43,10 +43,10 @@ class SyncStudentsEducationStage extends Command
                     }
 
                     $changes = [];
-                    if ($student->educational_stage !== $match['educational_stage']) {
+                    if ($student->educational_stage?->value !== $match['educational_stage']) {
                         $changes['educational_stage'] = $match['educational_stage'];
                     }
-                    if ($student->school_grade !== $match['school_grade']) {
+                    if ($student->school_grade?->value !== $match['school_grade']) {
                         $changes['school_grade'] = $match['school_grade'];
                     }
                     if ($match['education_type'] !== null && $student->education_type !== $match['education_type']) {

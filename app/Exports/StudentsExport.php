@@ -93,8 +93,8 @@ class StudentsExport implements FromQuery, WithHeadings, WithMapping, WithStyles
             $student->status?->value,
             $student->decision?->value,
             $student->circle?->name ?? '—',
-            $student->educational_stage ?? '—',
-            $student->school_grade ?? '—',
+            $student->educational_stage?->value ?? '—',
+            $student->school_grade?->value ?? '—',
             $student->date_of_birth?->age ?? '—',
             $student->whatsapp_number,
         ];

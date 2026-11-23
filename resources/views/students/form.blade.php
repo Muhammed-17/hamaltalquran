@@ -7,17 +7,10 @@ $ibda = $ibda ?? ($student->ibdaDetail ?? null);
 $regMonth = now()->month;
 $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
 
-    $gradePromotion=[ 'الأول'=> 'الثاني',
-    'الثاني' => 'الثالث',
-    'الثالث' => 'الرابع',
-    'الرابع' => 'الخامس',
-    'الخامس' => 'السادس',
-    'السادس' => 'لا يوجد',
-    ];
-
-    $savedGrade = isset($student) ? ($student->school_grade ?? '') : '';
-    $suggestedGrade = ($isNextYearReg && !$isEdit && isset($gradePromotion[$savedGrade]))
-    ? $gradePromotion[$savedGrade]
+    $savedGrade = isset($student) ? ($student->school_grade?->value ?? '') : '';
+    $promotedGrade = \App\Enums\SchoolGrade::tryFrom($savedGrade)?->promoted()?->value;
+    $suggestedGrade = ($isNextYearReg && !$isEdit && $promotedGrade !== null)
+    ? $promotedGrade
     : $savedGrade;
 
     $guardianData = null;
@@ -478,9 +471,9 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                     <label class="block text-sm font-bold text-gray-700">المرحلة الدراسية <span class="text-red-500">*</span></label>
                     <select name="educational_stage" data-field="educational_stage"
                         class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all appearance-none">
-                        <option value="" @selected(old('educational_stage', $student->educational_stage ?? '') == '')>-- اختر المرحلة --</option>
-                        @foreach(['تمهيدي', 'حضانة', 'ابتدائي', 'اعدادي', 'ثانوي', 'جامعي', 'خريج'] as $stage)
-                        <option value="{{ $stage }}" @selected(old('educational_stage', $student->educational_stage ?? '') == $stage)>
+                        <option value="" @selected(old('educational_stage', $student->educational_stage?->value ?? '') == '')>-- اختر المرحلة --</option>
+                        @foreach(\App\Enums\EducationalStage::values() as $stage)
+                        <option value="{{ $stage }}" @selected(old('educational_stage', $student->educational_stage?->value ?? '') == $stage)>
                             {{ $stage }}
                         </option>
                         @endforeach
@@ -510,15 +503,15 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="space-y-2">
                     <label class="block text-sm font-bold text-gray-700">الصف الدراسي <span class="text-red-500">*</span></label>
-                    @if($isNextYearReg && !$isEdit && isset($gradePromotion[$savedGrade]))
+                    @if($isNextYearReg && !$isEdit && $promotedGrade !== null)
                     <div class="mb-1 text-xs text-amber-600 font-semibold bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100">
-                        ⚠️ موسم تسجيل — الصف المقترح للعام الجديد: {{ $gradePromotion[$savedGrade] }}
+                        ⚠️ موسم تسجيل — الصف المقترح للعام الجديد: {{ $promotedGrade }}
                     </div>
                     @endif
                     <select name="school_grade" data-field="school_grade"
                         class="w-full p-3 bg-white border border-gray-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-[#0a5c36] focus:ring-1 focus:ring-[#0a5c36] transition-all appearance-none">
                         <option value="" @selected(old('school_grade', $suggestedGrade)=='' )>-- اختر الصف --</option>
-                        @foreach(['لا يوجد', 'الأول', 'الثاني', 'الثالث', 'الرابع', 'الخامس', 'السادس', 'دراسات عليا'] as $grade)
+                        @foreach(\App\Enums\SchoolGrade::values() as $grade)
                         <option value="{{ $grade }}" @selected(old('school_grade', $suggestedGrade)==$grade)>{{ $grade }}</option>
                         @endforeach
                     </select>

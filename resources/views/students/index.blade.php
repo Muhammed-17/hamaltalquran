@@ -132,7 +132,7 @@ $hasFilters = request()->anyFilled([
                     <label class="block text-xs font-bold text-gray-500 mb-1">المرحلة الدراسية</label>
                     <select name="educational_stage" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#10b981]/50">
                         <option value="">الكل</option>
-                        @foreach(['تمهيدي','حضانة','ابتدائي','اعدادي','ثانوي','جامعي','خريج'] as $stage)
+                        @foreach(\App\Enums\EducationalStage::values() as $stage)
                         <option value="{{ $stage }}" @selected(request('educational_stage')===$stage)>{{ $stage }}</option>
                         @endforeach
                     </select>

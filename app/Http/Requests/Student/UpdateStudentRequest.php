@@ -63,9 +63,9 @@ class UpdateStudentRequest extends FormRequest
             ],
 
             // Step 3
-            'educational_stage' => 'nullable|string|max:100',
+            'educational_stage' => ['nullable', \Illuminate\Validation\Rule::enum(\App\Enums\EducationalStage::class)],
             'education_type'    => 'nullable|string|max:100',
-            'school_grade'      => 'nullable|string|max:100',
+            'school_grade'      => ['nullable', \Illuminate\Validation\Rule::enum(\App\Enums\SchoolGrade::class)],
             'previous_school'   => 'nullable|string|max:255',
 
             // Step 4

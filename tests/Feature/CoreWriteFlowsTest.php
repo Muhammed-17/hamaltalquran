@@ -48,9 +48,9 @@ test('admin can add a new student', function () {
         'center_id'         => $this->center->id,
         'guardian_id'       => 'none',
         // الدراسة
-        'educational_stage' => 'المرحلة الابتدائية',
+        'educational_stage' => 'ابتدائي',
         'education_type'    => 'حكومي',
-        'school_grade'      => 'الصف الرابع',
+        'school_grade'      => 'الرابع',
         'previous_school'   => 'مدرسة سابقة',
         // الصحة والسمات
         'health_status'         => 'سليم',

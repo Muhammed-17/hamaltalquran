@@ -7,7 +7,6 @@ use Illuminate\Support\Collection;
 
 class EducationStageExclusionService
 {
-    private const EXCLUDED_STAGES = ['خريج'];
 
     // ✅ أقصى فرق سنين يُعتبر طبيعي (رسوب/تقديم سنة واحدة) ولا يحتاج مراجعة
     private const NORMAL_AGE_DIFF_TOLERANCE = 1;
@@ -27,11 +26,11 @@ class EducationStageExclusionService
             fn($row, $age) => ["{$row['educational_stage']}|{$row['school_grade']}" => $age]
         );
 
-        if (in_array($student->educational_stage, self::EXCLUDED_STAGES, true)) {
+        if ($student->educational_stage === \App\Enums\EducationalStage::Graduate) {
             return ['skip' => true, 'reason' => 'مرحلة محمية بالكامل (خريج)'];
         }
 
-        if (in_array($student->school_grade, $excludedGrades, true)) {
+        if (in_array($student->school_grade?->value, $excludedGrades, true)) {
             return ['skip' => true, 'reason' => 'صف مستثنى (دراسات عليا)'];
         }
 
@@ -45,10 +44,10 @@ class EducationStageExclusionService
             return ['skip' => true, 'reason' => null];
         }
 
-        $key = "{$student->educational_stage}|{$student->school_grade}";
+        $key = "{$student->educational_stage?->value}|{$student->school_grade?->value}";
 
         if (!$ageByStageGrade->has($key)) {
-            return ['skip' => true, 'reason' => "تركيبة \"{$student->educational_stage} - {$student->school_grade}\" غير معروفة في جدول المراحل"];
+            return ['skip' => true, 'reason' => "تركيبة \"{$student->educational_stage?->value} - {$student->school_grade?->value}\" غير معروفة في جدول المراحل"];
         }
 
         $expectedAge = $ageByStageGrade->get($key);

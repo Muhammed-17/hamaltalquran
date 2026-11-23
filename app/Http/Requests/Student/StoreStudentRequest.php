@@ -59,9 +59,9 @@ class StoreStudentRequest extends FormRequest
             ],
 
             // Step 3
-            'educational_stage' => 'required|string|max:100',
+            'educational_stage' => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\EducationalStage::class)],
             'education_type'    => 'required|string|max:100',
-            'school_grade'      => 'required|string|max:100',
+            'school_grade'      => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\SchoolGrade::class)],
             'previous_school'   => 'required|string|max:255',
 
             // Step 4

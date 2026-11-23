@@ -71,6 +71,8 @@ class Student extends Model
             'status'            => \App\Enums\StudentStatus::class,
             'decision'          => \App\Enums\StudentDecision::class,
             'gender'            => \App\Enums\Gender::class,
+            'educational_stage' => \App\Enums\EducationalStage::class,
+            'school_grade'      => \App\Enums\SchoolGrade::class,
         ];
     }
 
