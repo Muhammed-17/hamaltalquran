@@ -43,6 +43,9 @@ Route::middleware(['auth', 'verified'])
         Route::get('handovers/statistics', [BadgeTeacherHandoverController::class, 'statistics'])
             ->middleware('role:admin')
             ->name('handovers.statistics');
+        Route::get('handovers/statistics/recipients', [BadgeTeacherHandoverController::class, 'statisticsRecipients'])
+            ->middleware('role:admin')
+            ->name('handovers.statistics-recipients');
         Route::resource('handovers', BadgeTeacherHandoverController::class)
             ->only(['index', 'create', 'store']);
         Route::post('handovers/{handover}/cancel', [BadgeTeacherHandoverController::class, 'cancel'])

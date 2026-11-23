@@ -4,6 +4,40 @@
         <p class="text-emerald-100/80 text-sm font-medium">{{ $paginator->total() }} موزّع لديه عجز — {{ $totalRecords }} سجل عجز — تُعرض السجلات المفتوحة فقط</p>
     </div>
 
+    {{-- بطاقات الموجود والمستحق: بطاقة لكل موزّع × نوع — الموجود معه فعليًا مقابل المستحق المتبقي --}}
+    @if ($balanceCards->isNotEmpty())
+        <div class="mb-6" dir="rtl">
+            <div class="font-black text-gray-800 mb-3">الموجود والمستحق لدى الموزّعين</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                @foreach ($balanceCards as $card)
+                    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                        <div class="flex items-center justify-between gap-2 mb-3">
+                            <div class="min-w-0">
+                                <div class="font-black text-sm text-gray-800 truncate">{{ $card['teacher']?->name }}</div>
+                                <div class="text-[11px] font-bold text-gray-400">{{ $card['type']?->name }}</div>
+                            </div>
+                            @if ($card['balance'] >= $card['owed'])
+                                <span class="shrink-0 text-[11px] font-black text-white px-2.5 py-1 rounded-lg" style="background-color:#059669">يكفي للتسليم</span>
+                            @else
+                                <span class="shrink-0 text-[11px] font-black text-white px-2.5 py-1 rounded-lg" style="background-color:#b91c1c">ينقصه {{ $card['owed'] - $card['balance'] }}</span>
+                            @endif
+                        </div>
+                        <div class="flex items-stretch gap-3">
+                            <div class="flex-1 rounded-xl p-3 text-center" style="background-color:#ecfdf5">
+                                <div class="text-[11px] font-bold text-gray-500 mb-1">موجود معه الآن</div>
+                                <div class="text-3xl font-black" style="color:#065f46">{{ $card['balance'] }}</div>
+                            </div>
+                            <div class="flex-1 rounded-xl p-3 text-center" style="background-color:#fef2f2">
+                                <div class="text-[11px] font-bold text-gray-500 mb-1">المستحق المتبقي</div>
+                                <div class="text-3xl font-black" style="color:#b91c1c">{{ $card['owed'] }}</div>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6" dir="rtl">
         <form method="GET">
             <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">

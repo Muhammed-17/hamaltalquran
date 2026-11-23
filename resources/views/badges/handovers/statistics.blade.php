@@ -99,7 +99,10 @@
             </div>
 
             <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
-                <div class="px-6 py-4 font-black">حسب المستلم</div>
+                <div class="px-6 py-4 flex items-center justify-between gap-3">
+                    <span class="font-black">حسب المستلم</span>
+                    <a href="{{ route('badges.handovers.statistics-recipients', request()->query()) }}" class="shrink-0 px-4 py-2 bg-[#0a5c36] hover:bg-[#0b3d2c] text-white text-xs font-black rounded-xl transition active:scale-95">عرض المزيد</a>
+                </div>
                 @php $shownTypes = $types->filter(fn ($t) => isset($perType[$t->id])); @endphp
                 <table class="w-full text-right">
                     <thead class="bg-gray-50 border-b border-gray-100">

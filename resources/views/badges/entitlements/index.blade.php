@@ -20,39 +20,60 @@
         <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
     </div>
 
-    {{-- إرجاع ذاتي: كل حامل عهدة يعيد من عهدته هو للإدارة من هنا --}}
+    {{-- الأوسمة الموجودة معك الآن: بطاقة لكل نوع بحوزة المشاهد — عهدته الشخصية، وللأدمن المخزون المركزي --}}
     @if (auth()->user()->hasRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher']))
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6" dir="rtl">
-            <div class="font-black text-gray-800 mb-1">إرجاع أوسمة للإدارة (من عهدتي)</div>
-            <p class="text-xs text-gray-400 mb-4">أعد جزءًا من الأوسمة التي بحوزتك إلى المخزون المركزي للإدارة — الإرجاع يكون من عهدتك أنت فقط.</p>
-            @if ($returnBalances->isEmpty())
+            <div class="font-black text-gray-800 mb-4">الأوسمة الموجودة معك الآن</div>
+            @if (auth()->user()->hasRole('admin'))
+                @if ($centralBalances->isEmpty())
+                    <p class="text-sm text-gray-400">لا توجد أوسمة في المخزون المركزي حاليًا.</p>
+                @else
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        @foreach ($types as $t)
+                            @if ($centralBalances->has($t->id))
+                                <div class="border border-gray-100 rounded-2xl p-4" style="background-color:#f9fafb">
+                                    <div class="flex items-start justify-between gap-3 mb-3">
+                                        <div>
+                                            <div class="font-black text-gray-800 text-sm">{{ $t->name }}</div>
+                                            <div class="text-[11px] font-bold text-gray-400 mt-0.5">في المخزون المركزي</div>
+                                        </div>
+                                        <div class="text-2xl font-black" style="color:#0a5c36">{{ $centralBalances[$t->id] }}</div>
+                                    </div>
+                                    <a href="{{ route('badges.stock.index') }}" class="block text-center px-4 py-2 bg-[#0a5c36] hover:bg-[#0b3d2c] text-white rounded-xl font-bold text-sm transition active:scale-95">إدارة المخزون</a>
+                                </div>
+                            @endif
+                        @endforeach
+                    </div>
+                @endif
+            @elseif ($returnBalances->isEmpty())
                 <p class="text-sm text-gray-400">لا توجد عهدة بحوزتك حاليًا.</p>
             @else
-                <form method="POST" action="{{ route('badges.stock.returns.store') }}" class="flex flex-col lg:flex-row gap-4 items-end">
-                    @csrf
-                    <input type="hidden" name="teacher_id" value="{{ auth()->id() }}">
-                    <div class="w-full lg:w-64">
-                        <label class="block text-xs font-bold text-gray-400 mb-1.5">نوع الوسام</label>
-                        <x-searchable-select
-                            name="badge_type_id"
-                            :options="$types->filter(fn($t) => $returnBalances->has($t->id))->map(fn($t) => ['value' => $t->id, 'label' => $t->name . ' — رصيد عهدتك: ' . $returnBalances[$t->id]])->values()"
-                            placeholder="اختر نوع الوسام"
-                            searchPlaceholder="ابحث عن نوع وسام..."
-                            :defaultValue="old('badge_type_id', '')" />
-                        <x-input-error :messages="$errors->get('badge_type_id')" class="mt-2" />
-                    </div>
-                    <div class="w-full lg:w-40">
-                        <label class="block text-xs font-bold text-gray-400 mb-1.5">الكمية المرجعة</label>
-                        <input type="number" name="quantity" min="1" value="1" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm">
-                        <x-input-error :messages="$errors->get('quantity')" class="mt-2" />
-                    </div>
-                    <div class="flex-1 w-full">
-                        <label class="block text-xs font-bold text-gray-400 mb-1.5">ملاحظات</label>
-                        <input type="text" name="notes" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm" placeholder="اختياري">
-                    </div>
-                    <button class="px-6 py-2.5 bg-[#0a5c36] hover:bg-[#0b3d2c] text-white rounded-xl font-bold text-sm whitespace-nowrap">تسجيل الإرجاع</button>
-                </form>
-                <x-input-error :messages="$errors->get('teacher_id')" class="mt-2" />
+                <x-input-error :messages="$errors->get('badge_type_id')" class="mb-3" />
+                <x-input-error :messages="$errors->get('quantity')" class="mb-3" />
+                <x-input-error :messages="$errors->get('teacher_id')" class="mb-3" />
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @foreach ($types as $t)
+                        @if ($returnBalances->has($t->id))
+                            <div class="border border-gray-100 rounded-2xl p-4" style="background-color:#f9fafb">
+                                <div class="flex items-start justify-between gap-3 mb-3">
+                                    <div>
+                                        <div class="font-black text-gray-800 text-sm">{{ $t->name }}</div>
+                                        <div class="text-[11px] font-bold text-gray-400 mt-0.5">في عهدتك</div>
+                                    </div>
+                                    <div class="text-2xl font-black" style="color:#0a5c36">{{ $returnBalances[$t->id] }}</div>
+                                </div>
+                                <form method="POST" action="{{ route('badges.stock.returns.store') }}" class="flex gap-2">
+                                    @csrf
+                                    <input type="hidden" name="teacher_id" value="{{ auth()->id() }}">
+                                    <input type="hidden" name="badge_type_id" value="{{ $t->id }}">
+                                    <input type="number" name="quantity" min="1" max="{{ $returnBalances[$t->id] }}" value="1" class="w-20 p-2 px-3 border border-gray-200 rounded-xl text-sm bg-white" aria-label="الكمية المرجعة">
+                                    <input type="text" name="notes" class="flex-1 min-w-0 p-2 px-3 border border-gray-200 rounded-xl text-sm bg-white" placeholder="ملاحظات (اختياري)">
+                                    <button class="px-4 py-2 bg-[#0a5c36] hover:bg-[#0b3d2c] text-white rounded-xl font-bold text-sm whitespace-nowrap transition active:scale-95">إرجاع</button>
+                                </form>
+                            </div>
+                        @endif
+                    @endforeach
+                </div>
             @endif
         </div>
     @endcan

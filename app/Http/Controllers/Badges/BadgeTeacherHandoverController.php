@@ -38,6 +38,52 @@ class BadgeTeacherHandoverController extends Controller
     }
 
     /** زر التقرير: ملف Excel بالتسليمات حسب الفلاتر الحالية */
+    /** صفحة تفاصيل «حسب المستلم»: المستلم لكل نوع لكل مستلم مع الملغي والعمليات */
+    public function statisticsRecipients(Request $request, BadgeAccessService $access)
+    {
+        $this->authorize('viewAny', BadgeTeacherHandover::class);
+
+        $base = $this->handoverFilterQuery($request, $access);
+        $batchKey = fn ($h) => $h->batch_id ?? 'single-' . $h->id;
+
+        $activeRows = (clone $base)->where('status', 'active')
+            ->get(['id', 'teacher_id', 'badge_type_id', 'batch_id', 'quantity']);
+        $cancelledByRecipient = (clone $base)->where('status', 'cancelled')
+            ->selectRaw('teacher_id, SUM(quantity) as qty')
+            ->groupBy('teacher_id')->pluck('qty', 'teacher_id');
+
+        $matrix = $activeRows->groupBy('teacher_id')->map(fn ($rows, $teacherId) => [
+            'ops' => $rows->map($batchKey)->unique()->count(),
+            'total' => (int) $rows->sum('quantity'),
+            'types' => $rows->groupBy('badge_type_id')->map(fn ($tRows) => (int) $tRows->sum('quantity')),
+            'cancelled' => (int) ($cancelledByRecipient[$teacherId] ?? 0),
+        ])->sortByDesc('total');
+
+        $users = User::whereIn('id', $matrix->keys())->get(['id', 'name'])->keyBy('id');
+        if ($request->filled('q')) {
+            $q = (string) $request->q;
+            $matrix = $matrix->filter(fn ($row, $teacherId) => isset($users[$teacherId]) && mb_stripos($users[$teacherId]->name, $q) !== false);
+        }
+
+        $usedTypeIds = $matrix->flatMap(fn ($row) => $row['types']->keys())->unique()->all();
+
+        // قائمة المستلمين للفلتر: من لهم تسليمات داخل النطاق المرئي (دون فلتر المستلم نفسه)
+        $requestNoTeacher = clone $request;
+        $requestNoTeacher->query->remove('teacher_id');
+        $requestNoTeacher->request->remove('teacher_id');
+        $recipients = User::whereIn('id',
+            $this->handoverFilterQuery($requestNoTeacher, $access)->distinct()->pluck('teacher_id')
+        )->orderBy('name')->get(['id', 'name']);
+
+        return view('badges.handovers.statistics-recipients', [
+            'matrix' => $matrix,
+            'users' => $users,
+            'types' => BadgeType::whereIn('id', $usedTypeIds)->orderBy('name')->get(),
+            'filterTypes' => BadgeType::orderBy('name')->get(),
+            'recipients' => $recipients,
+        ]);
+    }
+
     public function report(Request $request, BadgeAccessService $access)
     {
         $base = fn () => $this->handoverFilterQuery($request, $access);
@@ -84,6 +130,13 @@ class BadgeTeacherHandoverController extends Controller
             // كمية كل نوع على حدة — لأعمدة الأنواع بجانب الإجمالي في جدول «حسب المستلم»
             'types' => $rows->groupBy('badge_type_id')->map(fn ($tRows) => (int) $tRows->sum('quantity')),
         ]);
+
+        // قسم «حسب المستلم» في صفحة الإحصائيات يعرض أعلى 10 مستلمين بإجمالي
+        // المستلم (وعند التعادل بعدد العمليات) — القائمة الكاملة في صفحة
+        // تفاصيل المستلمين المرتبطة بزر «عرض المزيد» في رأس القسم
+        $perRecipient = $perRecipient
+            ->sort(fn ($a, $b) => ($b['qty'] <=> $a['qty']) ?: ($b['ops'] <=> $a['ops']))
+            ->take(10);
 
         // قائمة المستلمين للفلتر: من لهم تسليمات داخل النطاق المرئي (دون فلتر المستلم نفسه)
         $requestNoTeacher = clone $request;

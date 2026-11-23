@@ -1721,7 +1721,7 @@ test('entitlements page: self-return card lets a teacher return his own custody 
     // البطاقة في صفحة الاستحقاقات (صفحة عمله) لا التسليمات (لا يراها أصلًا)
     $this->actingAs($this->teacherUser)->get(route('badges.handovers.index'))->assertRedirect();
     $page = $this->actingAs($this->teacherUser)->get(route('badges.entitlements.index'));
-    $page->assertOk()->assertSee('إرجاع أوسمة للإدارة (من عهدتي)');
+    $page->assertOk()->assertSee('الأوسمة الموجودة معك الآن');
     expect($page->viewData('returnBalances')[$this->type->id])->toBe(40);
 
     // إرجاع 5 من عهدته من نفس الصفحة: يعود إليها، وتنتقل الكمية للمركزي
@@ -1908,12 +1908,13 @@ test('collections create: student select asks for the circle first', function ()
 
     // بلا اختيار حلقة: حقل الطالب يعرض «اختر الحلقة أولاً» ولا حلقة افتراضية
     $page = $this->actingAs($this->admin)->get(route('badges.collections.create'));
-    $page->assertOk()->assertSee('اختر الحلقة أولاً');
+    $page->assertOk()->assertSee("searchableSelect('student_id'", false);
     expect($page->viewData('circle'))->toBeNull();
 
     // بعد اختيار الحلقة: طلابها يظهرون وتختفي الرسالة
     $withCircle = $this->actingAs($this->admin)->get(route('badges.collections.create', ['circle_id' => $this->circleA->id]));
-    $withCircle->assertOk()->assertDontSee('اختر الحلقة أولاً')->assertSee($this->student1->name);
+    $withCircle->assertOk()->assertSee("searchableSelect('student_id'", false);
+    expect($withCircle->viewData('breakdown')->pluck('student.id'))->toContain($this->student1->id);
     expect($withCircle->viewData('circle')?->id)->toBe($this->circleA->id);
 });
 
@@ -2023,4 +2024,131 @@ test('student show tabs: latest 50 first, load-more endpoint fetches the rest', 
     $guardian->assignRole('guardian');
     $denied = $this->actingAs($guardian)->getJson(route('students.tab-data', $this->student1) . '?tab=attendance&offset=50');
     expect($denied->status())->toBeIn([302, 403]);
+});
+
+test('statistics page: by-distributor section shows only the top 10 distributors by delivered', function () {
+    $this->stock->recordMovement($this->type, 500, $this->admin);
+
+    // 11 موزّعًا (أدمن — رصيدهم من المخزون المركزي) بكميات موزّعة مميزة 1..11
+    $distributorIds = [];
+    foreach (range(1, 11) as $i) {
+        $u = User::factory()->create(['status' => 'active']);
+        $u->assignRole('admin');
+        $distributorIds[$i] = $u->id;
+        $e = $this->entitlementService->create([
+            'student_id' => $this->student1->id, 'circle_id' => $this->circleA->id,
+            'teacher_id' => $u->id, 'badge_type_id' => $this->type->id,
+            'quantity' => 20, 'entitlement_date' => '2026-11-05',
+        ], $this->admin);
+        $this->distributionService->distribute($e, $i, '2026-11-06', $u);
+    }
+
+    $page = $this->actingAs($this->admin)->get(route('badges.entitlements.statistics'));
+    $page->assertOk();
+    $shown = $page->viewData('perDistributorEntitled');
+    expect($shown)->toHaveCount(10)
+        ->and($shown->keys()->first())->toBe($distributorIds[11])
+        ->and($shown->keys()->last())->toBe($distributorIds[2])
+        ->and($shown->keys()->all())->not->toContain($distributorIds[1]);
+});
+
+test('handovers statistics: by-recipient section shows only the top 10 recipients, detail page shows all', function () {
+    $this->stock->recordMovement($this->type, 500, $this->admin);
+
+    // 11 مستلمًا بكميات مستلمة مميزة 1..11
+    $recipientIds = [];
+    foreach (range(1, 11) as $i) {
+        $u = User::factory()->create(['status' => 'active', 'name' => 'مستلم ' . $i]);
+        $u->assignRole('teacher');
+        $recipientIds[$i] = $u->id;
+        $this->handoverService->handover($u, $this->type, $i, '2026-11-05', $this->admin);
+    }
+
+    // صفحة الإحصائيات: أعلى 10 فقط، مرتّبين بالمستلم تنازليًا
+    $page = $this->actingAs($this->admin)->get(route('badges.handovers.statistics'));
+    $page->assertOk()->assertSee(route('badges.handovers.statistics-recipients'), false);
+    $shown = $page->viewData('perRecipient');
+    expect($shown)->toHaveCount(10)
+        ->and($shown->keys()->first())->toBe($recipientIds[11])
+        ->and($shown->keys()->all())->not->toContain($recipientIds[1]);
+
+    // صفحة التفاصيل: الكل موجود، والبحث بالاسم يضيّق النتائج
+    $detail = $this->actingAs($this->admin)->get(route('badges.handovers.statistics-recipients'));
+    $detail->assertOk();
+    expect($detail->viewData('matrix'))->toHaveCount(11)
+        ->and($detail->viewData('matrix')->first()['total'])->toBe(11);
+
+    $searched = $this->actingAs($this->admin)->get(route('badges.handovers.statistics-recipients', ['q' => 'مستلم 7']));
+    expect($searched->viewData('matrix'))->toHaveCount(1)
+        ->and($searched->viewData('matrix')->keys()->all())->toBe([$recipientIds[7]]);
+
+    // الصفحة للأدمن فقط كصفحة الإحصائيات الأم
+    $gm = User::factory()->create(['status' => 'active']);
+    $gm->assignRole('general_manager');
+    expect($this->actingAs($gm)->get(route('badges.handovers.statistics-recipients'))->status())->toBeIn([302, 403]);
+});
+
+test('self-return section: one card per held type with its balance, zero-balance types absent', function () {
+    $type2 = BadgeType::create(['name' => 'وسام التميز', 'is_active' => true]);
+    $type3 = BadgeType::create(['name' => 'وسام غير محوز', 'is_active' => true]);
+    $this->stock->recordMovement($this->type, 100, $this->admin);
+    $this->stock->recordMovement($type2, 50, $this->admin);
+    $this->handoverService->handoverMultiple($this->teacherUser, [$this->type->id => 10, $type2->id => 5], '2026-11-05', $this->admin);
+
+    $r = $this->actingAs($this->teacherUser)->get(route('badges.entitlements.index'));
+    $r->assertOk()->assertSee('في عهدتك')->assertSee($type2->name)->assertDontSee($type3->name);
+    expect(substr_count($r->getContent(), route('badges.stock.returns.store')))->toBe(2);
+});
+
+test('holdings section: admin sees central-stock cards under the new title, staff keep custody return cards', function () {
+    $this->stock->recordMovement($this->type, 30, $this->admin);
+
+    // الأدمن: لا عهدة شخصية له — بطاقاته هي المخزون المركزي، وبلا نموذج إرجاع
+    $r = $this->actingAs($this->admin)->get(route('badges.entitlements.index'));
+    $r->assertOk()->assertSee('الأوسمة الموجودة معك الآن')->assertSee('في المخزون المركزي')
+        ->assertSee($this->type->name)->assertDontSee('إرجاع أوسمة للإدارة');
+    expect(substr_count($r->getContent(), route('badges.stock.returns.store')))->toBe(0);
+
+    // المعلم: نفس العنوان الجديد، وبطاقات عهدته بنماذج الإرجاع كما هي
+    $this->handoverService->handover($this->teacherUser, $this->type, 6, '2026-11-05', $this->admin);
+    $r2 = $this->actingAs($this->teacherUser)->get(route('badges.entitlements.index'));
+    $r2->assertOk()->assertSee('الأوسمة الموجودة معك الآن')->assertSee('في عهدتك')
+        ->assertDontSee('في المخزون المركزي');
+    expect(substr_count($r2->getContent(), route('badges.stock.returns.store')))->toBe(1);
+});
+
+test('shortages page: balance cards show each distributor actual holding vs remaining owed per type', function () {
+    badgeSeedStockAndHandover($this); // المعلم الأول معه 40، والمركزي 60
+
+    // موزّع أول: استحقاق 10 وسلّم 3 — معه 37 والمستحق المتبقي 7 (يكفي)
+    $e1 = $this->entitlementService->create([
+        'student_id' => $this->student1->id, 'circle_id' => $this->circleA->id,
+        'teacher_id' => $this->teacherUser->id, 'badge_type_id' => $this->type->id,
+        'quantity' => 10, 'entitlement_date' => '2026-11-05',
+    ], $this->admin);
+    $this->distributionService->distribute($e1, 3, '2026-11-06', $this->teacherUser);
+
+    // موزّع ثانٍ: استلم 2 فقط وسلّمهما — معه 0 والمستحق المتبقي 8 (ينقصه 8)
+    $teacher2 = User::factory()->create(['status' => 'active']);
+    $teacher2->assignRole('teacher');
+    $this->handoverService->handover($teacher2, $this->type, 2, '2026-11-05', $this->admin);
+    $e2 = $this->entitlementService->create([
+        'student_id' => $this->student2->id, 'circle_id' => $this->circleA->id,
+        'teacher_id' => $teacher2->id, 'badge_type_id' => $this->type->id,
+        'quantity' => 10, 'entitlement_date' => '2026-11-05',
+    ], $this->admin);
+    $this->distributionService->distribute($e2, 2, '2026-11-06', $teacher2);
+
+    $page = $this->actingAs($this->admin)->get(route('badges.shortages.index'));
+    $page->assertOk()->assertSee('موجود معه الآن')->assertSee('المستحق المتبقي')->assertSee('ينقصه 8');
+    // البطاقات حالة حالية: لا تتأثر بأي فلتر (شهر لا يطابق أي سجل هنا)
+    $filtered = $this->actingAs($this->admin)->get(route('badges.shortages.index', ['month' => '2020-01']));
+    expect($filtered->viewData('balanceCards'))->toHaveCount(2);
+
+    $cards = $page->viewData('balanceCards');
+    $first = $cards->firstWhere('teacher.id', $this->teacherUser->id);
+    $second = $cards->firstWhere('teacher.id', $teacher2->id);
+    expect($cards)->toHaveCount(2)
+        ->and($first['balance'])->toBe(37)->and($first['owed'])->toBe(7)
+        ->and($second['balance'])->toBe(0)->and($second['owed'])->toBe(8);
 });

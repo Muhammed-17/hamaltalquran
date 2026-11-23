@@ -47,7 +47,7 @@
         </div>
 
         {{-- سياق الورقة: التاريخ والحلقة والموزّع (إعادة تحميل عند التغيير) --}}
-        <form method="GET" action="{{ route('badges.entitlements.create') }}" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6">
+        <form id="sheet-context-form" method="GET" action="{{ route('badges.entitlements.create') }}" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6">
             <div class="flex flex-col lg:flex-row lg:flex-wrap gap-3 items-end">
                 <div class="w-full lg:flex-1 lg:min-w-[150px]">
                     <label class="block text-xs font-bold text-gray-400 mb-1.5">التاريخ</label>
@@ -55,19 +55,21 @@
                 </div>
                 <div class="w-full lg:flex-1 lg:min-w-[150px]">
                     <label class="block text-xs font-bold text-gray-400 mb-1.5">الحلقة</label>
-                    <select name="circle_id" onchange="this.form.submit()" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                        @foreach ($circles as $c)
-                            <option value="{{ $c->id }}" @selected($circle && $c->id === $circle->id)>{{ $c->name }}</option>
-                        @endforeach
-                    </select>
+                    <x-searchable-select
+                        name="circle_id"
+                        :options="$circles->map(fn($c) => ['value' => $c->id, 'label' => $c->name])->values()"
+                        placeholder="اختر الحلقة"
+                        searchPlaceholder="ابحث عن حلقة..."
+                        :defaultValue="$circle?->id ?? ''" />
                 </div>
                 <div class="w-full lg:flex-1 lg:min-w-[150px]">
                     <label class="block text-xs font-bold text-gray-400 mb-1.5">الموزّع</label>
-                    <select name="teacher_id" onchange="this.form.submit()" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                        @foreach ($distributors as $d)
-                            <option value="{{ $d->id }}" @selected($distributor && $d->id === $distributor->id)>{{ $d->name }}</option>
-                        @endforeach
-                    </select>
+                    <x-searchable-select
+                        name="teacher_id"
+                        :options="$distributors->map(fn($d) => ['value' => $d->id, 'label' => $d->name])->values()"
+                        placeholder="اختر الموزّع"
+                        searchPlaceholder="ابحث عن موزّع..."
+                        :defaultValue="$distributor?->id ?? ''" />
                 </div>
             </div>
             <p class="text-[11px] text-gray-400 mt-3">اضغط على اسم الوسام نفسه لتعليم استحقاق اليوم (يتغيّر لونه وتتلوّن بطاقة الطالب)، واضغط «تسليم فوري» في الطرف المقابل إن سلّمته فعلًا — ثم احفظ من نهاية الصفحة.</p>
@@ -290,4 +292,24 @@
             </script>
         @endif
     </div>
+    @push('scripts')
+        <script>
+            // اختيار الحلقة/الموزّع من القائمة القابلة للبحث يرسل سياق الورقة كالـselect العادي
+            window.addEventListener('searchable-change', function (e) {
+                if (['circle_id', 'teacher_id'].indexOf(e.detail.name) === -1) {
+                    return;
+                }
+                var form = document.getElementById('sheet-context-form');
+                if (!form) {
+                    return;
+                }
+                var hidden = form.querySelector('input[name="' + e.detail.name + '"]');
+                if (hidden) {
+                    hidden.value = e.detail.value;
+                }
+                form.submit();
+            });
+        </script>
+    @endpush
+
 </x-layouts.markaz-layout>

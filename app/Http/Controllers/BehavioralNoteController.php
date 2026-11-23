@@ -107,6 +107,7 @@ class BehavioralNoteController extends Controller
             'circles'  => $this->userAccessService->accessibleCircles($user)->get(),
             'teachers' => $teachers,
             'students' => Student::withoutGlobalScope(CenterScope::class)
+                ->whereIn('circle_id', $this->userAccessService->accessibleCircles($user)->pluck('id'))
                 ->where('status', 'مقيد')
                 ->select('id', 'name', 'circle_id')
                 ->orderBy('name')

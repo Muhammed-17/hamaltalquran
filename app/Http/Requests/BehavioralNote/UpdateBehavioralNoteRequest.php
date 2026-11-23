@@ -2,7 +2,11 @@
 
 namespace App\Http\Requests\BehavioralNote;
 
+use App\Models\Scopes\CenterScope;
+use App\Models\Student;
+use App\Services\UserAccessService;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 /**
  * Request: Update Behavioral Note
@@ -25,6 +29,36 @@ class UpdateBehavioralNoteRequest extends FormRequest
             'current_status' => ['nullable', 'string', 'max:2000'],
             'follow_up_at'   => ['nullable', 'date'],
         ];
+    }
+
+    /**
+     * فحوص النطاق لأي معرفات مُرسلة: لا يجوز نقل الملاحظة إلى حلقة أو طالب
+     * أو معلم خارج نطاق المستخدم عبر التعديل.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v) {
+            if ($v->errors()->isNotEmpty()) {
+                return;
+            }
+            $access = app(UserAccessService::class);
+            $user = $this->user();
+
+            if ($this->filled('circle_id') && !$access->canAccessCircle($user, (int) $this->input('circle_id'))) {
+                $v->errors()->add('circle_id', 'الحلقة المختارة خارج نطاق صلاحياتك.');
+            }
+
+            if ($this->filled('student_id')) {
+                $student = Student::withoutGlobalScope(CenterScope::class)->find((int) $this->input('student_id'));
+                if ($student && !$access->canAccessStudent($user, $student)) {
+                    $v->errors()->add('student_id', 'الطالب المختار خارج نطاق صلاحياتك.');
+                }
+            }
+
+            if ($this->filled('teacher_id') && !$access->accessibleTeachers($user)->whereKey((int) $this->input('teacher_id'))->exists()) {
+                $v->errors()->add('teacher_id', 'المعلم المختار خارج نطاق صلاحياتك.');
+            }
+        });
     }
 
     public function messages(): array

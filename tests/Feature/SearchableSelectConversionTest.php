@@ -54,13 +54,15 @@ test('converted pages render the searchable select for their entity fields', fun
     }
 });
 
-test('entitlements index self-return card renders its type select as searchable for a custody holder', function () {
+test('entitlements index self-return section renders a card per held type (REPORT 147 replaced the select form with cards)', function () {
     $teacherUser = User::create(['name' => 'معلم', 'email' => 'teacher@search.local', 'password' => Hash::make('Test123!'), 'status' => 'active']);
     $teacherUser->assignRole('teacher');
     $type = \App\Models\Badges\BadgeType::create(['name' => 'وسام', 'is_active' => true]);
     app(\App\Services\Badges\BadgeStockService::class)->recordMovement($type, 10, $this->admin);
     app(\App\Services\Badges\BadgeTeacherHandoverService::class)->handoverMultiple($teacherUser, [$type->id => 4], now()->toDateString(), $this->admin);
 
-    $this->actingAs($teacherUser)->get(route('badges.entitlements.index'))
-        ->assertOk()->assertSee("searchableSelect('badge_type_id'", false);
+    $r = $this->actingAs($teacherUser)->get(route('badges.entitlements.index'));
+    $r->assertOk()->assertSee('وسام')->assertSee('في عهدتك')
+        ->assertSee('name="badge_type_id" value="' . $type->id . '"', false);
+    expect(substr_count($r->getContent(), route('badges.stock.returns.store')))->toBe(1);
 });

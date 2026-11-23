@@ -93,6 +93,10 @@ class BadgeEntitlementController extends Controller
             'returnBalances' => $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher'])
                 ? collect($balances->teacherBalances($user->id))->filter(fn ($q) => (int) $q > 0)
                 : collect(),
+            // للأدمن: «الموجود معه» هو المخزون المركزي نفسه (لا عهدة شخصية له)
+            'centralBalances' => $user->hasRole('admin')
+                ? collect($balances->adminBalances())->filter(fn ($q) => (int) $q > 0)
+                : collect(),
             'distributors' => $distributors,
             'circles' => $access->accessibleCircles($user)->get(),
             'types' => BadgeType::orderBy('name')->get(),
@@ -320,6 +324,22 @@ class BadgeEntitlementController extends Controller
             ->whereIn('entitlement_id', $ids)
             ->selectRaw('teacher_id, SUM(quantity) as qty')
             ->groupBy('teacher_id')->pluck('qty', 'teacher_id');
+
+        // قسم «حسب المسؤول عن التوزيع» في صفحة الإحصائيات يعرض أعلى 10 مسؤولين
+        // بإجمالي الموزّع (وعند التعادل بإجمالي المستحق) — القائمة الكاملة في
+        // صفحة تفاصيل المسؤولين المرتبطة بزر «عرض المزيد» في رأس القسم
+        $topDistributorIds = $perDistributorEntitled->keys()
+            ->sort(function ($a, $b) use ($perDistributorEntitled, $perDistributorDelivered) {
+                $byDelivered = (int) ($perDistributorDelivered[$b] ?? 0) <=> (int) ($perDistributorDelivered[$a] ?? 0);
+                if ($byDelivered !== 0) {
+                    return $byDelivered;
+                }
+                return (int) $perDistributorEntitled[$b]->qty <=> (int) $perDistributorEntitled[$a]->qty;
+            })
+            ->take(10)->values();
+        $perDistributorEntitled = $topDistributorIds
+            ->mapWithKeys(fn ($id) => [$id => $perDistributorEntitled[$id]]);
+        $perDistributorDelivered = $perDistributorDelivered->only($topDistributorIds->all());
 
         // أكثر الطلاب حصولًا على الأوسمة (بإجمالي الموزّع فعليًا) لقسم الإحصائيات
         $topStudents = array_slice($this->statisticsMatrix($request, $access, 'student_id'), 0, 10, true);

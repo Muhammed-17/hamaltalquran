@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests\BehavioralNote;
 
+use App\Models\Student;
+use App\Services\UserAccessService;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 /**
  * Request: Store Behavioral Note
@@ -24,6 +27,37 @@ class StoreBehavioralNoteRequest extends FormRequest
             'behavior'       => ['required', 'string', 'max:2000'],
             'current_status' => ['nullable', 'string', 'max:2000'],
         ];
+    }
+
+    /**
+     * فحوص النطاق: الحلقة داخل نطاق المستخدم، والطالب مسجل في تلك الحلقة،
+     * والمعلم ضمن المعلمين المتاحين له — الوجود وحده (exists) لا يكفي.
+     */
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $v) {
+            if ($v->errors()->isNotEmpty()) {
+                return;
+            }
+            $access = app(UserAccessService::class);
+            $user = $this->user();
+            $circleId = (int) $this->input('circle_id');
+            $studentId = (int) $this->input('student_id');
+            $teacherId = (int) $this->input('teacher_id');
+
+            if (!$access->canAccessCircle($user, $circleId)) {
+                $v->errors()->add('circle_id', 'الحلقة المختارة خارج نطاق صلاحياتك.');
+            }
+
+            $student = Student::withoutGlobalScope(\App\Models\Scopes\CenterScope::class)->find($studentId);
+            if ($student && (int) $student->circle_id !== $circleId) {
+                $v->errors()->add('student_id', 'الطالب المختار ليس مسجلًا في الحلقة المختارة.');
+            }
+
+            if (!$access->accessibleTeachers($user)->whereKey($teacherId)->exists()) {
+                $v->errors()->add('teacher_id', 'المعلم المختار خارج نطاق صلاحياتك.');
+            }
+        });
     }
 
     public function messages(): array

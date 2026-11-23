@@ -90,7 +90,26 @@ class BadgeShortageController extends Controller
             ];
         })->filter(fn ($g) => $g['items']->isNotEmpty())->values();
 
+        // بطاقات «الموجود والمستحق»: الحالة الحالية دائمًا — بلا أي فلتر
+        // وبلا ترقيم: كل (موزّع × نوع) له عجز مفتوح داخل نطاق رؤية المشاهد،
+        // الموجود معه فعليًا الآن مقابل إجمالي المستحق المتبقي عنده الآن
+        $cardRows = (clone $scoped)->get(['id', 'teacher_id', 'badge_type_id', 'shortage_quantity']);
+        $cardTypes = BadgeType::whereIn('id', $cardRows->pluck('badge_type_id')->unique())->get()->keyBy('id');
+        $balanceCards = $cardRows->groupBy(fn ($s) => $s->teacher_id . ':' . $s->badge_type_id)
+            ->map(function ($rows) use ($balances, $cardTypes) {
+                $first = $rows->first();
+                $teacher = \App\Models\User::find($first->teacher_id);
+
+                return [
+                    'teacher' => $teacher,
+                    'type' => $cardTypes[$first->badge_type_id] ?? null,
+                    'balance' => $teacher ? $balances->distributorBalance($teacher->id, (int) $first->badge_type_id) : 0,
+                    'owed' => (int) $rows->sum('shortage_quantity'),
+                ];
+            })->sortByDesc('owed')->values();
+
         return view('badges.shortages.index', [
+            'balanceCards' => $balanceCards,
             'groups' => $groups,
             'paginator' => $paginator,
             'totalRecords' => (clone $base)->count(),

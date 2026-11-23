@@ -56,12 +56,12 @@
         <div class="grid md:grid-cols-4 gap-4">
             <div>
                 <label class="block text-xs font-bold text-gray-400 mb-1.5">المسؤول عن التحصيل *</label>
-                <select name="teacher_id" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                    <option value="">— اختر المسؤول —</option>
-                    @foreach ($teachers as $t)
-                        <option value="{{ $t->id }}" @selected($teacherId === $t->id)>{{ $t->name }}</option>
-                    @endforeach
-                </select>
+                <x-searchable-select
+                    name="teacher_id"
+                    :options="$teachers->map(fn($t) => ['value' => $t->id, 'label' => $t->name])->values()"
+                    placeholder="— اختر المسؤول —"
+                    searchPlaceholder="ابحث عن مسؤول..."
+                    :defaultValue="$teacherId ?? ''" />
                 <x-input-error :messages="$errors->get('teacher_id')" class="mt-2" />
             </div>
             <div>
@@ -70,28 +70,27 @@
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-400 mb-1.5">الحلقة *</label>
-                <select name="circle_id" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                    <option value="" @selected(!$circle)>— اختر الحلقة —</option>
-                    @foreach ($circles as $c)
-                        <option value="{{ $c->id }}" @selected($circle?->id === $c->id)>{{ $c->name }}</option>
-                    @endforeach
-                </select>
+                <x-searchable-select
+                    name="circle_id"
+                    :options="$circles->map(fn($c) => ['value' => $c->id, 'label' => $c->name])->values()"
+                    placeholder="— اختر الحلقة —"
+                    searchPlaceholder="ابحث عن حلقة..."
+                    :defaultValue="$circle?->id ?? ''" />
                 <x-input-error :messages="$errors->get('circle_id')" class="mt-2" />
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-400 mb-1.5">الطالب *</label>
-                <select name="student_id" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white" @disabled(!$circle)>
-                    @if (!$circle)
-                        <option value="">اختر الحلقة أولاً</option>
-                    @else
-                        <option value="">— اختر الطالب —</option>
-                        @foreach ($breakdown as $g)
-                            <option value="{{ $g['student']->id }}" @selected($selectedStudentId === $g['student']->id)>
-                                {{ $g['student']->name }}{{ $settled->has($g['student']->id) ? ' ✓ محفوظ' : '' }}
-                            </option>
-                        @endforeach
-                    @endif
-                </select>
+                @php
+                    $studentOptions = $circle
+                        ? $breakdown->map(fn($g) => ['value' => $g['student']->id, 'label' => $g['student']->name . ($settled->has($g['student']->id) ? ' ✓ محفوظ' : '')])->values()
+                        : collect();
+                @endphp
+                <x-searchable-select
+                    name="student_id"
+                    :options="$studentOptions"
+                    :placeholder="$circle ? '— اختر الطالب —' : 'اختر الحلقة أولاً'"
+                    searchPlaceholder="ابحث عن طالب..."
+                    :defaultValue="$selectedStudentId ?? ''" />
                 <x-input-error :messages="$errors->get('student_id')" class="mt-2" />
             </div>
         </div>
@@ -273,14 +272,18 @@
 
             // تحديث سياق التحصيل في مكانه: تغيير أي فلتر (المسؤول/الشهر/الحلقة/الطالب)
             // يجلب المنطقة المحدّثة فقط دون إعادة تحميل الصفحة كاملة
-            document.addEventListener('change', function (e) {
+            function reloadCollectionsWorkspace(changedName, changedValue) {
                 var form = document.getElementById('collections-context-form');
                 var workspace = document.getElementById('collections-workspace');
-                if (!form || !workspace || !form.contains(e.target)) {
+                if (!form || !workspace) {
                     return;
                 }
-                e.preventDefault();
-                var url = form.action + '?' + new URLSearchParams(new FormData(form)).toString();
+                var params = new URLSearchParams(new FormData(form));
+                if (changedName) {
+                    // قيمة حدث المكوّن أحدث من حقله المخفي (ربط Alpine قد يتأخر إطارًا)
+                    params.set(changedName, changedValue);
+                }
+                var url = form.action + '?' + params.toString();
                 workspace.style.opacity = '0.5';
                 workspace.style.pointerEvents = 'none';
                 fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
@@ -300,6 +303,23 @@
                         workspace.style.opacity = '';
                         workspace.style.pointerEvents = '';
                     });
+            }
+
+            document.addEventListener('change', function (e) {
+                var form = document.getElementById('collections-context-form');
+                if (!form || !form.contains(e.target)) {
+                    return;
+                }
+                e.preventDefault();
+                reloadCollectionsWorkspace();
+            });
+
+            // اختيار من قائمة قابلة للبحث (المسؤول/الحلقة/الطالب) يحدّث المنطقة نفسها
+            window.addEventListener('searchable-change', function (e) {
+                if (['teacher_id', 'circle_id', 'student_id'].indexOf(e.detail.name) === -1) {
+                    return;
+                }
+                reloadCollectionsWorkspace(e.detail.name, e.detail.value);
             });
         </script>
     @endpush
