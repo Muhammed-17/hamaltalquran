@@ -166,7 +166,7 @@ class UserAccessService
                 'id',
                 Student::where('guardian_id', $user->id)
                     ->whereNotNull('circle_id')
-                    ->where('status', 'مقيد')
+                    ->where('status', \App\Enums\StudentStatus::Enrolled)
                     ->pluck('circle_id')
             )->orderBy('name');
         }

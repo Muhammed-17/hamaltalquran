@@ -67,7 +67,7 @@ test('single-row edit preserves the educational lesson assessment', function () 
 
     $assessment = StudentWeeklyEducationalLesson::where('weekly_followup_id', $followup->id)->first();
     expect($assessment)->not->toBeNull()
-        ->and($assessment->level)->toBe('جيد')
+        ->and($assessment->level)->toBe(\App\Enums\AssessmentLevel::Good)
         ->and($assessment->notes)->toBe('ملاحظة الدرس الأصلية');
 });
 

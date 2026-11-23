@@ -10,7 +10,7 @@ $readonlyClass = 'w-full rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600';
 $fieldBoxClass = 'w-full rounded-xl border border-gray-100 bg-gray-50 text-center py-2 text-sm font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#0a5c36]/40';
 $fieldLabelClass = 'text-[11px] font-semibold text-gray-400 mt-1.5 text-center';
 
-$levels = \App\Models\StudentSurahTestResult::LEVELS;
+$levels = \App\Enums\SurahTestLevel::values();
 
 $results = $isEdit ? $surahTest->results : collect();
 
@@ -170,7 +170,7 @@ $levelFieldStyle = $canEditPercentage ? '' : 'pointer-events:none; background-co
                         @if(!$canEditPercentage) style="{{ $levelFieldStyle }}" tabindex="-1" @endif>
                         <option value="">--</option>
                         @foreach($levels as $lvl)
-                        <option value="{{ $lvl }}" {{ old("results.{$index}.level", $result->level) == $lvl ? 'selected' : '' }}>
+                        <option value="{{ $lvl }}" {{ old("results.{$index}.level", $result->level?->value) == $lvl ? 'selected' : '' }}>
                             {{ $lvl }}
                         </option>
                         @endforeach

@@ -272,12 +272,12 @@
                             </td>
                             <td class="px-6 py-4 font-bold text-gray-900">{{ $student->name }}</td>
                             <td class="px-6 py-4">
-                                @if($student->status === 'مقيد')
+                                @if($student->status === \App\Enums\StudentStatus::Enrolled)
                                 <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-fit">
                                     <span class="w-2 h-2 bg-emerald-500 rounded-full"></span>
                                     مقيد
                                 </span>
-                                @elseif($student->status === 'متوقف')
+                                @elseif($student->status === \App\Enums\StudentStatus::Stopped)
                                 <span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 w-fit">
                                     <span class="w-2 h-2 bg-orange-500 rounded-full"></span>
                                     متوقف

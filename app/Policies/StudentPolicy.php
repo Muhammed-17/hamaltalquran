@@ -25,7 +25,7 @@ class StudentPolicy
         if ($user->hasRole('guardian')) {
             return $user->can('view own children')
                 && $student->guardian_id === $user->id
-                && $student->status !== 'متوقف';
+                && $student->status !== \App\Enums\StudentStatus::Stopped;
         }
 
         return $user->can('view students')
@@ -63,8 +63,8 @@ class StudentPolicy
 
     public function recordPayment(User $user, Student $student): bool
     {
-        if ($student->status === 'متوقف') return false;
-        if ($student->decision !== 'مقبول') return false;
+        if ($student->status === \App\Enums\StudentStatus::Stopped) return false;
+        if ($student->decision !== \App\Enums\StudentDecision::Accepted) return false;
 
         return $user->can('create subscriptions')
             && $this->canAccessStudent($user, $student);

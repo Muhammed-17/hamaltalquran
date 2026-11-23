@@ -465,10 +465,10 @@ class StudentWeeklyFollowupController extends Controller
             : collect();
 
         $totalAttendance = $attendances->count();
-        $presentCount    = $attendances->where('status', 'present')->count();
-        $lateCount       = $attendances->where('status', 'late')->count();
-        $absentCount     = $attendances->where('status', 'absent')->count();
-        $excusedCount    = $attendances->where('status', 'excused')->count();
+        $presentCount    = $attendances->where('status', \App\Enums\AttendanceStatus::Present)->count();
+        $lateCount       = $attendances->where('status', \App\Enums\AttendanceStatus::Late)->count();
+        $absentCount     = $attendances->where('status', \App\Enums\AttendanceStatus::Absent)->count();
+        $excusedCount    = $attendances->where('status', \App\Enums\AttendanceStatus::Excused)->count();
         $attendanceRate  = $totalAttendance > 0
             ? round((($presentCount + $lateCount) / $totalAttendance) * 100)
             : 0;

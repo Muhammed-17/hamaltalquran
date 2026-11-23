@@ -29,16 +29,16 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
             <div class="flex items-center gap-4">
                 <div class="w-16 h-16 rounded-full flex items-center justify-center
-                    @if($attendance->status === 'present') bg-green-100 text-green-600
-                    @elseif($attendance->status === 'absent') bg-red-100 text-red-600
-                    @elseif($attendance->status === 'late') bg-yellow-100 text-yellow-600
+                    @if($attendance->status === \App\Enums\AttendanceStatus::Present) bg-green-100 text-green-600
+                    @elseif($attendance->status === \App\Enums\AttendanceStatus::Absent) bg-red-100 text-red-600
+                    @elseif($attendance->status === \App\Enums\AttendanceStatus::Late) bg-yellow-100 text-yellow-600
                     @else bg-blue-100 text-blue-600 @endif">
                     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        @if($attendance->status === 'present')
+                        @if($attendance->status === \App\Enums\AttendanceStatus::Present)
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        @elseif($attendance->status === 'absent')
+                        @elseif($attendance->status === \App\Enums\AttendanceStatus::Absent)
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        @elseif($attendance->status === 'late')
+                        @elseif($attendance->status === \App\Enums\AttendanceStatus::Late)
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         @else
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />

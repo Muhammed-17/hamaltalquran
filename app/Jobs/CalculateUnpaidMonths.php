@@ -24,7 +24,7 @@ class CalculateUnpaidMonths implements ShouldQueue
     public function handle(): void
     {
         $query = Student::query()
-            ->whereIn('status', ['مقيد', 'متوقف']);
+            ->whereIn('status', [\App\Enums\StudentStatus::Enrolled, \App\Enums\StudentStatus::Stopped]);
 
         if ($this->studentId) {
             $query->where('id', $this->studentId);
@@ -39,7 +39,7 @@ class CalculateUnpaidMonths implements ShouldQueue
 
 // ─── جلب كل الأشهر المدفوعة أو المعفاة دفعة واحدة ────
         $paidMonths = Subscription::whereIn('student_id', $students)
-            ->whereIn('status', ['مدفوع', 'معفي'])
+            ->whereIn('status', \App\Enums\SubscriptionStatus::settled())
             ->get(['student_id', 'month'])
             ->groupBy('student_id')
             ->map(fn($subs) => array_flip(

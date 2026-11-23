@@ -210,7 +210,7 @@ class SubscriptionController extends Controller
 
             $paidSubscriptionsMap = (clone $statsBaseQuery)
                 ->where('month', $monthStart)
-                ->where('status', 'مدفوع')
+                ->where('status', \App\Enums\SubscriptionStatus::Paid)
                 ->pluck('amount', 'student_id');
 
             (clone $studentsQuery)
@@ -229,7 +229,7 @@ class SubscriptionController extends Controller
 
                 $monthlyRevenue = (clone $statsBaseQuery)
                     ->selectRaw(SqlExpressions::monthKey('paid_at') . " as month_label, SUM(amount) as total")
-                    ->where('status', 'مدفوع')
+                    ->where('status', \App\Enums\SubscriptionStatus::Paid)
                     ->whereNotNull('paid_at')
                     ->groupBy('month_label')
                     ->orderBy('month_label', 'desc')
@@ -245,14 +245,14 @@ class SubscriptionController extends Controller
 
                 $paidCountsByMonth = (clone $statsBaseQuery)
                     ->whereIn('month', $last6MonthsStarts->map(fn($d) => $d->format('Y-m-d')))
-                    ->where('status', 'مدفوع')
+                    ->where('status', \App\Enums\SubscriptionStatus::Paid)
                     ->selectRaw(SqlExpressions::monthKey('month') . " as month_label, COUNT(*) as cnt")
                     ->groupBy('month_label')
                     ->pluck('cnt', 'month_label');
 
                 $exemptCountsByMonth = (clone $statsBaseQuery)
                     ->whereIn('month', $last6MonthsStarts->map(fn($d) => $d->format('Y-m-d')))
-                    ->where('status', 'معفي')
+                    ->where('status', \App\Enums\SubscriptionStatus::Exempt)
                     ->selectRaw(SqlExpressions::monthKey('month') . " as month_label, COUNT(*) as cnt")
                     ->groupBy('month_label')
                     ->pluck('cnt', 'month_label');
@@ -512,7 +512,7 @@ class SubscriptionController extends Controller
             ->select('id');
         $currentMonthStart = now()->startOfMonth()->format('Y-m-d');
         $exemptedStudentIds = Subscription::where('month', $currentMonthStart)
-            ->where('status', 'معفي')
+            ->where('status', \App\Enums\SubscriptionStatus::Exempt)
             ->whereIn('student_id', $scopedStudentIds)
             ->pluck('student_id')
             ->toArray();
@@ -721,13 +721,13 @@ class SubscriptionController extends Controller
             ->get();
 
         $paidSet   = array_flip(
-            $subscriptions->where('status', 'مدفوع')
+            $subscriptions->where('status', \App\Enums\SubscriptionStatus::Paid)
                 ->map(fn($s) => Carbon::parse($s->month)->format('Y-m'))
                 ->all()
         );
 
         $exemptSet = array_flip(
-            $subscriptions->where('status', 'معفي')
+            $subscriptions->where('status', \App\Enums\SubscriptionStatus::Exempt)
                 ->map(fn($s) => Carbon::parse($s->month)->format('Y-m'))
                 ->all()
         );
@@ -881,7 +881,7 @@ class SubscriptionController extends Controller
             ->orWhere('id', $subscription->student_id)
             ->select('id');
         $exemptedStudentIds = Subscription::where('month', $subscription->month)
-            ->where('status', 'معفي')
+            ->where('status', \App\Enums\SubscriptionStatus::Exempt)
             ->whereIn('student_id', $scopedStudentIds)
             ->pluck('student_id')
             ->toArray();
@@ -996,6 +996,9 @@ class SubscriptionController extends Controller
 
         foreach ($comparableFields as $field) {
             $current  = $subscription->{$field};
+            if ($current instanceof \BackedEnum) {
+                $current = $current->value;
+            }
             $incoming = $data[$field] ?? null;
 
             if ((string) ($current ?? '') !== (string) ($incoming ?? '')) {
@@ -1302,9 +1305,9 @@ class SubscriptionController extends Controller
                 ->get();
 
             // حساب المدفوع وغير المدفوع خلال 6 أشهر
-            $paidCount = $history->where('status', 'مدفوع')->count();
+            $paidCount = $history->where('status', \App\Enums\SubscriptionStatus::Paid)->count();
             $unpaidCount = $history->where('status', '!=', 'مدفوع')->count();
-            $lastPaidAt = $history->where('status', 'مدفوع')->sortByDesc('paid_at')->first()?->paid_at;
+            $lastPaidAt = $history->where('status', \App\Enums\SubscriptionStatus::Paid)->sortByDesc('paid_at')->first()?->paid_at;
 
             $summary[] = [
                 'student' => $student,

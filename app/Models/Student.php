@@ -68,6 +68,9 @@ class Student extends Model
             'join_date'         => 'date',
             'hobbies'           => 'array',
             'subscription_fees' => 'float',
+            'status'            => \App\Enums\StudentStatus::class,
+            'decision'          => \App\Enums\StudentDecision::class,
+            'gender'            => \App\Enums\Gender::class,
         ];
     }
 
@@ -204,7 +207,7 @@ class Student extends Model
             : $this->created_at->copy()->startOfMonth();
 
         $paidKeys = $this->subscriptions
-            ->where('status', 'مدفوع')
+            ->where('status', \App\Enums\SubscriptionStatus::Paid)
             ->pluck('month')
             ->map(fn($d) => $d->format('Y-m'))
             ->unique()
@@ -227,7 +230,7 @@ class Student extends Model
             return 0;
         }
         return (float) $this->subscriptions
-            ->where('status', '!=', 'مدفوع')
+            ->where('status', '!=', \App\Enums\SubscriptionStatus::Paid)
             ->where('month', '<=', $this->suspended_at)
             ->sum('amount');
     }

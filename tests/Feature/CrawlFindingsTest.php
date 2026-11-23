@@ -188,7 +188,7 @@ test('attendance edit denies cleanly when student is out of scope', function () 
     ]);
     $attendance = \App\Models\Attendance::create([
         'student_id' => $studentOut->id, 'circle_id' => $this->circle->id, 'teacher_id' => $this->teacher->id,
-        'date' => now()->format('Y-m-d'), 'status' => 'Present',
+        'date' => now()->format('Y-m-d'), 'status' => 'present',
     ]);
 
     // السجل نفسه مخفي عن المعلم بنطاق CenterScope فيرد الربط 404 قبل الوصول للبوليسي — رفض نظيف بلا 500

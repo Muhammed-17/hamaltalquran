@@ -125,7 +125,7 @@ class SurahTestController extends Controller
         $user   = Auth::user();
 
         $query = StudentSurahTestResult::with(['student.circle', 'surahTest.surah', 'surahTest.teacher.user'])
-            ->where('level', 'إعادة');
+            ->where('level', \App\Enums\SurahTestLevel::Repeat);
 
         if (!$user->hasAnyRole(['admin', 'general_manager'])) {
             $accessibleCircleIds = $access->accessibleCircles($user)->pluck('id');
@@ -451,7 +451,7 @@ class SurahTestController extends Controller
                 return $existing->prompt_errors   != $result['prompt_errors']
                     || $existing->tashkeel_errors != $result['tashkeel_errors']
                     || $existing->percentage      != $result['percentage']
-                    || $existing->level           != ($result['level'] ?? null)
+                    || $existing->level?->value != ($result['level'] ?? null)
                     || $existing->notes           != ($result['notes'] ?? null);
             })->values()->all();
 

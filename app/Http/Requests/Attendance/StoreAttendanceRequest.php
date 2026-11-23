@@ -19,7 +19,7 @@ class StoreAttendanceRequest extends FormRequest
             'circle_id' => 'required|exists:circles,id',
             'attendance' => 'required|array|min:1',
             'attendance.*.student_id' => 'required|exists:students,id',
-            'attendance.*.status' => 'required|in:present,absent,late,excused',
+            'attendance.*.status' => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\AttendanceStatus::class)],
             'attendance.*.notes' => 'nullable|string|max:500',
         ];
     }

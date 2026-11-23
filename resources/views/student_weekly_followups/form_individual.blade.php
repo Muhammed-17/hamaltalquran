@@ -33,7 +33,7 @@ $foundation = $studentWeeklyFollowup?->foundationLevel;
 $eduLesson = $studentWeeklyFollowup?->educationalLessonAssessment;
 
 // Assessment levels
-$levels = ['ممتاز' => 'ممتاز', 'جيد جداً' => 'جيد جداً', 'جيد' => 'جيد', 'مقبول' => 'مقبول', 'ضعيف' => 'ضعيف'];
+$levels = \App\Enums\AssessmentLevel::options();
 
 // Activity types
 $activityTypes = [
@@ -251,7 +251,7 @@ $activities = $studentWeeklyFollowup?->activities ?? collect();
             $oldFromAyah = old("{$prefix}_from_ayah", $sectionData?->plan_from_ayah ?? '');
             $oldToSurah = old("{$prefix}_to_surah_id", $sectionData?->plan_to_surah_id ?? '');
             $oldToAyah = old("{$prefix}_to_ayah", $sectionData?->plan_to_ayah ?? '');
-            $oldLevel = old($section['level_name'], $sectionData?->average_level ?? '');
+            $oldLevel = old($section['level_name'], $sectionData?->average_level?->value ?? '');
             @endphp
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 <div class="{{ $section['header'] }} text-white px-5 py-3">
@@ -408,7 +408,7 @@ $activities = $studentWeeklyFollowup?->activities ?? collect();
                             class="w-full rounded-lg border border-gray-300 focus:border-[#0a5c36] focus:ring-[#0a5c36] text-sm">
                             <option value="">اختر المستوى</option>
                             @foreach($levels as $val => $label)
-                            <option value="{{ $val }}" {{ old('discipline_level', $discipline?->level ?? '') == $val ? 'selected' : '' }}>{{ $label }}</option>
+                            <option value="{{ $val }}" {{ old('discipline_level', $discipline?->level?->value ?? '') == $val ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -450,7 +450,7 @@ $activities = $studentWeeklyFollowup?->activities ?? collect();
                             class="w-full rounded-lg border border-gray-300 focus:border-[#0a5c36] focus:ring-[#0a5c36] text-sm">
                             <option value="">اختر المستوى</option>
                             @foreach($levels as $val => $label)
-                            <option value="{{ $val }}" {{ old('tajweed_level', $tajweed?->level ?? '') == $val ? 'selected' : '' }}>{{ $label }}</option>
+                            <option value="{{ $val }}" {{ old('tajweed_level', $tajweed?->level?->value ?? '') == $val ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -492,7 +492,7 @@ $activities = $studentWeeklyFollowup?->activities ?? collect();
                             class="w-full rounded-lg border border-gray-300 focus:border-[#0a5c36] focus:ring-[#0a5c36] text-sm">
                             <option value="">اختر المستوى</option>
                             @foreach($levels as $val => $label)
-                            <option value="{{ $val }}" {{ old('foundation_level_level', $foundation?->level ?? '') == $val ? 'selected' : '' }}>{{ $label }}</option>
+                            <option value="{{ $val }}" {{ old('foundation_level_level', $foundation?->level?->value ?? '') == $val ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -542,7 +542,7 @@ $activities = $studentWeeklyFollowup?->activities ?? collect();
                             class="w-full rounded-lg border border-gray-300 focus:border-[#0a5c36] focus:ring-[#0a5c36]">
                             <option value="">اختر المستوى</option>
                             @foreach($levels as $val => $label)
-                            <option value="{{ $val }}" {{ old('educational_lesson_level', $eduLesson?->level ?? '') == $val ? 'selected' : '' }}>{{ $label }}</option>
+                            <option value="{{ $val }}" {{ old('educational_lesson_level', $eduLesson?->level?->value ?? '') == $val ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>

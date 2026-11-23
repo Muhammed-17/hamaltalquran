@@ -36,7 +36,7 @@ class NotifyUnpaidSubscriptions extends Command
         $noGuardian = 0;
 
         $students = Student::with('guardian')
-            ->whereIn('status', ['مقيد', 'متوقف'])
+            ->whereIn('status', [\App\Enums\StudentStatus::Enrolled, \App\Enums\StudentStatus::Stopped])
             ->whereHas('unpaidMonths', fn($q) => $q->where('unpaid_months_count', '>', 0))
             ->whereHas('guardian')
             ->get();
@@ -131,7 +131,7 @@ class NotifyUnpaidSubscriptions extends Command
 
         $paidOrExemptSet = array_flip(
             $student->subscriptions()
-                ->whereIn('status', ['مدفوع', 'معفي'])
+                ->whereIn('status', \App\Enums\SubscriptionStatus::settled())
                 ->pluck('month')
                 ->map(fn($d) => Carbon::parse($d)->format('Y-m'))
                 ->all()

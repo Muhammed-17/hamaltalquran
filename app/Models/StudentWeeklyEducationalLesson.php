@@ -17,6 +17,10 @@ class StudentWeeklyEducationalLesson extends Model
         'notes',
     ];
 
+    protected $casts = [
+        'level' => \App\Enums\AssessmentLevel::class,
+    ];
+
     protected static function booted(): void
     {
         static::addGlobalScope(new CenterScope());

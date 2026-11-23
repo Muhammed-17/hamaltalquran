@@ -7,7 +7,7 @@ $selectClass = 'w-full appearance-none rounded-xl border-0 bg-gray-50 pl-10 pr-4
 $inputClass = 'w-full rounded-xl border-0 bg-gray-50 px-4 py-3 text-sm text-gray-700 focus:ring-2 focus:ring-[#0a5c36]/40';
 $readonlyClass = 'w-full rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600';
 
-$levels = \App\Models\StudentSurahTestResult::LEVELS;
+$levels = \App\Enums\SurahTestLevel::values();
 
 // صلاحية تعديل النسبة والتقدير يدويًا — لازم الكنترولر يبعتها
 $canEditPercentage = $canEditPercentage ?? false;
@@ -210,7 +210,7 @@ $levelFieldStyle = $canEditPercentage ? '' : 'pointer-events:none; background-co
                         @if(!$canEditPercentage) style="{{ $levelFieldStyle }}" tabindex="-1" @endif>
                         <option value="">-- بدون تقدير --</option>
                         @foreach($levels as $lvl)
-                        <option value="{{ $lvl }}" {{ old('results.0.level', $result->level) == $lvl ? 'selected' : '' }}>
+                        <option value="{{ $lvl }}" {{ old('results.0.level', $result->level?->value) == $lvl ? 'selected' : '' }}>
                             {{ $lvl }}
                         </option>
                         @endforeach
@@ -239,7 +239,7 @@ $levelFieldStyle = $canEditPercentage ? '' : 'pointer-events:none; background-co
     </div>
     @endif
     <script>
-        // القيم جايه مباشرة من StudentSurahTestResult::LEVELS لتفادي أي اختلاف في الكتابة
+        // القيم جايه مباشرة من SurahTestLevel::values() لتفادي أي اختلاف في الكتابة
         const LEVELS_LIST = @json($levels);
 
         // السورة المختارة حاليًا

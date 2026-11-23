@@ -55,6 +55,7 @@ class Subscription extends Model
     ];
 
     protected $casts = [
+        'status' => \App\Enums\SubscriptionStatus::class,
         'month' => 'date:Y-m',
         'paid_at' => 'datetime',
         'amount' => 'decimal:2',
@@ -94,7 +95,7 @@ class Subscription extends Model
     // نطاق: الاشتراكات المدفوعة غير المرتبطة بأي التحصيل بعد
     public function scopeUncollected($query)
     {
-        return $query->where('is_collected', false)->where('status', 'مدفوع');
+        return $query->where('is_collected', false)->where('status', \App\Enums\SubscriptionStatus::Paid);
     }
 
     // دالة حساب المبلغ (تُستخدم عند الإنشاء)

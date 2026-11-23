@@ -220,15 +220,15 @@
                         </td>
                         {{-- عرض الحالات بالتصميم الأنيق المطور --}}
                         <td class="px-8 py-6 font-black">
-                            @if ($record->status === 'present')
+                            @if ($record->status === \App\Enums\AttendanceStatus::Present)
                             <span class="text-emerald-500 flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full bg-emerald-500"></span>حاضر
                             </span>
-                            @elseif($record->status === 'absent')
+                            @elseif($record->status === \App\Enums\AttendanceStatus::Absent)
                             <span class="text-red-500 flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full bg-red-500"></span>غائب
                             </span>
-                            @elseif($record->status === 'late')
+                            @elseif($record->status === \App\Enums\AttendanceStatus::Late)
                             <span class="text-amber-500 flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full bg-amber-500"></span>متأخر
                             </span>

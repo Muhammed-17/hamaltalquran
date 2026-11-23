@@ -71,7 +71,7 @@ class StoreSurahTestRequest extends FormRequest
             'results.*.prompt_errors'   => ['required', 'integer', 'min:0'],
             'results.*.tashkeel_errors' => ['required', 'integer', 'min:0'],
             'results.*.percentage'      => ['required', 'integer', 'min:0', 'max:100'],
-            'results.*.level'           => ['nullable', 'string', 'in:' . implode(',', StudentSurahTestResult::LEVELS)],
+            'results.*.level'           => ['nullable', 'string', \Illuminate\Validation\Rule::enum(\App\Enums\SurahTestLevel::class)],
             'results.*.notes'           => ['nullable', 'string'],
         ];
     }

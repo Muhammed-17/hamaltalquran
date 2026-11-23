@@ -45,7 +45,7 @@ class NotifySequentialAbsences extends Command
                 ->orderBy('date'),
             'guardian',
         ])
-            ->where('status', '!=', 'متوقف')
+            ->where('status', '!=', \App\Enums\StudentStatus::Stopped)
             ->whereHas('guardian')
             ->get();
         $this->info("Checking {$students->count()} students for absences in {$month} (step every {$step} absences)...");
@@ -200,7 +200,7 @@ class NotifySequentialAbsences extends Command
         $streak = 0;
 
         foreach ($student->attendances as $attendance) {
-            if ($attendance->status === 'absent') {
+            if ($attendance->status === \App\Enums\AttendanceStatus::Absent) {
                 $streak++;
             } else {
                 $streak = 0;

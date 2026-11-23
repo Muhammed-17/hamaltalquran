@@ -13,6 +13,7 @@ class Attendance extends Model
     protected $fillable = ['student_id', 'date', 'status', 'notes', 'user_id'];
 
     protected $casts = [
+        'status' => \App\Enums\AttendanceStatus::class,
         'date' => 'date',
         'deleted_at' => 'datetime',
     ];
@@ -35,25 +36,25 @@ class Attendance extends Model
     // Scope: Present only
     public function scopePresent($query)
     {
-        return $query->where('status', 'present');
+        return $query->where('status', \App\Enums\AttendanceStatus::Present);
     }
 
     // Scope: Absent only
     public function scopeAbsent($query)
     {
-        return $query->where('status', 'absent');
+        return $query->where('status', \App\Enums\AttendanceStatus::Absent);
     }
 
     // Scope: Late only
     public function scopeLate($query)
     {
-        return $query->where('status', 'late');
+        return $query->where('status', \App\Enums\AttendanceStatus::Late);
     }
 
     // Scope: Excused only
     public function scopeExcused($query)
     {
-        return $query->where('status', 'excused');
+        return $query->where('status', \App\Enums\AttendanceStatus::Excused);
     }
 
     // Scope: Date range
@@ -71,19 +72,13 @@ class Attendance extends Model
     // Accessor: Status label in Arabic
     public function getStatusLabelAttribute(): string
     {
-        return match ($this->status) {
-            'present' => 'حاضر',
-            'absent' => 'غائب',
-            'late' => 'متأخر',
-            'excused' => 'بعذر',
-            default => $this->status,
-        };
+        return $this->status?->label() ?? '';
     }
 
     // Accessor: Status color
     public function getStatusColorAttribute(): string
     {
-        return match ($this->status) {
+        return match ($this->status?->value) {
             'present' => 'green',
             'absent' => 'red',
             'late' => 'yellow',
@@ -95,7 +90,7 @@ class Attendance extends Model
     // Accessor: Status icon
     public function getStatusIconAttribute(): string
     {
-        return match ($this->status) {
+        return match ($this->status?->value) {
             'present' => 'check-circle',
             'absent' => 'x-circle',
             'late' => 'clock',

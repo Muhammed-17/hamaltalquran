@@ -20,7 +20,7 @@ class UpdateSubscriptionRequest extends FormRequest
             'teacher_id'     => 'required|exists:users,id',
             'amount'         => 'required_if:status,مدفوع|nullable|numeric|min:0',
             'month'          => 'required|date_format:Y-m',
-            'status'         => 'required|in:مدفوع,غير مدفوع,معفي',
+            'status'         => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\SubscriptionStatus::class)],
             'payment_method' => 'required_if:status,مدفوع|nullable|in:نقدي,تحويل بنكي,أخرى',
             'collected_by'   => 'nullable|exists:users,id',
             'notes'          => 'nullable|string|max:1000',

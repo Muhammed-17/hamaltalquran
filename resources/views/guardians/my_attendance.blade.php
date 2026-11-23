@@ -169,9 +169,9 @@
                                 <td class="px-4 py-3 text-center">{{ $record->date->translatedFormat('l') }}</td>
                                 <td class="px-4 py-3 text-center">
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                    @if($record->status === 'present') bg-green-100 text-green-800
-                                    @elseif($record->status === 'absent') bg-red-100 text-red-800
-                                    @elseif($record->status === 'late') bg-yellow-100 text-yellow-800
+                                    @if($record->status === \App\Enums\AttendanceStatus::Present) bg-green-100 text-green-800
+                                    @elseif($record->status === \App\Enums\AttendanceStatus::Absent) bg-red-100 text-red-800
+                                    @elseif($record->status === \App\Enums\AttendanceStatus::Late) bg-yellow-100 text-yellow-800
                                     @else bg-blue-100 text-blue-800 @endif">
                                         {{ $record->status_label }}
                                     </span>

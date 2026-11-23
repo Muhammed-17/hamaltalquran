@@ -53,7 +53,7 @@ class AttendanceController extends Controller
         $dailyStats = (clone $query)
             ->selectRaw('date, count(*) as count')
             ->where('date', '>=', now()->subDays(7))
-            ->where('status', 'present')
+            ->where('status', \App\Enums\AttendanceStatus::Present)
             ->groupBy('date')
             ->orderBy('date')
             ->get();
@@ -337,7 +337,7 @@ class AttendanceController extends Controller
     // ✅ FIX: مقارنة status/notes/date الحالية مقابل المُرسَلة لتحديد وجود تغيير فعلي
     private function hasAttendanceChanges(Attendance $attendance, array $validated): bool
     {
-        if ($attendance->status !== $validated['status']) {
+        if ($attendance->status?->value !== $validated['status']) {
             return true;
         }
 
@@ -507,14 +507,14 @@ class AttendanceController extends Controller
 
         $summary = $students->map(function ($student) {
             $total   = $student->attendances->count();
-            $present = $student->attendances->where('status', 'present')->count();
+            $present = $student->attendances->where('status', \App\Enums\AttendanceStatus::Present)->count();
             $late    = $student->attendances->where('status', 'late')->count();
 
             return [
                 'student'         => $student,
                 'total_days'      => $total,
                 'present'         => $present,
-                'absent'          => $student->attendances->where('status', 'absent')->count(),
+                'absent'          => $student->attendances->where('status', \App\Enums\AttendanceStatus::Absent)->count(),
                 'late'            => $late,
                 'excused'         => $student->attendances->where('status', 'excused')->count(),
                 'attendance_rate' => $total > 0
@@ -584,7 +584,7 @@ class AttendanceController extends Controller
                 $query->from('attendances')
                     ->selectRaw('COUNT(*)')
                     ->whereColumn('attendances.student_id', 'students.id')
-                    ->where('attendances.status', 'absent')
+                    ->where('attendances.status', \App\Enums\AttendanceStatus::Absent)
                     ->whereBetween('attendances.date', [$startOfMonth, $endOfMonth]);
             }, 'absence_days')
             ->having('absence_days', '>=', $minAbsences)
@@ -596,7 +596,7 @@ class AttendanceController extends Controller
 
         $absenceDatesByStudent = DB::table('attendances')
             ->whereIn('student_id', $studentIds)
-            ->where('status', 'absent')
+            ->where('status', \App\Enums\AttendanceStatus::Absent)
             ->whereBetween('date', [$startOfMonth, $endOfMonth])
             ->orderBy('date')
             ->get(['student_id', 'date'])
@@ -676,7 +676,7 @@ class AttendanceController extends Controller
         }
 
         $absenceDays = $student->attendances()
-            ->where('status', 'absent')
+            ->where('status', \App\Enums\AttendanceStatus::Absent)
             ->where('date', '>=', now()->subDays(30))
             ->count();
 

@@ -10,7 +10,6 @@ class StudentSurahTestResult extends Model
 {
     use HasFactory;
 
-    public const LEVELS = ['ممتاز', 'جيد جداً', 'جيد', 'مقبول','إعادة'];
 
 
     /**
@@ -30,6 +29,7 @@ class StudentSurahTestResult extends Model
      * Attribute casting.
      */
     protected $casts = [
+        'level'            => \App\Enums\SurahTestLevel::class,
         'prompt_errors'    => 'integer',
         'tashkeel_errors'  => 'integer',
         'percentage'       => 'integer',

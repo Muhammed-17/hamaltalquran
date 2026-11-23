@@ -732,7 +732,7 @@ $activityTypes = ['معرفي' => 'معرفي/علمي', 'اجتماعي' => 'ا
     }
 
     function buildStudentRow(student, index) {
-        const levelOptions = ['ممتاز', 'جيد جداً', 'جيد', 'مقبول', 'ضعيف'];
+        const levelOptions = @json(\App\Enums\AssessmentLevel::values());
         const buildSelect = (fieldKey) => `
             <select name="students[${index}][${fieldKey}]" class="student-${fieldKey} w-full rounded-lg border border-gray-300 text-sm focus:border-[#0a5c36] focus:ring-[#0a5c36]">
                 <option value="">--</option>

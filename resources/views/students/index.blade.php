@@ -106,9 +106,9 @@ $hasFilters = request()->anyFilled([
                     <label class="block text-xs font-bold text-gray-500 mb-1">الحالة</label>
                     <select name="status" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#10b981]/50">
                         <option value="">الكل</option>
-                        <option value="مقيد" @selected(request('status')==='مقيد' )>مقيد</option>
-                        <option value="متوقف" @selected(request('status')==='متوقف' )>متوقف</option>
-                        <option value="مسافر" @selected(request('status')==='مسافر' )>مسافر</option>
+                        @foreach(\App\Enums\StudentStatus::values() as $statusOption)
+                        <option value="{{ $statusOption }}" @selected(request('status')===$statusOption)>{{ $statusOption }}</option>
+                        @endforeach
                     </select>
                 </div>
                 @endif
@@ -190,9 +190,9 @@ $hasFilters = request()->anyFilled([
                     <label class="block text-xs font-bold text-gray-500 mb-1">قرار الإدارة</label>
                     <select name="decision" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-[#10b981]/50">
                         <option value="">الكل</option>
-                        <option value="تحت الاختبار" @selected(request('decision')==='تحت الاختبار' )>تحت الاختبار</option>
-                        <option value="مقبول" @selected(request('decision')==='مقبول' )>مقبول</option>
-                        <option value="مرفوض" @selected(request('decision')==='مرفوض' )>مرفوض</option>
+                        @foreach(\App\Enums\StudentDecision::values() as $decisionOption)
+                        <option value="{{ $decisionOption }}" @selected(request('decision')===$decisionOption)>{{ $decisionOption }}</option>
+                        @endforeach
                     </select>
                 </div>
                 @endif
@@ -255,11 +255,11 @@ $hasFilters = request()->anyFilled([
                     <tr class="hover:bg-gray-50/50">
                         <td class="py-4 px-6 font-medium text-gray-800">{{ $student->name }}</td>
                         <td class="py-4 px-6">
-                            @if($student->status === 'مقيد')
+                            @if($student->status === \App\Enums\StudentStatus::Enrolled)
                             <span class="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-md text-sm">مقيد</span>
-                            @elseif($student->status === 'متوقف')
+                            @elseif($student->status === \App\Enums\StudentStatus::Stopped)
                             <span class="px-3 py-1 bg-orange-100 text-orange-700 rounded-md text-sm">موقوف</span>
-                            @elseif($student->status === 'مسافر')
+                            @elseif($student->status === \App\Enums\StudentStatus::Traveling)
                             <span class="px-3 py-1 bg-cyan-100 text-cyan-700 rounded-md text-sm">مسافر</span>
                             @endif
                         </td>

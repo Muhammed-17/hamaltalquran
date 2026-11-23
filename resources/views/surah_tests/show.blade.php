@@ -5,14 +5,6 @@ $cardClass = 'bg-white rounded-2xl border border-gray-100 p-6 md:p-8';
 $labelClass = 'text-xs font-semibold text-gray-400';
 $valueClass = 'text-sm font-bold text-[#1e2942] mt-1';
 
-// ألوان التقدير — عدّلها لو عندك قيم مختلفة في StudentSurahTestResult::LEVELS
-$levelColors = [
-'ممتاز' => 'bg-emerald-50 text-emerald-700',
-'جيد جدا' => 'bg-blue-50 text-blue-700',
-'جيد' => 'bg-amber-50 text-amber-700',
-'مقبول' => 'bg-orange-50 text-orange-700',
-'ضعيف' => 'bg-red-50 text-red-700',
-];
 @endphp
 
 <x-layouts.markaz-layout>
@@ -159,7 +151,7 @@ $levelColors = [
                                 <p class="text-[11px] font-semibold text-gray-400 mt-1">النسبة</p>
                             </div>
                             @if($result->level)
-                            <span class="text-xs font-bold px-3 py-1.5 rounded-full {{ $levelColors[$result->level] ?? 'bg-gray-50 text-gray-600' }}">
+                            <span class="text-xs font-bold px-3 py-1.5 rounded-full {{ $result->level->colorClasses() }}">
                                 {{ $result->level }}
                             </span>
                             @endif

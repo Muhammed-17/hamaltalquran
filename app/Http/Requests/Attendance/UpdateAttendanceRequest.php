@@ -15,7 +15,7 @@ class UpdateAttendanceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => 'required|in:present,absent,late,excused',
+            'status' => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\AttendanceStatus::class)],
             'notes' => 'nullable|string|max:500',
             'date' => 'required|date|before_or_equal:today',
         ];

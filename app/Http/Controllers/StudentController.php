@@ -343,10 +343,10 @@ class StudentController extends Controller
         ]);
 
         $totalAttendance = $student->attendances->count();
-        $presentCount    = $student->attendances->where('status', 'present')->count();
-        $lateCount       = $student->attendances->where('status', 'late')->count();
-        $absentCount     = $student->attendances->where('status', 'absent')->count();
-        $excusedCount    = $student->attendances->where('status', 'excused')->count();
+        $presentCount    = $student->attendances->where('status', \App\Enums\AttendanceStatus::Present)->count();
+        $lateCount       = $student->attendances->where('status', \App\Enums\AttendanceStatus::Late)->count();
+        $absentCount     = $student->attendances->where('status', \App\Enums\AttendanceStatus::Absent)->count();
+        $excusedCount    = $student->attendances->where('status', \App\Enums\AttendanceStatus::Excused)->count();
         $attendanceRate  = $totalAttendance > 0
             ? round((($presentCount + $lateCount) / $totalAttendance) * 100)
             : 0;
@@ -413,7 +413,7 @@ class StudentController extends Controller
             ? $student->join_date->copy()->startOfMonth()
             : $student->created_at->copy()->startOfMonth();
 
-        $endDate = $student->status === 'متوقف' && $student->suspended_at
+        $endDate = $student->status === \App\Enums\StudentStatus::Stopped && $student->suspended_at
             ? $student->suspended_at->copy()->startOfMonth()
             : now()->startOfMonth();
 
@@ -588,7 +588,7 @@ class StudentController extends Controller
             }
 
             if (isset($studentData['status'])) {
-                if ($studentData['status'] === 'متوقف' && $student->status !== 'متوقف') {
+                if ($studentData['status'] === 'متوقف' && $student->status !== \App\Enums\StudentStatus::Stopped) {
                     $studentData['suspended_at'] = now();
                 } elseif ($studentData['status'] !== 'متوقف') {
                     $studentData['suspended_at'] = null;

@@ -159,10 +159,10 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                     <div class="space-y-2">
                         <label class="block text-sm font-bold text-gray-700">النوع <span class="text-red-500">*</span></label>
                         <div class="flex gap-6 p-3 bg-gray-50 rounded-2xl border border-gray-100">
-                            @foreach(['ذكر', 'أنثى'] as $genderOption)
+                            @foreach(\App\Enums\Gender::values() as $genderOption)
                             <label class="flex items-center gap-2 text-sm font-semibold text-gray-600 cursor-pointer">
                                 <input type="radio" name="gender" value="{{ $genderOption }}" data-field="gender"
-                                    @checked(old('gender', $student->gender ?? '') == $genderOption)
+                                    @checked(old('gender', $student->gender?->value ?? '') == $genderOption)
                                 class="text-[#0a5c36] focus:ring-[#0a5c36]" >
                                 <span>{{ $genderOption }}</span>
                             </label>
@@ -1061,8 +1061,8 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
             <div class="space-y-2">
                 <label class="block text-sm font-bold text-gray-700">حالة الطالب</label>
                 <select name="status" data-field="status" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm">
-                    @foreach(['مقيد', 'متوقف', 'مسافر'] as $statusOption)
-                    <option value="{{ $statusOption }}" @selected(old('status', $student->status ?? 'مقيد') == $statusOption)>{{ $statusOption }}</option>
+                    @foreach(\App\Enums\StudentStatus::values() as $statusOption)
+                    <option value="{{ $statusOption }}" @selected(old('status', $student->status?->value ?? 'مقيد') == $statusOption)>{{ $statusOption }}</option>
                     @endforeach
                 </select>
                 <span data-error-for="status" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
@@ -1071,15 +1071,15 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                 @enderror
             </div>
             @else
-            <input type="hidden" name="status" value="{{ old('status', $student->status ?? 'مقيد') }}">
+            <input type="hidden" name="status" value="{{ old('status', $student->status?->value ?? 'مقيد') }}">
             @endcan
 
             @can('manage student status')
             <div class="space-y-2">
                 <label class="block text-sm font-bold text-gray-700">قرار الإدارة</label>
                 <select name="decision" data-field="decision" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm">
-                    @foreach(['تحت الاختبار', 'مقبول', 'مرفوض'] as $decisionOption)
-                    <option value="{{ $decisionOption }}" @selected(old('decision', $student->decision ?? 'تحت الاختبار') == $decisionOption)>{{ $decisionOption }}</option>
+                    @foreach(\App\Enums\StudentDecision::values() as $decisionOption)
+                    <option value="{{ $decisionOption }}" @selected(old('decision', $student->decision?->value ?? 'تحت الاختبار') == $decisionOption)>{{ $decisionOption }}</option>
                     @endforeach
                 </select>
                 <span data-error-for="decision" class="hidden text-red-500 text-xs font-medium">هذا الحقل مطلوب</span>
@@ -1090,7 +1090,7 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
             @else
             <div class="space-y-2">
                 <label class="block text-sm font-bold text-gray-700">قرار الإدارة</label>
-                @php $decision = old('decision', $student->decision ?? 'تحت الاختبار'); @endphp
+                @php $decision = old('decision', $student->decision?->value ?? 'تحت الاختبار'); @endphp
                 <div class="w-full p-3 bg-gray-100 border border-gray-200 rounded-2xl text-sm text-gray-600 flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full inline-block
                             {{ $decision === 'مقبول' ? 'bg-emerald-500' : ($decision === 'مرفوض' ? 'bg-red-500' : 'bg-amber-400') }}">

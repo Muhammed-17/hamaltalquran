@@ -23,7 +23,7 @@ class StoreStudentRequest extends FormRequest
             // Step 2
             'student_code'                    => 'nullable|digits:14|unique:students,student_code',
             'name'                            => 'required|string|max:255',
-            'gender'                          => 'required|in:ذكر,أنثى',
+            'gender'                          => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\Gender::class)],
             'date_of_birth'                   => 'nullable|date',
             'address'                         => 'required|string',
             'center_id'                       => 'required|integer|exists:centers,id',
@@ -108,8 +108,8 @@ class StoreStudentRequest extends FormRequest
             // Step 9
             'notes'              => 'nullable|string',
             // ✅ FIX: الحقول الأربعة دي بقت مطلوبة بناءً على طلبك
-            'status'             => 'required|string|max:50',
-            'decision'           => 'required|string|max:50',
+            'status'             => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\StudentStatus::class)],
+            'decision'           => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\StudentDecision::class)],
             'subscription_fees'  => 'required|string|max:50',
             'received_tools'     => 'required|string|max:100',
 

@@ -73,8 +73,8 @@ class SubscriptionTransferController extends Controller
             ->where('circle_id', $validated['circle_id'])
             ->where('month', $monthDate)
             ->where(function ($q) use ($validated) {
-                $q->where(fn($qq) => $qq->where('status', 'مدفوع')->where('collected_by', $validated['collected_by']))
-                    ->orWhere('status', 'معفي');
+                $q->where(fn($qq) => $qq->where('status', \App\Enums\SubscriptionStatus::Paid)->where('collected_by', $validated['collected_by']))
+                    ->orWhere('status', \App\Enums\SubscriptionStatus::Exempt);
             })
             ->orderByRaw("CASE WHEN status = 'مدفوع' THEN 0 ELSE 1 END")
             ->orderBy('id')
@@ -89,7 +89,7 @@ class SubscriptionTransferController extends Controller
                     'amount'       => (float) $s->amount,
                     'status'       => $s->status,
                     'paid_at'      => optional($s->paid_at)->format('Y-m-d'),
-                    'transferable' => in_array($s->status, ['مدفوع', 'معفي']) && !$isLocked, // ✅ الممنوع محمي يُستبعد
+                    'transferable' => in_array($s->status, \App\Enums\SubscriptionStatus::settled()) && !$isLocked, // ✅ الممنوع محمي يُستبعد
                     'locked'       => $isLocked, // ✅ جديد — للواجهة، عشان تعرض سبب المنع
                 ];
             });
@@ -147,8 +147,8 @@ class SubscriptionTransferController extends Controller
                 ->where('circle_id', $data['circle_id'])
                 ->where('month', $monthDate)
                 ->where(function ($q) use ($data) {
-                    $q->where(fn($qq) => $qq->where('status', 'مدفوع')->where('collected_by', $data['from_user_id']))
-                        ->orWhere('status', 'معفي');
+                    $q->where(fn($qq) => $qq->where('status', \App\Enums\SubscriptionStatus::Paid)->where('collected_by', $data['from_user_id']))
+                        ->orWhere('status', \App\Enums\SubscriptionStatus::Exempt);
                 })
                 ->with('collectionRoundItem.collectionRound')
                 ->get();

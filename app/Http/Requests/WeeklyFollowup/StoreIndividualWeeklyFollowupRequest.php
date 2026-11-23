@@ -59,7 +59,7 @@ class StoreIndividualWeeklyFollowupRequest extends FormRequest
             'memorization_plan_comparison'     => ['nullable', 'string', 'max:255'],
             'memorization_progress_difference' => ['nullable', 'string', 'max:255'],
             'memorization_notes'               => ['nullable', 'string'],
-            'new_memorization_level'           => ['nullable', 'string', 'in:ممتاز,جيد جداً,جيد,مقبول,ضعيف'],
+            'new_memorization_level'           => ['nullable', 'string', \Illuminate\Validation\Rule::enum(\App\Enums\AssessmentLevel::class)],
 
             // Revision (flat fields)
             'revision_from_surah_id'       => ['nullable', 'integer', 'exists:surahs,id'],
@@ -69,7 +69,7 @@ class StoreIndividualWeeklyFollowupRequest extends FormRequest
             'revision_plan_comparison'     => ['nullable', 'string', 'max:255'],
             'revision_progress_difference' => ['nullable', 'string', 'max:255'],
             'revision_notes'               => ['nullable', 'string'],
-            'revision_level'               => ['nullable', 'string', 'in:ممتاز,جيد جداً,جيد,مقبول,ضعيف'],
+            'revision_level'               => ['nullable', 'string', \Illuminate\Validation\Rule::enum(\App\Enums\AssessmentLevel::class)],
 
             // Old Memorization (flat fields)
             'old_revision_from_surah_id'       => ['nullable', 'integer', 'exists:surahs,id'],
@@ -79,19 +79,19 @@ class StoreIndividualWeeklyFollowupRequest extends FormRequest
             'old_revision_plan_comparison'     => ['nullable', 'string', 'max:255'],
             'old_revision_progress_difference' => ['nullable', 'string', 'max:255'],
             'old_revision_notes'               => ['nullable', 'string'],
-            'old_memorization_level'           => ['nullable', 'string', 'in:ممتاز,جيد جداً,جيد,مقبول,ضعيف'],
+            'old_memorization_level'           => ['nullable', 'string', \Illuminate\Validation\Rule::enum(\App\Enums\AssessmentLevel::class)],
 
             // Assessments
-            'discipline_level'              => ['nullable', 'string', 'in:ممتاز,جيد جداً,جيد,مقبول,ضعيف'],
+            'discipline_level'              => ['nullable', 'string', \Illuminate\Validation\Rule::enum(\App\Enums\AssessmentLevel::class)],
             'discipline_achievement'        => ['nullable', 'string', 'max:500'],
-            'tajweed_level'                 => ['nullable', 'string', 'in:ممتاز,جيد جداً,جيد,مقبول,ضعيف'],
+            'tajweed_level'                 => ['nullable', 'string', \Illuminate\Validation\Rule::enum(\App\Enums\AssessmentLevel::class)],
             'tajweed_achievement'           => ['nullable', 'string', 'max:500'],
-            'foundation_level_level'        => ['nullable', 'string', 'in:ممتاز,جيد جداً,جيد,مقبول,ضعيف'],
+            'foundation_level_level'        => ['nullable', 'string', \Illuminate\Validation\Rule::enum(\App\Enums\AssessmentLevel::class)],
             'foundation_level_achievement'  => ['nullable', 'string', 'max:500'],
 
             // Educational Lesson
             'educational_lesson_id'         => ['nullable', 'integer', 'exists:educational_lessons,id'],
-            'educational_lesson_level'      => ['nullable', 'string', 'in:ممتاز,جيد جداً,جيد,مقبول,ضعيف'],
+            'educational_lesson_level'      => ['nullable', 'string', \Illuminate\Validation\Rule::enum(\App\Enums\AssessmentLevel::class)],
             'educational_lesson_notes'      => ['nullable', 'string', 'max:500'],
 
             // Activities

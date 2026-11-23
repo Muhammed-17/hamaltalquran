@@ -88,7 +88,7 @@ class DashboardController extends Controller
                     ->whereBetween('date', [now()->subDays(30)->startOfDay(), now()->endOfDay()]);
 
                 $totalAttendanceRecords = (clone $attendanceQuery)->count();
-                $presentRecords         = (clone $attendanceQuery)->where('status', 'present')->count();
+                $presentRecords         = (clone $attendanceQuery)->where('status', \App\Enums\AttendanceStatus::Present)->count();
 
                 $stats['attendance_rate'] = $totalAttendanceRecords > 0
                     ? round(($presentRecords / $totalAttendanceRecords) * 100, 1)
@@ -234,7 +234,7 @@ class DashboardController extends Controller
             $maxConsecutive = 0;
 
             foreach ($attendances as $status) {
-                if ($status === 'absent') {
+                if ($status === \App\Enums\AttendanceStatus::Absent) {
                     $consecutiveCount++;
                     $maxConsecutive = max($maxConsecutive, $consecutiveCount);
                     if ($consecutiveCount >= 2) {

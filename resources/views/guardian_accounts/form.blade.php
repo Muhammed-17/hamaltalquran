@@ -185,9 +185,9 @@ $action = $isEdit
                             <span class="text-sm font-bold text-gray-700">{{ $student->name }}</span>
                         </div>
                         <span class="text-xs px-2.5 py-1 rounded-lg font-bold
-                            {{ $student->status === 'مقيد'
+                            {{ $student->status === \App\Enums\StudentStatus::Enrolled
                                 ? 'bg-emerald-100 text-emerald-700'
-                                : ($student->status === 'مسافر'
+                                : ($student->status === \App\Enums\StudentStatus::Traveling
                                     ? 'bg-blue-100 text-blue-700'
                                     : 'bg-orange-100 text-orange-600') }}">
                             {{ $student->status }}

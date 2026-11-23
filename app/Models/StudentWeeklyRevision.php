@@ -23,6 +23,7 @@ class StudentWeeklyRevision extends Model
     ];
 
     protected $casts = [
+        'average_level' => \App\Enums\AssessmentLevel::class,
         'plan_from_ayah' => 'integer',
         'plan_to_ayah'   => 'integer',
     ];

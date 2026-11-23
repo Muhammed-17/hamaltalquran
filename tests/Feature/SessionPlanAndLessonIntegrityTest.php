@@ -105,7 +105,7 @@ test('lesson weekly assessments relation works', function () {
     ]);
 
     expect($lesson->weeklyAssessments()->count())->toBe(1)
-        ->and($lesson->weeklyAssessments->first()->level)->toBe('جيد');
+        ->and($lesson->weeklyAssessments->first()->level)->toBe(\App\Enums\AssessmentLevel::Good);
 });
 
 test('lesson lifecycle as admin, used lesson cannot be deleted', function () {

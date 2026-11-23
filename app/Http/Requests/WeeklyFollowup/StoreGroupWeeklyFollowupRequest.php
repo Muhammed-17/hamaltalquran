@@ -72,14 +72,14 @@ class StoreGroupWeeklyFollowupRequest extends FormRequest
             'students.*.student_id' => ['required', 'integer', 'exists:students,id'],
 
             // Student assessment levels
-            'students.*.discipline_level'         => ['nullable', 'string', 'max:50'],
-            'students.*.tajweed_level'            => ['nullable', 'string', 'max:50'],
-            'students.*.educational_lesson_level' => ['nullable', 'string', 'max:50'],
+            'students.*.discipline_level' => ['nullable', \Illuminate\Validation\Rule::enum(\App\Enums\AssessmentLevel::class)],
+            'students.*.tajweed_level' => ['nullable', \Illuminate\Validation\Rule::enum(\App\Enums\AssessmentLevel::class)],
+            'students.*.educational_lesson_level' => ['nullable', \Illuminate\Validation\Rule::enum(\App\Enums\AssessmentLevel::class)],
             'students.*.educational_lesson_notes' => ['nullable', 'string'],
-            'students.*.foundation_level_level'   => ['nullable', 'string', 'max:50'],
-            'students.*.new_memorization_level'   => ['nullable', 'string', 'max:50'],
-            'students.*.revision_level'           => ['nullable', 'string', 'max:50'],
-            'students.*.old_memorization_level'   => ['nullable', 'string', 'max:50'],
+            'students.*.foundation_level_level' => ['nullable', \Illuminate\Validation\Rule::enum(\App\Enums\AssessmentLevel::class)],
+            'students.*.new_memorization_level' => ['nullable', \Illuminate\Validation\Rule::enum(\App\Enums\AssessmentLevel::class)],
+            'students.*.revision_level' => ['nullable', \Illuminate\Validation\Rule::enum(\App\Enums\AssessmentLevel::class)],
+            'students.*.old_memorization_level' => ['nullable', \Illuminate\Validation\Rule::enum(\App\Enums\AssessmentLevel::class)],
             'students.*.general_notes'            => ['nullable', 'string'],
         ];
     }

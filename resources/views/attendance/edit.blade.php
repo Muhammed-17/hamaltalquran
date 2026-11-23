@@ -47,7 +47,7 @@
                     'late' => ['متأخر', 'amber'],
                     'excused' => ['بعذر', 'blue']
                     ];
-                    $selectedStatus = old('status') !== null ? old('status') : ($attendance->status ?? 'present');
+                    $selectedStatus = old('status') !== null ? old('status') : ($attendance->status?->value ?? 'present');
                     @endphp
 
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">

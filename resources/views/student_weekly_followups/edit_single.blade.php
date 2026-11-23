@@ -16,7 +16,7 @@
         </div>
 
         @php
-        $levels = ['ممتاز' => 'ممتاز', 'جيد جداً' => 'جيد جداً', 'جيد' => 'جيد', 'مقبول' => 'مقبول', 'ضعيف' => 'ضعيف'];
+        $levels = \App\Enums\AssessmentLevel::options();
         $discipline = $studentWeeklyFollowup->discipline;
         $tajweed = $studentWeeklyFollowup->tajweedAssessment;
         $foundation = $studentWeeklyFollowup->foundationLevel;

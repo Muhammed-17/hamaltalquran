@@ -530,11 +530,11 @@ $columnsCount = 12;
                             <td class="px-6 py-4 font-bold text-gray-800">{{ number_format($subscription->amount, 2) }} ج.م</td>
                             <td class="px-6 py-4">
                                 <div class="flex flex-col gap-1">
-                                    @if($subscription->status == 'مدفوع')
+                                    @if($subscription->status === \App\Enums\SubscriptionStatus::Paid)
                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
                                         مدفوع
                                     </span>
-                                    @elseif($subscription->status == 'معفي')
+                                    @elseif($subscription->status === \App\Enums\SubscriptionStatus::Exempt)
                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                         معفي
                                     </span>
@@ -560,7 +560,7 @@ $columnsCount = 12;
                             <td class="px-6 py-4 text-gray-600">
                                 @if($subscription->paid_at)
                                 {{ $subscription->paid_at->format('Y-m-d') }}
-                                @elseif($subscription->status === 'معفي')
+                                @elseif($subscription->status === \App\Enums\SubscriptionStatus::Exempt)
                                 {{ $subscription->created_at->format('Y-m-d') }}
                                 @else
                                 —

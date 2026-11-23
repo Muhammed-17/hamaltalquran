@@ -29,7 +29,7 @@ class UpdateStudentRequest extends FormRequest
                 Rule::unique('students', 'student_code')->ignore($this->route('id') ?? $this->route('student')),
             ],
             'name'                      => 'required|string|max:255',
-            'gender'                    => 'required|in:ذكر,أنثى',
+            'gender'                    => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\Gender::class)],
             'date_of_birth'             => 'nullable|date',
             'address'                   => 'required|string',
             'center_id'                 => 'nullable|integer|exists:centers,id',
@@ -114,8 +114,8 @@ class UpdateStudentRequest extends FormRequest
             // Step 9
             'notes'              => 'nullable|string',
             // ✅ FIX: الحقول الأربعة دي بقت مطلوبة بناءً على طلبك
-            'status'             => 'required|string|max:50',
-            'decision'           => 'required|string|max:50',
+            'status'             => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\StudentStatus::class)],
+            'decision'           => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\StudentDecision::class)],
             'subscription_fees'  => 'required|string|max:50',
             'received_tools'     => 'required|string|max:100',
 

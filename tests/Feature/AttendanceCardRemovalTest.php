@@ -27,7 +27,7 @@ test('attendances table no longer has the card column and flows work without it'
     ]);
     $r->assertRedirect(route('attendance.index'));
     $record = Attendance::first();
-    expect($record)->not->toBeNull()->and($record->status)->toBe('present')->and($record->notes)->toBe('ملحوظة');
+    expect($record)->not->toBeNull()->and($record->status)->toBe(\App\Enums\AttendanceStatus::Present)->and($record->notes)->toBe('ملحوظة');
 
     // صفحتا الفهرس والتعديل تعملان بلا حقل card
     $this->actingAs($this->admin)->get(route('attendance.index'))->assertOk();
@@ -41,5 +41,5 @@ test('attendances table no longer has the card column and flows work without it'
         'status' => 'absent',
         'notes' => 'ملحوظة',
     ])->assertRedirect(route('attendance.index'));
-    expect($record->fresh()->status)->toBe('absent');
+    expect($record->fresh()->status)->toBe(\App\Enums\AttendanceStatus::Absent);
 });

@@ -75,7 +75,7 @@
                                 $nameParts = preg_split('/\s+/', trim($student->name));
                                 $initials = mb_substr($nameParts[0], 0, 1) . (count($nameParts) > 1 ? mb_substr(end($nameParts), 0, 1) : '');
                             @endphp
-                            <div class="w-full h-full flex items-center justify-center" style="background-color: #{{ $student->gender === 'ذكر' ? '10b981' : 'f43f5e' }}">
+                            <div class="w-full h-full flex items-center justify-center" style="background-color: #{{ $student->gender === \App\Enums\Gender::Male ? '10b981' : 'f43f5e' }}">
                                 <span class="text-white font-black text-5xl lg:text-6xl">{{ $initials }}</span>
                             </div>
                         </div>
@@ -96,15 +96,15 @@
                             @endif
 
                             {{-- ✅ fix #1 — قيم عربية --}}
-                            @if($student->status === 'مقيد')
+                            @if($student->status === \App\Enums\StudentStatus::Enrolled)
                             <span class="px-4 py-1.5 bg-emerald-100 text-emerald-700 rounded-full text-sm font-bold flex items-center gap-1.5">
                                 <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> مقيد
                             </span>
-                            @elseif($student->status === 'متوقف')
+                            @elseif($student->status === \App\Enums\StudentStatus::Stopped)
                             <span class="px-4 py-1.5 bg-orange-100 text-orange-700 rounded-full text-sm font-bold flex items-center gap-1.5">
                                 <span class="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span> موقوف
                             </span>
-                            @elseif($student->status === 'مسافر')
+                            @elseif($student->status === \App\Enums\StudentStatus::Traveling)
                             <span class="px-4 py-1.5 bg-cyan-100 text-cyan-700 rounded-full text-sm font-bold flex items-center gap-1.5">
                                 <span class="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></span> مسافر
                             </span>
@@ -122,7 +122,7 @@
                             @endif
 
                             {{-- ✅ fix #4 — يستخدم unpaidMonthsCount المحسوب من feeTimeline --}}
-                            @if($student->status !== 'متوقف' && $unpaidMonthsCount > 0)
+                            @if($student->status !== \App\Enums\StudentStatus::Stopped && $unpaidMonthsCount > 0)
                             <span class="px-4 py-1.5 bg-rose-100 text-rose-700 rounded-full text-sm font-bold flex items-center gap-1.5">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -794,7 +794,7 @@
             {{-- ═══════════════════════════════════════════════════════ --}}
             <div x-show="activeTab === 'fees'" x-cloak class="space-y-6">
 
-                @if($student->status === 'متوقف' && $suspendedPastDebt > 0)
+                @if($student->status === \App\Enums\StudentStatus::Stopped && $suspendedPastDebt > 0)
                 <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 flex items-start gap-4">
                     <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600 shrink-0">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

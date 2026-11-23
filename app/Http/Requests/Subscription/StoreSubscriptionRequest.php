@@ -19,7 +19,7 @@ class StoreSubscriptionRequest extends FormRequest
             'circle_id'      => 'required|exists:circles,id',
             'teacher_id'     => 'required|exists:users,id',
             'month'          => 'required|date_format:Y-m',
-            'status'         => 'required|in:مدفوع,غير مدفوع,معفي',
+            'status'         => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\SubscriptionStatus::class)],
             'amount'         => 'required_if:status,مدفوع|nullable|numeric|min:0',
             'payment_method' => 'required_if:status,مدفوع|nullable|in:نقدي,تحويل بنكي,أخرى',
             'collected_by'   => 'nullable|exists:users,id',

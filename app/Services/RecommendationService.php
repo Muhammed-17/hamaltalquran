@@ -10,13 +10,6 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 class RecommendationService
 {
-    private const ATTENDANCE_LEVEL_THRESHOLDS = [
-        90 => 'ممتاز',
-        80 => 'جيد جداً',
-        70 => 'جيد',
-        60 => 'مقبول',
-        0  => 'ضعيف',
-    ];
 
     /**
      * Cache لكل قوالب التوصيات — تتحمل مرة واحدة فقط لكل request
@@ -147,8 +140,8 @@ class RecommendationService
                 continue;
             }
 
-            $present = $studentAttendances->where('status', 'present')->count();
-            $late    = $studentAttendances->where('status', 'late')->count();
+            $present = $studentAttendances->where('status', \App\Enums\AttendanceStatus::Present)->count();
+            $late    = $studentAttendances->where('status', \App\Enums\AttendanceStatus::Late)->count();
 
             $rates[$key] = round((($present + $late) / $total) * 100);
         }
@@ -189,25 +182,19 @@ class RecommendationService
         $rate = $attendanceRates->get($key);
 
         return [
-            'new_memorization'   => $followup->newMemorizations?->average_level,
-            'revision'           => $followup->revisions?->average_level,
-            'old_memorization'   => $followup->oldMemorizations?->average_level,
-            'discipline'         => $followup->discipline?->level,
-            'tajweed'            => $followup->tajweedAssessment?->level,
-            'foundation'         => $followup->foundationLevel?->level,
-            'educational_lesson' => $followup->educationalLessonAssessment?->level,
+            'new_memorization'   => $followup->newMemorizations?->average_level?->value,
+            'revision'           => $followup->revisions?->average_level?->value,
+            'old_memorization'   => $followup->oldMemorizations?->average_level?->value,
+            'discipline'         => $followup->discipline?->level?->value,
+            'tajweed'            => $followup->tajweedAssessment?->level?->value,
+            'foundation'         => $followup->foundationLevel?->level?->value,
+            'educational_lesson' => $followup->educationalLessonAssessment?->level?->value,
             'attendance'         => $rate !== null ? $this->percentageToLevel($rate) : null,
         ];
     }
 
     private function percentageToLevel(float $rate): string
     {
-        foreach (self::ATTENDANCE_LEVEL_THRESHOLDS as $threshold => $level) {
-            if ($rate >= $threshold) {
-                return $level;
-            }
-        }
-
-        return 'ضعيف';
+        return \App\Enums\AssessmentLevel::forPercentage($rate)->value;
     }
 }

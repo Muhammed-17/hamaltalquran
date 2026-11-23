@@ -65,7 +65,7 @@ test('admin can add a new student', function () {
         'desired_narration_and_path'   => 'حفص عن عاصم',
         // القرار
         'status'            => 'مقيد',
-        'decision'          => 'قبول',
+        'decision'          => 'مقبول',
         'subscription_fees' => 'مدفوع',
         'received_tools'    => 'تم الاستلام',
     ]);
@@ -133,7 +133,7 @@ test('admin can update a subscription to paid', function () {
     $response->assertRedirect(route('subscriptions.index'));
 
     $subscription->refresh();
-    expect($subscription->status)->toBe('مدفوع')
+    expect($subscription->status)->toBe(\App\Enums\SubscriptionStatus::Paid)
         ->and((float) $subscription->amount)->toBe(150.0)
         ->and($subscription->paid_at)->not->toBeNull();
 });

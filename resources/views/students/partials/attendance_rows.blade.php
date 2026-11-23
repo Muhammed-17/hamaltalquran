@@ -8,8 +8,8 @@
             {{ $att->date->locale('ar')->isoFormat('dddd، D MMMM YYYY') }}
         </td>
         <td class="px-6 py-5">
-            <span class="px-3 py-1 rounded-lg text-xs font-bold {{ $statusClasses[$att->status] ?? 'bg-gray-100 text-gray-700' }}">
-                {{ $statusLabels[$att->status] ?? $att->status }}
+            <span class="px-3 py-1 rounded-lg text-xs font-bold {{ $statusClasses[$att->status->value] ?? 'bg-gray-100 text-gray-700' }}">
+                {{ $statusLabels[$att->status->value] ?? $att->status }}
             </span>
         </td>
         <td class="px-6 py-5 text-gray-500 text-sm">{{ $att->notes ?? '—' }}</td>

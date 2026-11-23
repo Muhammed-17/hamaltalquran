@@ -72,7 +72,7 @@ beforeEach(function () {
         'study_system' => 'group',
         'circle_id' => $this->circleA->id,
         'status' => 'مقيد',
-        'decision' => 'قبول',
+        'decision' => 'مقبول',
         'subscription_fees' => 'مدفوع',
         'received_tools' => 'تم الاستلام',
     ], $over);
