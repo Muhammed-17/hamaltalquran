@@ -78,7 +78,7 @@ $overdueText = empty($parts) ? 'اليوم' : implode(' و', $parts);
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
             {{-- بطاقات الإحصائيات --}}
-            <div class="lg:col-span-2 grid grid-cols-3 gap-4">
+            <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {{-- إجمالي الأشهر --}}
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 group">
                     <div class="flex items-center justify-between mb-3">

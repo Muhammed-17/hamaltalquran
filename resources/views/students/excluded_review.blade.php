@@ -32,6 +32,7 @@
         </div>
         @else
         <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <div class="overflow-x-auto">
             <table class="w-full text-sm text-right">
                 <thead class="bg-gray-50 text-gray-600">
                     <tr>
@@ -69,6 +70,7 @@
                     @endforeach
                 </tbody>
             </table>
+            </div>
         </div>
         @endif
     </div>

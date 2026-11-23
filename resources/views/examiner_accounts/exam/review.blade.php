@@ -12,7 +12,7 @@
         <p class="text-emerald-100/80 text-sm">مراجعة الاختبار قبل اعتماد النتيجة</p>
     </div>
 
-    <div class="grid grid-cols-3 gap-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 text-center">
             <p class="text-2xl font-black text-gray-800">{{ $totalQuestions }}</p>
             <p class="text-xs text-gray-500 mt-1">عدد الأسئلة</p>

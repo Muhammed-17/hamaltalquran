@@ -265,7 +265,7 @@ $activities = $studentWeeklyFollowup?->activities ?? collect();
                 <div class="p-5 space-y-3">
                     @if($isShow)
                     <!-- Show Mode: Text Display -->
-                    <div class="grid grid-cols-2 gap-3 text-sm">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                         <div class="bg-gray-50 rounded-lg p-3">
                             <span class="block text-xs text-gray-500 mb-1">من سورة</span>
                             <span class="font-semibold text-gray-900">{{ $sectionData?->fromSurah?->name_arabic ?? '-' }}</span>
@@ -283,7 +283,7 @@ $activities = $studentWeeklyFollowup?->activities ?? collect();
                             <span class="font-semibold text-gray-900">{{ $sectionData?->plan_to_ayah ?? '-' }}</span>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-3 text-sm">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                         <div class="bg-gray-50 rounded-lg p-3">
                             <span class="block text-xs text-gray-500 mb-1">مقارنة الخطة</span>
                             <span class="font-semibold text-gray-900">{{ $sectionData?->plan_comparison ?? '-' }}</span>
@@ -334,7 +334,7 @@ $activities = $studentWeeklyFollowup?->activities ?? collect();
                             value="{{ $oldToAyah }}" min="1">
                     </div>
                     <!-- Plan Comparison & Progress Difference -->
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">مقارنة الخطة</label>
                             <select name="{{ $prefix }}_plan_comparison"

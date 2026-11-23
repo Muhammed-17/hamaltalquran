@@ -83,7 +83,7 @@ $surahOptions = $surahs->map(fn($surah) => [
 
                 {{-- أجزاء سؤال الحفظ --}}
                 <template x-if="type === 'memorization'">
-                    <div class="md:col-span-2 grid grid-cols-2 gap-6 pt-2">
+                    <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
                         <div class="space-y-2">
                             <label class="block text-sm font-bold text-gray-700">من سورة</label>
                             <x-searchable-select

@@ -140,6 +140,7 @@
                     </div>
 
                     <div class="border border-gray-100 rounded-2xl overflow-hidden">
+                        <div class="overflow-x-auto">
                         <table class="w-full text-right text-sm">
                             <thead class="bg-gray-50 text-gray-500">
                                 <tr>
@@ -184,6 +185,7 @@
                                 </template>
                             </tbody>
                         </table>
+                        </div>
                     </div>
 
                     {{-- ─── إتمام التحويل ─────────────────────────── --}}

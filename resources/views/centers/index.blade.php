@@ -44,6 +44,7 @@
 
         <!-- Centers Table -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="overflow-x-auto">
             <table class="w-full text-right">
                 <thead class="bg-gray-50 text-gray-500 text-sm">
                     <tr>
@@ -96,6 +97,7 @@
                     @endforelse
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
 

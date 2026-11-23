@@ -12,7 +12,7 @@
 
                 <!-- Student Info -->
                 <div class="mb-6 p-4 bg-gray-50 rounded-lg">
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-500">الطالب</label>
                             <p class="text-lg font-semibold text-gray-900">{{ $attendance->student->name ?? '-' }}</p>
@@ -50,7 +50,7 @@
                     $selectedStatus = old('status') !== null ? old('status') : ($attendance->status?->value ?? 'present');
                     @endphp
 
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                         @foreach($statuses as $value => [$label, $color])
                         @php
                         $isChecked = $selectedStatus == $value;

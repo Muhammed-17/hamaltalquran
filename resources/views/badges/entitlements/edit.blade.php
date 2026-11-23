@@ -6,7 +6,7 @@
     <form method="POST" action="{{ route('badges.entitlements.update', $entitlement) }}" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 max-w-2xl" dir="rtl">
         @csrf @method('PUT')
         <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-bold text-gray-400 mb-1.5">الكمية المستحقة *</label>
                     <input type="number" name="quantity" min="1" value="{{ old('quantity', $entitlement->quantity) }}" required class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm">

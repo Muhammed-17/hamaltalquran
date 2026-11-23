@@ -152,7 +152,7 @@ $activityTypes = ['معرفي' => 'معرفي/علمي', 'اجتماعي' => 'ا
                 </h3>
             </div>
             <div class="p-5 space-y-3">
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-medium text-gray-600 mb-1">من سورة</label>
                         @if($isShow)
@@ -198,7 +198,7 @@ $activityTypes = ['معرفي' => 'معرفي/علمي', 'اجتماعي' => 'ا
                             value="{{ $sectionData['to_ayah'] ?? '' }}" min="1" {{ $readonly }}>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-medium text-gray-600 mb-1">مقارنة الخطة</label>
                         <select name="{{ $key }}[plan_comparison]"
