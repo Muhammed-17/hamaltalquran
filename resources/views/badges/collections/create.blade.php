@@ -51,11 +51,12 @@
     </div>
 
     {{-- السياق: الحلقة والمسؤول والتاريخ والطالب (يُعاد التحميل عند التغيير) --}}
-    <form method="GET" action="{{ route('badges.collections.create') }}" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6" dir="rtl">
+    <div id="collections-workspace">
+    <form method="GET" id="collections-context-form" action="{{ route('badges.collections.create') }}" class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6" dir="rtl">
         <div class="grid md:grid-cols-4 gap-4">
             <div>
                 <label class="block text-xs font-bold text-gray-400 mb-1.5">المسؤول عن التحصيل *</label>
-                <select name="teacher_id" onchange="this.form.submit()" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
+                <select name="teacher_id" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
                     <option value="">— اختر المسؤول —</option>
                     @foreach ($teachers as $t)
                         <option value="{{ $t->id }}" @selected($teacherId === $t->id)>{{ $t->name }}</option>
@@ -64,12 +65,13 @@
                 <x-input-error :messages="$errors->get('teacher_id')" class="mt-2" />
             </div>
             <div>
-                <label class="block text-xs font-bold text-gray-400 mb-1.5">تاريخ التحصيل *</label>
-                <input type="date" name="collection_date" value="{{ $collectionDate }}" onchange="this.form.submit()" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm">
+                <label class="block text-xs font-bold text-gray-400 mb-1.5">شهر التحصيل *</label>
+                <input type="month" name="month" value="{{ $month }}" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm">
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-400 mb-1.5">الحلقة *</label>
-                <select name="circle_id" onchange="this.form.submit()" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
+                <select name="circle_id" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
+                    <option value="" @selected(!$circle)>— اختر الحلقة —</option>
                     @foreach ($circles as $c)
                         <option value="{{ $c->id }}" @selected($circle?->id === $c->id)>{{ $c->name }}</option>
                     @endforeach
@@ -78,24 +80,34 @@
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-400 mb-1.5">الطالب *</label>
-                <select name="student_id" onchange="this.form.submit()" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                    <option value="">— اختر الطالب —</option>
-                    @foreach ($breakdown as $g)
-                        <option value="{{ $g['student']->id }}" @selected($selectedStudentId === $g['student']->id)>
-                            {{ $g['student']->name }}{{ $settled->has($g['student']->id) ? ' ✓ محفوظ' : '' }}
-                        </option>
-                    @endforeach
+                <select name="student_id" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white" @disabled(!$circle)>
+                    @if (!$circle)
+                        <option value="">اختر الحلقة أولاً</option>
+                    @else
+                        <option value="">— اختر الطالب —</option>
+                        @foreach ($breakdown as $g)
+                            <option value="{{ $g['student']->id }}" @selected($selectedStudentId === $g['student']->id)>
+                                {{ $g['student']->name }}{{ $settled->has($g['student']->id) ? ' ✓ محفوظ' : '' }}
+                            </option>
+                        @endforeach
+                    @endif
                 </select>
                 <x-input-error :messages="$errors->get('student_id')" class="mt-2" />
             </div>
         </div>
     </form>
 
+    @if ($monthCollected)
+        <div class="bg-red-50 border border-red-200 text-red-700 rounded-2xl p-4 mb-6 text-sm font-bold" dir="rtl">
+            تم تحصيل هذه الحلقة بالفعل في هذا الشهر بتاريخ {{ \Carbon\Carbon::parse($monthCollected->collection_date)->toDateString() }} بواسطة {{ $monthCollected->teacher?->name ?? '—' }} — لا يمكن تحصيل الحلقة أكثر من مرة في الشهر الواحد.
+        </div>
+    @endif
+
     @if ($errors->has('amounts'))
         <div class="bg-red-50 border border-red-200 text-red-700 rounded-2xl px-5 py-3 text-sm font-bold mb-6" dir="rtl">{{ $errors->first('amounts') }}</div>
     @endif
 
-    @if ($circle && $selectedGroup)
+    @if ($circle && $selectedGroup && !$monthCollected)
         {{-- بيانات تحصيل الطالب المختار --}}
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-6" dir="rtl">
             <div class="px-6 py-4 flex items-center gap-3 border-b border-gray-50">
@@ -214,20 +226,25 @@
                             <button class="px-5 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl font-bold text-sm">إلغاء الجلسة</button>
                         </form>
                     @endif
+                    @if (!$monthCollected)
                     <form method="POST" action="{{ $session ? route('badges.collections.complete', $session) : '#' }}" data-swal-confirm data-swal-icon="question" data-swal-title="اعتماد التحصيل؟" data-swal-text="بعد الاعتماد تدخل الكميات المحصلة السليمة في عهدة المسؤول وتُقفل الجلسة نهائيًا ولا يمكن التعديل." data-swal-confirm-text="نعم، اعتماد التحصيل" data-swal-color="#059669">
                         @csrf
                         <button class="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl font-bold text-sm shadow" @disabled(!$session || $settledCount === 0)>اعتماد التحصيل</button>
                     </form>
+                    @endif
                 </div>
             </div>
         </div>
     @endif
+    </div>
 
     {{-- تأكيدات SweetAlert بنفس أسلوب حورات الموقع بدل تأكيد المتصفح --}}
     @push('scripts')
         <script>
-            document.querySelectorAll('form[data-swal-confirm]').forEach(function (form) {
-                form.addEventListener('submit', function (e) {
+            function bindSwalConfirms(root) {
+                (root || document).querySelectorAll('form[data-swal-confirm]:not([data-swal-bound])').forEach(function (form) {
+                    form.dataset.swalBound = '1';
+                    form.addEventListener('submit', function (e) {
                     e.preventDefault();
                     Swal.fire({
                         title: form.dataset.swalTitle,
@@ -249,7 +266,40 @@
                             form.submit();
                         }
                     });
+                    });
                 });
+            }
+            bindSwalConfirms(document);
+
+            // تحديث سياق التحصيل في مكانه: تغيير أي فلتر (المسؤول/الشهر/الحلقة/الطالب)
+            // يجلب المنطقة المحدّثة فقط دون إعادة تحميل الصفحة كاملة
+            document.addEventListener('change', function (e) {
+                var form = document.getElementById('collections-context-form');
+                var workspace = document.getElementById('collections-workspace');
+                if (!form || !workspace || !form.contains(e.target)) {
+                    return;
+                }
+                e.preventDefault();
+                var url = form.action + '?' + new URLSearchParams(new FormData(form)).toString();
+                workspace.style.opacity = '0.5';
+                workspace.style.pointerEvents = 'none';
+                fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function (r) { return r.text(); })
+                    .then(function (html) {
+                        var fresh = new DOMParser().parseFromString(html, 'text/html').getElementById('collections-workspace');
+                        if (!fresh) {
+                            window.location = url;
+                            return;
+                        }
+                        workspace.innerHTML = fresh.innerHTML;
+                        history.replaceState(null, '', url);
+                        bindSwalConfirms(workspace);
+                    })
+                    .catch(function () { window.location = url; })
+                    .finally(function () {
+                        workspace.style.opacity = '';
+                        workspace.style.pointerEvents = '';
+                    });
             });
         </script>
     @endpush

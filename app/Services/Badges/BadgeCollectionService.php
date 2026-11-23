@@ -126,10 +126,43 @@ class BadgeCollectionService
             ->first();
     }
 
+    /** جولة تحصيل معتمدة لهذه الحلقة في شهر التاريخ المعطى (إن وُجدت) */
+    public function completedRoundInMonth(Circle $circle, string $date, ?int $excludeRoundId = null): ?BadgeCollectionRound
+    {
+        $start = \Carbon\Carbon::parse($date)->startOfMonth();
+
+        return BadgeCollectionRound::with('teacher')
+            ->where('circle_id', $circle->id)
+            ->where('status', CollectionRoundStatus::Completed->value)
+            ->whereBetween('collection_date', [$start->toDateString(), $start->copy()->endOfMonth()->toDateString()])
+            ->when($excludeRoundId, fn ($q) => $q->where('id', '!=', $excludeRoundId))
+            ->latest('id')
+            ->first();
+    }
+
+    /** رسالة منع تحصيل الحلقة مرتين في الشهر الواحد */
+    public function monthBlockMessage(BadgeCollectionRound $done): string
+    {
+        $date = \Carbon\Carbon::parse($done->collection_date)->toDateString();
+        $by = $done->teacher?->name ?? '—';
+
+        return "تم تحصيل هذه الحلقة بالفعل في هذا الشهر بتاريخ {$date} بواسطة {$by} — لا يمكن تحصيل الحلقة أكثر من مرة في الشهر الواحد.";
+    }
+
     /** جولة الجلسة: الموجودة أو جولة مسودة فارغة جديدة تُبنى طالبًا طالبًا */
     public function findOrCreateSessionRound(Circle $circle, int $teacherUserId, string $date, User $actor): BadgeCollectionRound
     {
-        return $this->sessionRound($circle, $teacherUserId, $date) ?? BadgeCollectionRound::create([
+        $existing = $this->sessionRound($circle, $teacherUserId, $date);
+        if ($existing) {
+            return $existing;
+        }
+
+        // قاعدة الشهر: لا تُحصَّل الحلقة أكثر من مرة في الشهر الواحد
+        if ($done = $this->completedRoundInMonth($circle, $date)) {
+            throw ValidationException::withMessages(['collection_date' => $this->monthBlockMessage($done)]);
+        }
+
+        return BadgeCollectionRound::create([
             'circle_id'       => $circle->id,
             'teacher_id'      => $teacherUserId,
             'collection_date' => $date,
@@ -410,6 +443,11 @@ class BadgeCollectionService
 
             if (!$round->isDraft()) {
                 throw ValidationException::withMessages(['round' => 'يمكن اعتماد الجولات المسودة فقط.']);
+            }
+
+            // قاعدة الشهر: اعتماد ثانٍ لنفس الحلقة في نفس الشهر ممنوع ولو بدأت الجلسة قبله
+            if ($done = $this->completedRoundInMonth($round->circle, $round->collection_date->toDateString(), $round->id)) {
+                throw ValidationException::withMessages(['round' => $this->monthBlockMessage($done)]);
             }
 
             $round->update(['status' => CollectionRoundStatus::Completed->value]);

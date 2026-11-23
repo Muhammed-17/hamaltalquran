@@ -232,9 +232,15 @@
                     <button @click="activeTab = 'weekly'"
                         :class="activeTab === 'weekly' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-gray-400 hover:text-gray-600'"
                         class="pb-4 font-bold transition-all px-2 whitespace-nowrap">المتابعة الأسبوعية</button>
+                    <button @click="activeTab = 'badges'"
+                        :class="activeTab === 'badges' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-gray-400 hover:text-gray-600'"
+                        class="pb-4 font-bold transition-all px-2 whitespace-nowrap">الأوسمة</button>
                     <button @click="activeTab = 'surah_tests'"
                         :class="activeTab === 'surah_tests' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-gray-400 hover:text-gray-600'"
                         class="pb-4 font-bold transition-all px-2 whitespace-nowrap">اختبارات السور</button>
+                    <button @click="activeTab = 'competitions'"
+                        :class="activeTab === 'competitions' ? 'text-emerald-600 border-b-2 border-emerald-600' : 'text-gray-400 hover:text-gray-600'"
+                        class="pb-4 font-bold transition-all px-2 whitespace-nowrap">المسابقات</button>
                 </div>
             </div>
 
@@ -1059,6 +1065,136 @@
             </div>
 
             {{-- ═══════════════════════════════════════════════════════ --}}
+            {{-- Tab: الأوسمة                                          --}}
+            {{-- ═══════════════════════════════════════════════════════ --}}
+            <div x-show="activeTab === 'badges'" x-cloak class="space-y-6">
+                <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-6 lg:p-8 border-b border-gray-50">
+                        <h3 class="text-[#0a5c36] font-black text-xl">ملخص الأوسمة</h3>
+                    </div>
+                    @if($badgeSummary->isEmpty())
+                        <p class="p-6 lg:p-8 text-gray-400 font-bold text-sm">لا أوسمة مسجلة لهذا الطالب.</p>
+                    @else
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right">
+                                <thead class="bg-gray-50 font-black text-gray-400 text-xs uppercase">
+                                    <tr>
+                                        <th class="px-6 py-5">نوع الوسام</th>
+                                        <th class="px-6 py-5">المستحق</th>
+                                        <th class="px-6 py-5">المسلّم</th>
+                                        <th class="px-6 py-5">في يد الطالب حاليًا</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-50">
+                                    @foreach($badgeSummary as $row)
+                                        <tr class="hover:bg-emerald-50/30 transition-all">
+                                            <td class="px-6 py-5 font-bold text-gray-800">{{ $row['type']->name }}</td>
+                                            <td class="px-6 py-5 font-black text-gray-800">{{ $row['entitled'] }}</td>
+                                            <td class="px-6 py-5 font-black text-gray-800">{{ $row['delivered'] }}</td>
+                                            <td class="px-6 py-5 font-black text-gray-800">{{ $row['in_hand'] }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+
+                <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-6 lg:p-8 border-b border-gray-50">
+                        <h3 class="text-[#0a5c36] font-black text-xl">سجل التوزيعات</h3>
+                    </div>
+                    @if($badgeDistributions->isEmpty())
+                        <p class="p-6 lg:p-8 text-gray-400 font-bold text-sm">لا توزيعات مسجلة لهذا الطالب.</p>
+                    @else
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right">
+                                <thead class="bg-gray-50 font-black text-gray-400 text-xs uppercase">
+                                    <tr>
+                                        <th class="px-6 py-5">التاريخ</th>
+                                        <th class="px-6 py-5">نوع الوسام</th>
+                                        <th class="px-6 py-5">الكمية</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-50">
+                                    @foreach($badgeDistributions as $d)
+                                        <tr class="hover:bg-emerald-50/30 transition-all">
+                                            <td class="px-6 py-5 text-gray-500 text-sm">{{ \Carbon\Carbon::parse($d->distribution_date)->format('Y/m/d') }}</td>
+                                            <td class="px-6 py-5 font-bold text-gray-800">{{ $d->badgeType?->name ?? '—' }}</td>
+                                            <td class="px-6 py-5 font-black text-gray-800">{{ $d->quantity }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+
+                <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-6 lg:p-8 border-b border-gray-50">
+                        <h3 class="text-[#0a5c36] font-black text-xl">سجل التحصيل</h3>
+                    </div>
+                    @if($badgeCollections->isEmpty())
+                        <p class="p-6 lg:p-8 text-gray-400 font-bold text-sm">لا تحصيلات مسجلة لهذا الطالب.</p>
+                    @else
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right">
+                                <thead class="bg-gray-50 font-black text-gray-400 text-xs uppercase">
+                                    <tr>
+                                        <th class="px-6 py-5">تاريخ الجولة</th>
+                                        <th class="px-6 py-5">المسؤول</th>
+                                        <th class="px-6 py-5">نوع الوسام</th>
+                                        <th class="px-6 py-5">سليم</th>
+                                        <th class="px-6 py-5">تالف/مفقود</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-50">
+                                    @foreach($badgeCollections as $row)
+                                        <tr class="hover:bg-emerald-50/30 transition-all">
+                                            <td class="px-6 py-5 text-gray-500 text-sm">{{ $row['round']->collection_date->format('Y/m/d') }}</td>
+                                            <td class="px-6 py-5 font-bold text-gray-800">{{ $row['round']->teacher?->name ?? '—' }}</td>
+                                            <td class="px-6 py-5 font-bold text-gray-800">{{ $row['type']?->name ?? '—' }}</td>
+                                            <td class="px-6 py-5 font-black text-gray-800">{{ $row['good'] }}</td>
+                                            <td class="px-6 py-5 font-black text-gray-800">{{ $row['damaged'] }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+
+                @if($badgeDeductions->isNotEmpty())
+                    <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+                        <div class="p-6 lg:p-8 border-b border-gray-50">
+                            <h3 class="text-[#0a5c36] font-black text-xl">خصومات المستحق (استبدال بلعبة)</h3>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right">
+                                <thead class="bg-gray-50 font-black text-gray-400 text-xs uppercase">
+                                    <tr>
+                                        <th class="px-6 py-5">التاريخ</th>
+                                        <th class="px-6 py-5">نوع الوسام</th>
+                                        <th class="px-6 py-5">الكمية المخصومة</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-50">
+                                    @foreach($badgeDeductions as $redemption)
+                                        @foreach($redemption->items as $item)
+                                            <tr class="hover:bg-emerald-50/30 transition-all">
+                                                <td class="px-6 py-5 text-gray-500 text-sm">{{ \Carbon\Carbon::parse($redemption->redemption_date)->format('Y/m/d') }}</td>
+                                                <td class="px-6 py-5 font-bold text-gray-800">{{ $item->badgeType?->name ?? '—' }}</td>
+                                                <td class="px-6 py-5 font-black text-gray-800">{{ $item->shortage_quantity }}</td>
+                                            </tr>
+                                        @endforeach
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endif
+            </div>
+
             {{-- Tab: اختبارات السور                                    --}}
             {{-- ═══════════════════════════════════════════════════════ --}}
             <div x-show="activeTab === 'surah_tests'" x-cloak class="space-y-6">
@@ -1133,6 +1269,47 @@
                         <h4 class="text-gray-500 font-medium">لا توجد اختبارات سور</h4>
                         <p class="text-gray-400 text-sm">لم يتم تسجيل أي اختبار سورة لهذا الطالب</p>
                     </div>
+                    @endif
+                </div>
+            </div>
+
+            {{-- ═══════════════════════════════════════════════════════ --}}
+            {{-- Tab: المسابقات                                         --}}
+            {{-- ═══════════════════════════════════════════════════════ --}}
+            <div x-show="activeTab === 'competitions'" x-cloak class="space-y-6">
+                <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="p-6 lg:p-8 border-b border-gray-50">
+                        <h3 class="text-[#0a5c36] font-black text-xl">مشاركات المسابقات</h3>
+                    </div>
+                    @if($student->competitionParticipants->isEmpty())
+                        <p class="p-6 lg:p-8 text-gray-400 font-bold text-sm">لم يشارك في أي مسابقة بعد.</p>
+                    @else
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right">
+                                <thead class="bg-gray-50 font-black text-gray-400 text-xs uppercase">
+                                    <tr>
+                                        <th class="px-6 py-5">المسابقة</th>
+                                        <th class="px-6 py-5">المستوى</th>
+                                        <th class="px-6 py-5">حالة ملف التفسير</th>
+                                        <th class="px-6 py-5">رسوم التسجيل</th>
+                                        <th class="px-6 py-5">الدرجة الكلية</th>
+                                        <th class="px-6 py-5">المركز</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-50">
+                                    @foreach($student->competitionParticipants as $participant)
+                                        <tr class="hover:bg-emerald-50/30 transition-all">
+                                            <td class="px-6 py-5 font-bold text-gray-800">{{ $participant->competition?->name ?? '—' }}</td>
+                                            <td class="px-6 py-5 text-gray-800">{{ $participant->competitionLevel?->level?->name ?? '—' }}</td>
+                                            <td class="px-6 py-5 text-gray-800">{{ [0 => 'غير مطلوب', 1 => 'لم يتم الاستلام', 2 => 'تم الاستلام'][$participant->file_status] ?? '—' }}</td>
+                                            <td class="px-6 py-5 font-black text-gray-800">{{ $participant->registration_fee ? number_format($participant->registration_fee) . ' ج.م' : '—' }}</td>
+                                            <td class="px-6 py-5 font-black text-gray-800">{{ $participant->competitionResult?->total_score ?? '—' }}</td>
+                                            <td class="px-6 py-5 font-black text-gray-800">{{ $participant->competitionResult?->rank ?? '—' }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     @endif
                 </div>
             </div>

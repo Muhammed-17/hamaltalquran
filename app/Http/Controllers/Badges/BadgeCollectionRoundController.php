@@ -46,16 +46,24 @@ class BadgeCollectionRoundController extends Controller
         $user = auth()->user();
         // من يدير التحصيل يرى كل الحلقات في كل الفروع والمراكز
         $circles = Circle::orderBy('name')->get();
-        $circle = $circles->firstWhere('id', (int) $request->circle_id) ?? $circles->first();
+        // لا حلقة افتراضية: الطلاب لا يظهرون قبل اختيار الحلقة صراحة («اختر الحلقة أولاً»)
+        $circle = $request->filled('circle_id') ? $circles->firstWhere('id', (int) $request->circle_id) : null;
         // مسؤول التحصيل: كل المشرفين والمديرين والمديرين العامين عدا مدير النظام
         $teachers = $badgeAccess->selectableCollectors();
         $teacherId = (int) $request->teacher_id
             ?: ($teachers->contains('id', $user->id) ? $user->id : null);
-        $date = $request->filled('collection_date') ? $request->collection_date : now()->toDateString();
+        // السياق الشهري: الشهر وحدة التحصيل — التاريخ الفعلي اليوم إن كان داخل الشهر المختار وإلا أوله
+        $month = preg_match('/^\d{4}-\d{2}$/', (string) $request->month)
+            ? $request->month
+            : ($request->filled('collection_date') ? substr((string) $request->collection_date, 0, 7) : now()->format('Y-m'));
+        $date = $request->filled('collection_date')
+            ? $request->collection_date
+            : ($month === now()->format('Y-m') ? now()->toDateString() : $month . '-01');
 
         // جلسة التحصيل: جولة مسودة واحدة للسياق (حلقة + مسؤول + تاريخ)
         $session = ($circle && $teacherId) ? $service->sessionRound($circle, $teacherId, $date) : null;
         $settled = $session ? $service->settledStudents($session) : collect();
+        $monthCollected = $circle ? $service->completedRoundInMonth($circle, $date) : null;
         $breakdown = $circle ? $service->breakdownForCircle($circle) : collect();
 
         $studentId = (int) $request->student_id ?: null;
@@ -67,6 +75,8 @@ class BadgeCollectionRoundController extends Controller
             'teachers' => $teachers,
             'teacherId' => $teacherId,
             'collectionDate' => $date,
+            'month' => $month,
+            'monthCollected' => $monthCollected,
             'breakdown' => $breakdown,
             'session' => $session,
             'settled' => $settled,

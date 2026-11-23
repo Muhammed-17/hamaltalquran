@@ -377,6 +377,40 @@ class StudentController extends Controller
             ->get()
             ->sortByDesc(fn($result) => $result->surahTest->test_date);
 
+        // تبويب الأوسمة: ملخص لكل نوع (المستحق/المسلّم/في يد الطالب حاليًا) + سجل الحركات
+        $badgeBalances = app(\App\Services\Badges\BadgeBalanceService::class);
+        $badgeEntitled = \App\Models\Badges\BadgeEntitlement::where('student_id', $student->id)
+            ->where('status', '!=', \App\Enums\Badges\EntitlementStatus::Cancelled->value)
+            ->selectRaw('badge_type_id, SUM(quantity) as total')->groupBy('badge_type_id')->pluck('total', 'badge_type_id');
+        $badgeDelivered = \App\Models\Badges\BadgeDistribution::active()
+            ->where('student_id', $student->id)
+            ->selectRaw('badge_type_id, SUM(quantity) as total')->groupBy('badge_type_id')->pluck('total', 'badge_type_id');
+        $badgeSummary = \App\Models\Badges\BadgeType::whereIn('id', $badgeEntitled->keys()->merge($badgeDelivered->keys())->unique())
+            ->orderBy('name')->get()
+            ->map(fn ($t) => [
+                'type' => $t,
+                'entitled' => (int) ($badgeEntitled[$t->id] ?? 0),
+                'delivered' => (int) ($badgeDelivered[$t->id] ?? 0),
+                'in_hand' => $badgeBalances->studentBalance($student->id, $t->id),
+            ]);
+        $badgeDistributions = \App\Models\Badges\BadgeDistribution::active()
+            ->where('student_id', $student->id)->with('badgeType')
+            ->orderByDesc('distribution_date')->orderByDesc('id')->get();
+        $damagedValues = [\App\Enums\Badges\CollectionItemStatus::Damaged->value, \App\Enums\Badges\CollectionItemStatus::Missing->value];
+        $badgeCollections = \App\Models\Badges\BadgeCollectionItem::where('student_id', $student->id)
+            ->whereHas('round', fn ($q) => $q->where('status', \App\Enums\Badges\CollectionRoundStatus::Completed->value))
+            ->with(['round.teacher', 'badgeType'])->get()
+            ->groupBy(fn ($i) => $i->round_id . ':' . $i->badge_type_id)
+            ->map(fn ($items) => [
+                'round' => $items->first()->round,
+                'type' => $items->first()->badgeType,
+                'good' => (int) $items->reject(fn ($i) => in_array($i->status->value, $damagedValues, true))->sum('collected_quantity'),
+                'damaged' => (int) $items->filter(fn ($i) => in_array($i->status->value, $damagedValues, true))->sum('collected_quantity'),
+            ])->sortByDesc(fn ($r) => $r['round']->collection_date)->values();
+        $badgeDeductions = \App\Models\Badges\BadgeRedemption::where('student_id', $student->id)
+            ->where('status', \App\Enums\Badges\RedemptionStatus::Completed->value)
+            ->with(['items.badgeType'])->orderByDesc('redemption_date')->orderByDesc('id')->get();
+
         return view('students.show', [
             'student'           => $student,
             'attendanceRate'    => $attendanceRate,
@@ -389,6 +423,10 @@ class StudentController extends Controller
             'feeTimeline'       => $feeTimeline->sortByDesc('month'),
             'suspendedPastDebt' => $student->suspended_past_debt,
             'surahTestResults'  => $surahTestResults,
+            'badgeSummary'      => $badgeSummary,
+            'badgeDistributions' => $badgeDistributions,
+            'badgeCollections'  => $badgeCollections,
+            'badgeDeductions'   => $badgeDeductions,
         ]);
     }
 

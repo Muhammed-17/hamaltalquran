@@ -768,8 +768,8 @@ test('collection: all students included, partial/missing tracked, no double coll
     expect($this->balances->studentBalance($this->student1->id, $this->type->id))->toBe(4)
         ->and($this->balances->teacherBalance($this->teacherUser->id, $this->type->id))->toBe(30 + 6);
 
-    // جولة ثانية: بند التوزيع نفسه يظهر بالمتبقي فقط (4) — لا تحصيل مكرر
-    $round2 = $this->collectionService->createRound($this->circleA, $this->teacherUser->id, '2026-11-25', $this->teacherUser);
+    // جولة ثانية في شهر لاحق (قاعدة الشهر: جولة واحدة معتمدة للحلقة في الشهر): بند التوزيع نفسه يظهر بالمتبقي فقط (4) — لا تحصيل مكرر
+    $round2 = $this->collectionService->createRound($this->circleA, $this->teacherUser->id, '2026-12-02', $this->teacherUser);
     $item2 = $round2->items()->where('distribution_id', $distribution->id)->first();
     expect($item2->distributed_quantity)->toBe(4);
 
@@ -1841,4 +1841,152 @@ test('فلتر الشهر في صفحة جولات تحصيل الأوسمة', f
     $all = $this->actingAs($this->admin)->get(route('badges.collections.index'));
     $allIds = collect($all->viewData('rounds')->items())->pluck('id');
     expect($allIds)->toContain($nov->id)->toContain($oct->id);
+});
+
+test('collections: same circle cannot be collected twice in one month', function () {
+    badgeSeedStockAndHandover($this);
+
+    $supervisor = User::factory()->create(['status' => 'active']);
+    $supervisor->assignRole('supervisor');
+    Teacher::create(['user_id' => $supervisor->id, 'branch_id' => $this->branchA->id]);
+
+    $e = $this->entitlementService->create([
+        'student_id' => $this->student1->id, 'circle_id' => $this->circleA->id,
+        'teacher_id' => $this->teacherUser->id, 'badge_type_id' => $this->type->id,
+        'quantity' => 50, 'entitlement_date' => '2026-11-10',
+    ], $this->admin);
+    $this->distributionService->distribute($e, 7, '2026-11-11', $this->teacherUser);
+
+    // جولة معتمدة سابقة لنفس الحلقة في نوفمبر
+    \App\Models\Badges\BadgeCollectionRound::create([
+        'circle_id' => $this->circleA->id, 'teacher_id' => $supervisor->id,
+        'collection_date' => '2026-11-05', 'status' => 'completed', 'created_by' => $this->admin->id,
+    ]);
+
+    // بدء جلسة جديدة في نفس الشهر مرفوض ولا ينشئ مسودة
+    $this->actingAs($this->admin)->post(route('badges.collections.settle-student'), [
+        'circle_id' => $this->circleA->id, 'teacher_id' => $supervisor->id,
+        'collection_date' => '2026-11-20', 'student_id' => $this->student1->id,
+        'amounts' => [$this->type->id => ['good' => 1, 'damaged' => 0, 'owed' => 0]],
+    ])->assertSessionHasErrors('collection_date');
+    expect(\App\Models\Badges\BadgeCollectionRound::where('status', 'draft')->count())->toBe(0);
+
+    // صفحة التحصيل تعرض المنع عند اختيار الشهر المحصَّل
+    $page = $this->actingAs($this->admin)->get(route('badges.collections.create', [
+        'circle_id' => $this->circleA->id, 'teacher_id' => $supervisor->id, 'month' => '2026-11',
+    ]));
+    $page->assertOk()->assertSee('لا يمكن تحصيل الحلقة أكثر من مرة في الشهر الواحد');
+    expect($page->viewData('monthCollected'))->not->toBeNull()
+        ->and($page->viewData('month'))->toBe('2026-11');
+
+    // شهر آخر متاح: التسوية تنجح وتفتح مسودة
+    $this->actingAs($this->admin)->post(route('badges.collections.settle-student'), [
+        'circle_id' => $this->circleA->id, 'teacher_id' => $supervisor->id,
+        'collection_date' => '2026-12-02', 'student_id' => $this->student1->id,
+        'amounts' => [$this->type->id => ['good' => 1, 'damaged' => 0, 'owed' => 0]],
+    ])->assertRedirect();
+    $draft = \App\Models\Badges\BadgeCollectionRound::where('status', 'draft')->first();
+    expect($draft)->not->toBeNull();
+
+    // سباق الاعتماد: جولة أخرى اكتملت في ديسمبر أولًا → اعتماد المسودة مرفوض وتبقى مسودة
+    \App\Models\Badges\BadgeCollectionRound::create([
+        'circle_id' => $this->circleA->id, 'teacher_id' => $supervisor->id,
+        'collection_date' => '2026-12-10', 'status' => 'completed', 'created_by' => $this->admin->id,
+    ]);
+    $this->actingAs($this->admin)->post(route('badges.collections.complete', $draft))->assertSessionHasErrors();
+    expect($draft->fresh()->status->value)->toBe('draft');
+});
+
+test('collections create: student select asks for the circle first', function () {
+    badgeSeedStockAndHandover($this);
+    $e = $this->entitlementService->create([
+        'student_id' => $this->student1->id, 'circle_id' => $this->circleA->id,
+        'teacher_id' => $this->teacherUser->id, 'badge_type_id' => $this->type->id,
+        'quantity' => 5, 'entitlement_date' => '2026-11-10',
+    ], $this->admin);
+    $this->distributionService->distribute($e, 5, '2026-11-11', $this->teacherUser);
+
+    // بلا اختيار حلقة: حقل الطالب يعرض «اختر الحلقة أولاً» ولا حلقة افتراضية
+    $page = $this->actingAs($this->admin)->get(route('badges.collections.create'));
+    $page->assertOk()->assertSee('اختر الحلقة أولاً');
+    expect($page->viewData('circle'))->toBeNull();
+
+    // بعد اختيار الحلقة: طلابها يظهرون وتختفي الرسالة
+    $withCircle = $this->actingAs($this->admin)->get(route('badges.collections.create', ['circle_id' => $this->circleA->id]));
+    $withCircle->assertOk()->assertDontSee('اختر الحلقة أولاً')->assertSee($this->student1->name);
+    expect($withCircle->viewData('circle')?->id)->toBe($this->circleA->id);
+});
+
+test('collections create: context filters update in place without a page reload', function () {
+    $page = $this->actingAs($this->admin)->get(route('badges.collections.create'));
+    $page->assertOk()
+        ->assertSee('id="collections-workspace"', false)
+        ->assertSee('id="collections-context-form"', false)
+        ->assertSee('bindSwalConfirms', false)
+        ->assertDontSee('this.form.submit', false);
+});
+
+test('student show: badges and competitions tabs show the student data', function () {
+    badgeSeedStockAndHandover($this);
+
+    $supervisor = User::factory()->create(['status' => 'active']);
+    $supervisor->assignRole('supervisor');
+    Teacher::create(['user_id' => $supervisor->id, 'branch_id' => $this->branchA->id]);
+
+    // استحقاقان (10 + 5) سُلّم منهما 6 + 5: المستحق 15 والمسلّم 11 وبقي مستحق 4
+    $e = $this->entitlementService->create([
+        'student_id' => $this->student1->id, 'circle_id' => $this->circleA->id,
+        'teacher_id' => $this->teacherUser->id, 'badge_type_id' => $this->type->id,
+        'quantity' => 10, 'entitlement_date' => '2026-11-10',
+    ], $this->admin);
+    $this->distributionService->distribute($e, 6, '2026-11-11', $this->teacherUser);
+    $e2 = $this->entitlementService->create([
+        'student_id' => $this->student1->id, 'circle_id' => $this->circleA->id,
+        'teacher_id' => $this->teacherUser->id, 'badge_type_id' => $this->type->id,
+        'quantity' => 5, 'entitlement_date' => '2026-11-10',
+    ], $this->admin);
+    $this->distributionService->distribute($e2, 5, '2026-11-11', $this->teacherUser);
+
+    // جلسة تحصيل معتمدة: 7 سليم + 2 تالف/مفقود + خصم 1 من المستحق → في اليد 2
+    // (تقسيم السليم/التالف باصطلاح النظام نفسه: التوزيع الأقدم يُملأ سليمًا أولًا)
+    $round = \App\Models\Badges\BadgeCollectionRound::create([
+        'circle_id' => $this->circleA->id, 'teacher_id' => $supervisor->id,
+        'collection_date' => '2026-11-20', 'status' => 'draft', 'created_by' => $this->admin->id,
+    ]);
+    $this->collectionService->settleStudent($round, $this->student1->id, [
+        $this->type->id => ['good' => 7, 'damaged' => 2, 'owed' => 1],
+    ], $this->admin);
+    $this->collectionService->complete($round, $this->admin);
+
+    $competition = \App\Models\Competition::create(['name' => 'مسابقة الحفظ الكبرى', 'status' => 'active']);
+    $level = \App\Models\Level::create(['name' => 'المستوى الأول']);
+    $competitionLevel = \App\Models\CompetitionLevel::create(['competition_id' => $competition->id, 'level_id' => $level->id]);
+    $participant = \App\Models\CompetitionParticipant::create([
+        'competition_id' => $competition->id, 'competition_level_id' => $competitionLevel->id, 'student_id' => $this->student1->id,
+        'center_id' => $this->centerA->id, 'circle_id' => $this->circleA->id,
+        'file_status' => 2, 'registration_fee' => 50,
+    ]);
+    \App\Models\CompetitionResult::create([
+        'competition_participant_id' => $participant->id, 'total_score' => 95, 'rank' => 1,
+    ]);
+
+    $page = $this->actingAs($this->admin)->get(route('students.show', $this->student1));
+    $page->assertOk()
+        ->assertSee('الأوسمة')->assertSee('المسابقات')
+        ->assertSee('في يد الطالب حاليًا')
+        ->assertSee('مسابقة الحفظ الكبرى')->assertSee('تم الاستلام');
+
+    $summary = $page->viewData('badgeSummary');
+    expect($summary)->toHaveCount(1)
+        ->and($summary[0]['entitled'])->toBe(15)
+        ->and($summary[0]['delivered'])->toBe(11)
+        ->and($summary[0]['in_hand'])->toBe(2);
+
+    $collections = $page->viewData('badgeCollections');
+    expect($collections)->toHaveCount(1)
+        ->and($collections[0]['good'])->toBe(6)
+        ->and($collections[0]['damaged'])->toBe(3);
+
+    expect($page->viewData('badgeDistributions'))->toHaveCount(2)
+        ->and($page->viewData('badgeDeductions')->sum(fn ($r) => $r->items->sum('shortage_quantity')))->toBe(1);
 });
