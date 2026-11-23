@@ -73,11 +73,10 @@ class BadgeBalanceService
         // المحصّل الصالح فقط يعود لعهدة المعلم — التالف رجع لكنه غير صالح
         $collectedBack = (int) BadgeCollectionItem::where('badge_type_id', $badgeTypeId)
             ->where('collected_quantity', '>', 0)
-            ->where('status', '!=', 'damaged')
             ->whereHas('round', fn ($q) => $q
                 ->where('status', 'completed')
                 ->where('teacher_id', $teacherUserId))
-            ->sum('collected_quantity');
+            ->sum(DB::raw('collected_quantity - damaged_quantity'));
 
         return $received - $given - $distributed - $returnedToAdmin + $collectedBack;
     }
@@ -180,9 +179,8 @@ class BadgeBalanceService
     public function totalDamaged(?int $badgeTypeId = null): int
     {
         return (int) BadgeCollectionItem::when($badgeTypeId, fn ($q) => $q->where('badge_type_id', $badgeTypeId))
-            ->where('status', 'damaged')
             ->whereHas('round', fn ($q) => $q->where('status', 'completed'))
-            ->sum('collected_quantity');
+            ->sum('damaged_quantity');
     }
 
     /** إجمالي المفقود المسجل في جولات معتمدة */

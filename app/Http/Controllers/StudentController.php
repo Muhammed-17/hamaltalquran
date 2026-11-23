@@ -454,7 +454,6 @@ class StudentController extends Controller
         $badgeDistributions = \App\Models\Badges\BadgeDistribution::active()
             ->where('student_id', $student->id)->with('badgeType')
             ->orderByDesc('distribution_date')->orderByDesc('id')->get();
-        $damagedValues = [\App\Enums\Badges\CollectionItemStatus::Damaged->value, \App\Enums\Badges\CollectionItemStatus::Missing->value];
         $badgeCollections = \App\Models\Badges\BadgeCollectionItem::where('student_id', $student->id)
             ->whereHas('round', fn ($q) => $q->where('status', \App\Enums\Badges\CollectionRoundStatus::Completed->value))
             ->with(['round.teacher', 'badgeType'])->get()
@@ -462,8 +461,8 @@ class StudentController extends Controller
             ->map(fn ($items) => [
                 'round' => $items->first()->round,
                 'type' => $items->first()->badgeType,
-                'good' => (int) $items->reject(fn ($i) => in_array($i->status->value, $damagedValues, true))->sum('collected_quantity'),
-                'damaged' => (int) $items->filter(fn ($i) => in_array($i->status->value, $damagedValues, true))->sum('collected_quantity'),
+                'good' => (int) $items->sum('collected_quantity') - (int) $items->sum('damaged_quantity'),
+                'damaged' => (int) $items->sum('damaged_quantity'),
             ])->sortByDesc(fn ($r) => $r['round']->collection_date)->values();
         $badgeDeductions = \App\Models\Badges\BadgeRedemption::where('student_id', $student->id)
             ->where('status', \App\Enums\Badges\RedemptionStatus::Completed->value)

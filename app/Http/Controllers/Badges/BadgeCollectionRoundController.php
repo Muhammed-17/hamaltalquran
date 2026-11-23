@@ -133,7 +133,7 @@ class BadgeCollectionRoundController extends Controller
                 'types' => $items->filter(fn ($i) => $i->badge_type_id !== null)->groupBy('badge_type_id')->map(function ($typeItems) {
                     $distributed = (int) $typeItems->sum('distributed_quantity');
                     $collectedTotal = (int) $typeItems->sum('collected_quantity');
-                    $damagedQty = (int) $typeItems->where('status', \App\Enums\Badges\CollectionItemStatus::Damaged)->sum('collected_quantity');
+                    $damagedQty = (int) $typeItems->sum('damaged_quantity');
                     $missingQty = (int) $typeItems->where('status', \App\Enums\Badges\CollectionItemStatus::Missing)
                         ->sum(fn ($i) => $i->distributed_quantity - $i->collected_quantity);
 

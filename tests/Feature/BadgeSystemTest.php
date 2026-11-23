@@ -724,9 +724,9 @@ test('collection settle: damaged and missing are one category, outcome fixed at 
         ->and($items[1]->collected_quantity)->toBe(5)
         ->and($items[1]->status->value)->toBe('damaged');
 
-    // الاعتماد: السليم فقط (5) يعود لعهدة المسؤول، والطالب يُسوّى بالكامل (10)
+    // الاعتماد: السليم فقط (9) يعود لعهدة المسؤول، والطالب يُسوّى بالكامل (10)
     $this->collectionService->complete($round, $supervisor);
-    expect($this->balances->teacherBalance($supervisor->id, $this->type->id))->toBe(5)
+    expect($this->balances->teacherBalance($supervisor->id, $this->type->id))->toBe(9)
         ->and($this->balances->studentBalance($this->student1->id, $this->type->id))->toBe(0);
 });
 
@@ -1983,8 +1983,8 @@ test('student show: badges and competitions tabs show the student data', functio
 
     $collections = $page->viewData('badgeCollections');
     expect($collections)->toHaveCount(1)
-        ->and($collections[0]['good'])->toBe(6)
-        ->and($collections[0]['damaged'])->toBe(3);
+        ->and($collections[0]['good'])->toBe(7)
+        ->and($collections[0]['damaged'])->toBe(2);
 
     expect($page->viewData('badgeDistributions'))->toHaveCount(2)
         ->and(collect($page->viewData('badgeDeductionRows'))->sum(fn ($r) => $r['item']->shortage_quantity))->toBe(1);

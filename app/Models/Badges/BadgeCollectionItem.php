@@ -11,7 +11,7 @@ class BadgeCollectionItem extends Model
 {
     protected $fillable = [
         'round_id', 'student_id', 'distribution_id', 'badge_type_id',
-        'distributed_quantity', 'collected_quantity', 'status', 'notes',
+        'distributed_quantity', 'collected_quantity', 'damaged_quantity', 'status', 'notes',
     ];
 
     protected $casts = ['status' => CollectionItemStatus::class];

@@ -241,6 +241,7 @@ class BadgeCollectionService
                         'badge_type_id'      => (int) $typeId,
                         'distributed_quantity' => $remaining,
                         'collected_quantity' => $collected,
+                        'damaged_quantity'   => $d,
                         'status'             => $collected === 0
                             ? CollectionItemStatus::NotCollected->value
                             : ($d > 0 ? CollectionItemStatus::Damaged->value : CollectionItemStatus::fromQuantities($remaining, $collected)->value),
@@ -309,8 +310,8 @@ class BadgeCollectionService
                 'types' => $items->groupBy('badge_type_id')->map(fn ($typeItems, $typeId) => [
                     'type' => $typeItems->first()->badgeType,
                     'distributed' => (int) $typeItems->sum('distributed_quantity'),
-                    'good' => (int) $typeItems->sum('collected_quantity') - (int) $typeItems->where('status', CollectionItemStatus::Damaged->value)->sum('collected_quantity'),
-                    'damaged' => (int) $typeItems->where('status', CollectionItemStatus::Damaged->value)->sum('collected_quantity'),
+                    'good' => (int) $typeItems->sum('collected_quantity') - (int) $typeItems->sum('damaged_quantity'),
+                    'damaged' => (int) $typeItems->sum('damaged_quantity'),
                     'owed_deducted' => (int) ($deducted[$studentId . ':' . $typeId] ?? 0),
                     'entitled' => (int) ($entitlementTotals[$studentId . ':' . $typeId]['entitled'] ?? 0),
                     'delivered' => (int) ($entitlementTotals[$studentId . ':' . $typeId]['delivered'] ?? 0),
@@ -427,6 +428,7 @@ class BadgeCollectionService
 
             $item->update([
                 'collected_quantity' => $collected,
+                'damaged_quantity'   => $resolvedStatus === CollectionItemStatus::Damaged ? $collected : 0,
                 'status'             => $resolvedStatus->value,
                 'notes'              => $notes,
             ]);
