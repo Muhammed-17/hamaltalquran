@@ -348,7 +348,7 @@ $columnsCount = 12;
         </div>
 
         {{-- ─── Monthly Revenue Chart ─────────────────────────────── --}}
-        @can('view subscriptions chart')
+        @role('admin')
         @if($monthlyRevenue->isNotEmpty())
         <div x-data="{ open: true }" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
 
@@ -412,7 +412,7 @@ $columnsCount = 12;
 
         </div>
         @endif
-        @endcan
+        @endrole
 
         {{-- ─── Subscriptions Table ───────────────────────────────── --}}
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -731,7 +731,7 @@ $columnsCount = 12;
             }, 500);
         }
 
-        @can('view subscriptions chart')
+        @role('admin')
         @if($monthlyRevenue->isNotEmpty())
             (function() {
                 const raw = @json($monthlyRevenue);
@@ -905,7 +905,7 @@ $columnsCount = 12;
                 });
             })();
         @endif
-        @endcan
+        @endrole
 
         function subscriptionFilters() {
             return {

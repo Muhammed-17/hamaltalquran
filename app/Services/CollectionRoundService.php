@@ -31,7 +31,7 @@ class CollectionRoundService
 
         $subscriptions = Subscription::uncollected()
             ->where('circle_id', $circleId)
-            ->where('month', $monthStart)
+            ->whereDate('month', $monthStart)
             ->with(['collectedBy:id,name', 'student:id,name'])
             ->get();
 
@@ -68,7 +68,7 @@ class CollectionRoundService
         $monthStart = $this->parseMonth($periodMonth);
 
         $lastRound = CollectionRound::where('circle_id', $circleId)
-            ->where('period_month', $monthStart)
+            ->whereDate('period_month', $monthStart)
             ->max('round_number');
 
         return $lastRound ? ($lastRound + 1) : 1;
@@ -82,7 +82,7 @@ class CollectionRoundService
         $monthStart = $this->parseMonth($periodMonth);
 
         return CollectionRound::where('circle_id', $circleId)
-            ->where('period_month', $monthStart)
+            ->whereDate('period_month', $monthStart)
             ->orderBy('round_number', 'asc')
             ->get([
                 'id',
@@ -105,7 +105,7 @@ class CollectionRoundService
             return $circles;
         }
 
-        $pendingCircleIds = CollectionRound::where('period_month', $monthStart)
+        $pendingCircleIds = CollectionRound::whereDate('period_month', $monthStart)
             ->where('status', 'pending')
             ->pluck('circle_id');
 
@@ -138,7 +138,16 @@ class CollectionRoundService
             throw new \InvalidArgumentException('بعض الاشتراكات المحددة غير موجودة في المستحقات الحالية لهذه الحلقة والشهر.');
         }
 
-        // 3. حماية من حالة فارغة
+        // 3. لا جولة معلّقة ثانية لنفس الحلقة والشهر (نفس قاعدة صفحة الإنشاء)
+        $pendingExists = CollectionRound::where('circle_id', $data['circle_id'])
+            ->whereDate('period_month', $this->parseMonth($data['period_month']))
+            ->where('status', 'pending')
+            ->exists();
+        if ($pendingExists) {
+            throw new \InvalidArgumentException('توجد جولة تحصيل معلّقة لهذه الحلقة في هذا الشهر؛ أكّدها أو احذفها أولًا.');
+        }
+
+        // 4. حماية من حالة فارغة
         if (empty($selectedSubscriptionIds)) {
             throw new \InvalidArgumentException('لا توجد اشتراكات محدَّدة لإنشاء التحصيل');
         }
@@ -177,7 +186,7 @@ class CollectionRoundService
                 'center_id'       => $centerId,
                 'circle_id'       => $data['circle_id'],
                 'round_number'    => $roundNumber,
-                'period_month'    => $this->parseMonth($data['period_month']),
+                'period_month'    => $this->parseMonth($data['period_month'])->toDateString(),
                 'total_amount'    => $data['total_amount'],
                 'students_count'  => $studentsCount,
                 'status'          => 'pending',

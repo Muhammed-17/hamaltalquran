@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CollectionRoundController;
 
-Route::middleware(['auth','verified','permission:view collection rounds'])->group(function () {
+Route::middleware(['auth','verified','role:admin|manager|supervisor'])->group(function () {
 
     // ─── قائمة التحصيلات ───
     Route::get('/collection-rounds', [CollectionRoundController::class, 'index'])

@@ -18,7 +18,7 @@ class StudentWeeklyFollowupPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view student weekly followups');
+        return $user->hasAnyRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher']);
     }
 
     /**
@@ -26,7 +26,7 @@ class StudentWeeklyFollowupPolicy
      */
     public function view(User $user, StudentWeeklyFollowup $studentWeeklyFollowup): bool
     {
-        if (!$user->can('view student weekly followups')) {
+        if (!$user->hasAnyRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher'])) {
             return false;
         }
 

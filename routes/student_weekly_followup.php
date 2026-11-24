@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\StudentWeeklyFollowupController;
 use App\Models\StudentWeeklyFollowup;
 
-Route::middleware(['auth', 'verified', 'permission:view student weekly followups'])->group(function () {
+Route::middleware(['auth', 'verified', 'role:admin|general_manager|manager|supervisor|teacher'])->group(function () {
 
     // Explicit model binding for individual plans
     Route::model('studentWeeklyFollowup', StudentWeeklyFollowup::class);

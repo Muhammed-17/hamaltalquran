@@ -140,12 +140,12 @@
                 </a>
                 @endrole
 
-                @can('view collection rounds')
+                @role('admin|manager|supervisor')
                 <a href="{{ route('collection-rounds.index') }}"
                     class="block px-4 py-2 rounded-lg {{ request()->routeIs('collection-rounds.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">
                     تحصيل الاشتراكات
                 </a>
-                @endcan
+                @endrole
 
                 {{-- قسم الأوسمة --}}
                 @canany(['badges.entitlements.view', 'badges.shortages.view'])
@@ -187,7 +187,7 @@
                 }
                 @endphp
 
-                @canany(['view student weekly followups', 'view behavioral notes'])
+                @if(auth()->user()->hasAnyRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher']) || auth()->user()->can('view behavioral notes'))
                 <div x-data="{ open: {{ request()->routeIs(['student-weekly-followups.*', 'group-session-plans.*', 'behavioral-notes.*']) ? 'true' : 'false' }} }" class="space-y-1">
                     <button @click="open = !open"
                         class="w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-[#0d7a48] transition-colors focus:outline-none {{ request()->routeIs(['student-weekly-followups.*', 'group-session-plans.*', 'behavioral-notes.*']) ? 'bg-[#0d7a48]' : '' }}">
@@ -200,23 +200,23 @@
                     </button>
 
                     <div x-show="open" x-cloak class="pr-3 space-y-1 border-r border-white/10 mr-1">
-                        @can('view student weekly followups')
+                        @role('admin|general_manager|manager|supervisor|teacher')
                         @if($canSeeGroupFollowup)
                         <a href="{{ route('student-weekly-followups.index-group') }}"
                             class="block px-4 py-2 rounded-lg text-[13px] {{ request()->routeIs('student-weekly-followups.index-group') ? 'bg-[#0d7a48] font-bold' : 'hover:bg-[#0d7a48]' }}">
                             المتابعة الجماعية
                         </a>
                         @endif
-                        @endcan
+                        @endrole
 
-                        @can('view student weekly followups')
+                        @role('admin|general_manager|manager|supervisor|teacher')
                         @if($canSeeIndividualFollowup)
                         <a href="{{ route('student-weekly-followups.index-individual') }}"
                             class="block px-4 py-2 rounded-lg text-[13px] {{ request()->routeIs('student-weekly-followups.index-individual') ? 'bg-[#0d7a48] font-bold' : 'hover:bg-[#0d7a48]' }}">
                             المتابعة الفردية
                         </a>
                         @endif
-                        @endcan
+                        @endrole
 
                         @can('view behavioral notes')
                         <a href="{{ route('behavioral-notes.index') }}"
@@ -226,7 +226,7 @@
                         @endcan
                     </div>
                 </div>
-                @endcanany
+                @endif
 
                 <!-- ═══════════════════════════════════════════════════════════════ -->
 

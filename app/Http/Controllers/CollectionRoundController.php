@@ -522,6 +522,12 @@ class CollectionRoundController extends Controller
             'period_month' => 'required|date_format:Y-m',
         ]);
 
+        // حلقات مستخدم آخر تُعرض فقط للإدارة العليا (قائمة المنشئين)؛ غيرهم لأنفسهم فقط
+        if ((int) $validated['user_id'] !== (int) Auth::id()
+            && ! Auth::user()->hasAnyRole(['admin', 'general_manager'])) {
+            abort(403, 'ليس لديك صلاحية لعرض حلقات مستخدم آخر.');
+        }
+
         $user = User::findOrFail($validated['user_id']);
 
         $circles = $this->access->accessibleCircles($user)->get();

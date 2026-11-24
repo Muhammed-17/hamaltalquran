@@ -36,7 +36,7 @@
                     <td class="px-4 py-3 text-gray-500 text-xs">{{ $batch->created_at->format('Y-m-d H:i') }}</td>
                     <td class="px-4 py-3">
                         <div class="flex items-center justify-center gap-1">
-                            @can('view student weekly followups')
+                            @role('admin|general_manager|manager|supervisor|teacher')
                             <a href="{{ route('student-weekly-followups.show-group', $batch->batch_id) }}"
                                 class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100 transition-colors"
                                 title="عرض">
@@ -45,7 +45,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                 </svg>
                             </a>
-                            @endcan
+                            @endrole
                             @can('edit student weekly followups')
                             <a href="{{ route('student-weekly-followups.edit-group', $batch->batch_id) }}"
                                 class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors"
@@ -137,7 +137,7 @@
                     </td>
                     <td class="px-4 py-3">
                         <div class="flex items-center justify-center gap-1">
-                            @can('view student weekly followups')
+                            @role('admin|general_manager|manager|supervisor|teacher')
                             <a href="{{ route('student-weekly-followups.show', $plan) }}"
                                 class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100 transition-colors"
                                 title="عرض">
@@ -146,7 +146,7 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                 </svg>
                             </a>
-                            @endcan
+                            @endrole
                             @can('edit student weekly followups')
                             <a href="{{ route('student-weekly-followups.edit-individual', $plan) }}"
                                 class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors"

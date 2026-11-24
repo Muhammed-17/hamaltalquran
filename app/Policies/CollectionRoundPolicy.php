@@ -12,7 +12,7 @@ class CollectionRoundPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->can('view collection rounds');
+        return $user->hasAnyRole(['admin', 'manager', 'supervisor']);
     }
 
     public function view(User $user, CollectionRound $round): bool
@@ -21,7 +21,7 @@ class CollectionRoundPolicy
             return true;
         }
 
-        if (! $user->can('view collection rounds')) {
+        if (! $user->hasAnyRole(['admin', 'manager', 'supervisor'])) {
             return false;
         }
 

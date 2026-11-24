@@ -45,14 +45,12 @@ class PermissionSeeder extends Seeder
             'create subscriptions'        => ['تسجيل دفع اشتراك', 'subscriptions'],
             'edit subscriptions'          => ['تعديل الاشتراكات', 'subscriptions'],
             'delete subscriptions'        => ['حذف سندات الاشتراكات', 'subscriptions'],
-            'view subscriptions chart'    => ['عرض رسوم الاشتراكات', 'subscriptions'],
             'notify unpaid subscriptions' => ['إشعار أولياء الأمور بالاشتراكات المتأخرة', 'subscriptions'],
             'transfer subscriptions'      => ['تحويل الاشتراكات', 'subscriptions'],
 
             // ─────────────────────────────────────────────────────────
             // التحصيلات (collection rounds)
             // ─────────────────────────────────────────────────────────
-            'view collection rounds'      => ['عرض التحصيل', 'collection rounds'],
             'create collection rounds'    => ['إنشاء تحصيل', 'collection rounds'],
             'edit collection rounds'      => ['تعديل التحصيل', 'collection rounds'],
             'delete collection rounds'    => ['حذف التحصيل', 'collection rounds'],
@@ -61,7 +59,6 @@ class PermissionSeeder extends Seeder
             // ─────────────────────────────────────────────────────────
             // متابعة الطلاب الأسبوعية (student weekly followups)
             // ─────────────────────────────────────────────────────────
-            'view student weekly followups'     => ['عرض متابعة الطلاب الأسبوعية', 'student weekly followups'],
             'create student weekly followups'   => ['إنشاء متابعة الطلاب الأسبوعية', 'student weekly followups'],
             'edit student weekly followups'     => ['تعديل متابعة الطلاب الأسبوعية', 'student weekly followups'],
             'delete student weekly followups'   => ['حذف متابعة الطلاب الأسبوعية', 'student weekly followups'],
@@ -162,9 +159,7 @@ class PermissionSeeder extends Seeder
                 'delete subscriptions',
                 'notify unpaid subscriptions',
                 'transfer subscriptions',
-                'view subscriptions chart',
                 // collection rounds
-                'view collection rounds',
                 'create collection rounds',
                 'edit collection rounds',
                 'delete collection rounds',
@@ -174,7 +169,6 @@ class PermissionSeeder extends Seeder
                 'edit group session plans',
                 'delete group session plans',
                 // student weekly followups
-                'view student weekly followups',
                 'create student weekly followups',
                 'edit student weekly followups',
                 'delete student weekly followups',
@@ -237,13 +231,11 @@ class PermissionSeeder extends Seeder
                 'delete subscriptions',
                 'transfer subscriptions',
                 'notify unpaid subscriptions',
-                'view subscriptions chart',
                 // group session plans
                 'view group session plans',
                 'edit group session plans',
                 'delete group session plans',
                 // student weekly followups
-                'view student weekly followups',
                 'create student weekly followups',
                 'edit student weekly followups',
                 'delete student weekly followups',
@@ -285,10 +277,8 @@ class PermissionSeeder extends Seeder
                 'delete subscriptions',
                 'notify unpaid subscriptions',
                 'transfer subscriptions',
-                'view subscriptions chart',
                 // collection rounds
                 'create collection rounds',
-                'view collection rounds',
                 'edit collection rounds',
                 'delete collection rounds',
                 'confirm collection rounds',
@@ -297,7 +287,6 @@ class PermissionSeeder extends Seeder
                 'edit group session plans',
                 'delete group session plans',
                 // student weekly followups
-                'view student weekly followups',
                 'create student weekly followups',
                 'edit student weekly followups',
                 'delete student weekly followups',
@@ -339,14 +328,12 @@ class PermissionSeeder extends Seeder
                 'transfer subscriptions',
                 // collection rounds
                 'create collection rounds',
-                'view collection rounds',
                 'confirm collection rounds',
                 // group session plans
                 'view group session plans',
                 'edit group session plans',
                 'delete group session plans',
                 // student weekly followups
-                'view student weekly followups',
                 'create student weekly followups',
                 'edit student weekly followups',
                 'delete student weekly followups',
@@ -383,7 +370,6 @@ class PermissionSeeder extends Seeder
                 // group session plans
                 'view group session plans',
                 // student weekly followups
-                'view student weekly followups',
                 'create student weekly followups',
                 'edit student weekly followups',
                 'delete student weekly followups',

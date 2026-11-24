@@ -234,7 +234,7 @@ class SubscriptionController extends Controller
                     }
                 });
 
-            if ($user->can('view subscriptions chart')) {
+            if ($user->hasRole('admin')) {
 
                 $monthlyRevenue = (clone $statsBaseQuery)
                     ->selectRaw(SqlExpressions::monthKey('paid_at') . " as month_label, SUM(amount) as total")
