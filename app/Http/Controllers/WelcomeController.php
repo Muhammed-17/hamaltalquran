@@ -22,7 +22,9 @@ class WelcomeController extends Controller
             'sliderItems' => $media->filter(fn (WelcomeMediaItem $item) => $item->type === WelcomeMediaType::Image && $item->in_slider)->filter($hasUsableImage)->values(),
             'galleryItems' => $media->filter(fn (WelcomeMediaItem $item) => $item->type === WelcomeMediaType::Image && $item->in_gallery)->filter($hasUsableImage)->values(),
             'videoItems' => $media->where('type', WelcomeMediaType::Video)
-                ->filter(fn (WelcomeMediaItem $item) => $item->youtubeIdValue() !== null)
+                ->filter(fn (WelcomeMediaItem $item) => $item->isLocalVideo()
+                    ? Storage::disk('public')->exists($item->video_path)
+                    : $item->youtubeIdValue() !== null)
                 ->values(),
         ]);
     }

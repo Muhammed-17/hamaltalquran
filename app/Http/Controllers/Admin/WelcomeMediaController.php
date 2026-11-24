@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\WelcomeMediaType;
+use App\Enums\WelcomeVideoOrientation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreWelcomeMediaRequest;
 use App\Http\Requests\Admin\UpdateWelcomeMediaRequest;
@@ -77,10 +78,33 @@ class WelcomeMediaController extends Controller
         ];
 
         if ($type === WelcomeMediaType::Video) {
-            $data['video_url'] = $validated['video_url'];
             $data['image_path'] = null;
             if ($existing?->image_path) {
                 Storage::disk('public')->delete($existing->image_path);
+            }
+
+            $source = $request->input('video_source', 'link');
+            if ($source === 'file') {
+                $data['video_url'] = null;
+                if ($request->hasFile('video_file')) {
+                    if ($existing?->video_path) {
+                        Storage::disk('public')->delete($existing->video_path);
+                    }
+                    $data['video_path'] = $request->file('video_file')->store('welcome-media/videos', 'public');
+                } elseif ($existing) {
+                    $data['video_path'] = $existing->video_path;
+                }
+                $data['orientation'] = $validated['orientation'] ?? WelcomeVideoOrientation::Landscape->value;
+            } else {
+                $data['video_path'] = null;
+                if ($existing?->video_path) {
+                    Storage::disk('public')->delete($existing->video_path);
+                }
+                $data['video_url'] = $validated['video_url'] ?? $existing?->video_url;
+                // روابط Shorts عمودية بطبيعتها
+                $data['orientation'] = ($data['video_url'] && str_contains($data['video_url'], '/shorts/'))
+                    ? WelcomeVideoOrientation::Portrait->value
+                    : ($validated['orientation'] ?? WelcomeVideoOrientation::Landscape->value);
             }
         } else {
             $data['video_url'] = null;

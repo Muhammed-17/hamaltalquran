@@ -60,7 +60,7 @@
                                         <div>
                                             <div class="font-bold text-gray-800 text-sm">{{ $item->title ?: '— بدون عنوان —' }}</div>
                                             @if($item->type === \App\Enums\WelcomeMediaType::Video)
-                                                <div class="text-[11px] text-gray-400 mt-0.5" dir="ltr">{{ Str::limit($item->video_url, 45) }}</div>
+                                                <div class="text-[11px] text-gray-400 mt-0.5" dir="ltr">{{ Str::limit($item->isLocalVideo() ? basename($item->video_path) . ' (محلي)' : $item->video_url, 45) }}</div>
                                             @endif
                                         </div>
                                     </div>

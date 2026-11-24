@@ -107,7 +107,7 @@
                           onTouchEnd(e) { if (this.touchX === null) return; const dx = e.changedTouches[0].clientX - this.touchX; if (Math.abs(dx) > 40) { dx > 0 ? this.next() : this.prev() } this.touchX = null } }"
                 x-init="start()" @mouseenter="stop()" @mouseleave="start()"
                 @touchstart="onTouchStart($event)" @touchend="onTouchEnd($event)">
-                <div class="relative h-[320px] md:h-[480px]">
+                <div class="relative aspect-[4/3] md:aspect-[16/8]">
                     @foreach($sliderItems as $slide)
                         <div class="absolute inset-0 transition-opacity duration-700" x-show="active === {{ $loop->index }}" x-cloak>
                             <img src="{{ $slide->imageUrl() }}" alt="{{ $slide->title }}" class="w-full h-full object-cover"
@@ -149,7 +149,7 @@
                 @foreach($galleryItems as $photo)
                     <button type="button" @click="lightbox = '{{ $photo->imageUrl() }}'" class="group relative rounded-3xl overflow-hidden shadow-sm focus:outline-none">
                         <img src="{{ $photo->imageUrl() }}" alt="{{ $photo->title }}" loading="lazy"
-                            class="w-full h-44 md:h-52 object-cover transition duration-500 group-hover:scale-105">
+                            class="w-full aspect-[4/3] object-cover transition duration-500 group-hover:scale-105">
                         @if($photo->title)
                             <span class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent text-white text-sm font-bold text-right p-3 pt-8">{{ $photo->title }}</span>
                         @endif
@@ -176,21 +176,27 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 @foreach($videoItems as $video)
-                    @if($video->youtubeEmbedUrl())
-                        <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100" x-data="{ playing: false }">
-                            <div class="relative aspect-video bg-black">
+                    @if($video->isLocalVideo() || $video->youtubeEmbedUrl())
+                        <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 {{ $video->orientation === \App\Enums\WelcomeVideoOrientation::Portrait ? 'max-w-[320px] w-full mx-auto' : '' }}" x-data="{ playing: false }">
+                            <div class="relative {{ $video->orientation?->aspectClass() ?? 'aspect-video' }} bg-black">
                                 <template x-if="!playing">
                                     <button type="button" @click="playing = true" class="absolute inset-0 w-full h-full group">
-                                        <img src="{{ $video->youtubeThumbnailUrl() }}" alt="{{ $video->title }}" loading="lazy" class="w-full h-full object-cover opacity-90">
+                                        @if(!$video->isLocalVideo())
+                                            <img src="{{ $video->youtubeThumbnailUrl() }}" alt="{{ $video->title }}" loading="lazy" class="w-full h-full object-cover opacity-90">
+                                        @endif
                                         <span class="absolute inset-0 flex items-center justify-center">
                                             <span class="w-16 h-16 rounded-full bg-red-600 text-white flex items-center justify-center text-2xl shadow-xl transition group-hover:scale-110">▶</span>
                                         </span>
                                     </button>
                                 </template>
                                 <template x-if="playing">
-                                    <iframe src="{{ $video->youtubeEmbedUrl() }}&autoplay=1" class="absolute inset-0 w-full h-full"
-                                        title="{{ $video->title }}" frameborder="0" allowfullscreen
-                                        allow="accelerometer; autoplay; encrypted-media; picture-in-picture"></iframe>
+                                    @if($video->isLocalVideo())
+                                        <video src="{{ $video->videoFileUrl() }}" class="absolute inset-0 w-full h-full" controls autoplay playsinline></video>
+                                    @else
+                                        <iframe src="{{ $video->youtubeEmbedUrl() }}&autoplay=1" class="absolute inset-0 w-full h-full"
+                                            title="{{ $video->title }}" frameborder="0" allowfullscreen
+                                            allow="accelerometer; autoplay; encrypted-media; picture-in-picture"></iframe>
+                                    @endif
                                 </template>
                             </div>
                             @if($video->title)

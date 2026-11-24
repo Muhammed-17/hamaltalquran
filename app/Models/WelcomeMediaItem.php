@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\WelcomeMediaType;
+use App\Enums\WelcomeVideoOrientation;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
@@ -16,12 +17,15 @@ class WelcomeMediaItem extends Model
         'title',
         'image_path',
         'video_url',
+        'video_path',
+        'orientation',
         'sort_order',
         'is_active',
     ];
 
     protected $casts = [
         'type' => WelcomeMediaType::class,
+        'orientation' => WelcomeVideoOrientation::class,
         'in_slider' => 'boolean',
         'in_gallery' => 'boolean',
         'is_active' => 'boolean',
@@ -34,6 +38,9 @@ class WelcomeMediaItem extends Model
         static::deleting(function (WelcomeMediaItem $item) {
             if ($item->image_path) {
                 Storage::disk('public')->delete($item->image_path);
+            }
+            if ($item->video_path) {
+                Storage::disk('public')->delete($item->video_path);
             }
         });
     }
@@ -90,6 +97,17 @@ class WelcomeMediaItem extends Model
         }
 
         return null;
+    }
+
+    /** هل الفيديو ملف محلي مرفوع؟ */
+    public function isLocalVideo(): bool
+    {
+        return $this->type === WelcomeMediaType::Video && !empty($this->video_path);
+    }
+
+    public function videoFileUrl(): ?string
+    {
+        return $this->video_path ? Storage::disk('public')->url($this->video_path) : null;
     }
 
     public function youtubeIdValue(): ?string

@@ -162,3 +162,51 @@ test('one uploaded image can appear in both the slider and the gallery', functio
     $page->assertSee('من أجواء المركز')->assertSee('معرض الصور');
     expect(substr_count($page->getContent(), 'صورة مشتركة'))->toBeGreaterThanOrEqual(2);
 });
+
+/** ملف فيديو وهمي بترويسة MP4 حقيقية */
+function fakeVideoUpload(string $name): UploadedFile
+{
+    return UploadedFile::fake()->createWithContent($name, "\x00\x00\x00\x18ftypisom\x00\x00\x00\x00isomiso2");
+}
+
+test('local video upload, shorts orientation, and rendering', function () {
+    Storage::fake('public');
+    $admin = mediaAdmin();
+
+    // فيديو محلي مرفوع
+    $this->actingAs($admin)->post(route('welcome-media.store'), [
+        'type' => 'video', 'video_source' => 'file', 'title' => 'فيديو محلي',
+        'video_file' => fakeVideoUpload('clip.mp4'), 'orientation' => 'portrait', 'is_active' => 1,
+    ])->assertRedirect(route('welcome-media.index'));
+
+    $local = WelcomeMediaItem::where('title', 'فيديو محلي')->first();
+    expect($local)->not->toBeNull()
+        ->and($local->isLocalVideo())->toBeTrue()
+        ->and($local->orientation)->toBe(\App\Enums\WelcomeVideoOrientation::Portrait)
+        ->and(Storage::disk('public')->exists($local->video_path))->toBeTrue();
+
+    // رابط Shorts يُضبط عموديًا تلقائيًا
+    $this->actingAs($admin)->post(route('welcome-media.store'), [
+        'type' => 'video', 'video_source' => 'link', 'title' => 'ريلز',
+        'video_url' => 'https://www.youtube.com/shorts/dQw4w9WgXcQ', 'orientation' => 'landscape', 'is_active' => 1,
+    ])->assertRedirect(route('welcome-media.index'));
+    expect(WelcomeMediaItem::where('title', 'ريلز')->first()?->orientation)
+        ->toBe(\App\Enums\WelcomeVideoOrientation::Portrait);
+
+    // فيديو بلا مصدر صالح مرفوض
+    $this->actingAs($admin)->post(route('welcome-media.store'), [
+        'type' => 'video', 'video_source' => 'file', 'is_active' => 1,
+    ])->assertSessionHasErrors('video_file');
+
+    // العرض في صفحة الترحيب: المحلي بمشغله وبإطاره العمودي
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('فيديوهات المركز')
+        ->assertSee('فيديو محلي')
+        ->assertSee('aspect-[9/16]', false);
+
+    // حذف المحلي يمسح ملفه
+    $path = $local->video_path;
+    $this->actingAs($admin)->delete(route('welcome-media.destroy', $local));
+    expect(Storage::disk('public')->exists($path))->toBeFalse();
+});
