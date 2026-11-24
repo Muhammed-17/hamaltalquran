@@ -107,6 +107,23 @@ class WelcomeMediaController extends Controller
                     : ($validated['orientation'] ?? WelcomeVideoOrientation::Landscape->value);
             }
         } else {
+            // اتجاه الصورة: اختيار صريح، أو كشف تلقائي من أبعاد الملف المرفوع
+            $choice = $validated['image_orientation'] ?? 'auto';
+            if ($choice === 'auto') {
+                $detected = null;
+                if ($request->hasFile('image')) {
+                    $size = @getimagesize($request->file('image')->getRealPath());
+                    if ($size) {
+                        $detected = $size[0] >= $size[1]
+                            ? WelcomeVideoOrientation::Landscape->value
+                            : WelcomeVideoOrientation::Portrait->value;
+                    }
+                }
+                $data['orientation'] = $detected ?? $existing?->orientation?->value ?? WelcomeVideoOrientation::Landscape->value;
+            } else {
+                $data['orientation'] = $choice;
+            }
+
             $data['video_url'] = null;
             if ($request->hasFile('image')) {
                 if ($existing?->image_path) {

@@ -35,6 +35,17 @@
         @error('in_slider') <p class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p> @enderror
     </div>
 
+    {{-- اتجاه الصورة: تلقائي من أبعادها أو يدوي --}}
+    <div x-show="type === 'image'" x-cloak>
+        <label class="block text-xs font-bold text-gray-400 mb-1.5">اتجاه الصورة</label>
+        <select name="image_orientation" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
+            <option value="auto" @selected(old('image_orientation', $isEdit ? null : 'auto') === 'auto')>تلقائي (حسب أبعاد الصورة)</option>
+            <option value="landscape" @selected(old('image_orientation', $item->orientation?->value) === 'landscape')>أفقية (بالعرض)</option>
+            <option value="portrait" @selected(old('image_orientation', $item->orientation?->value) === 'portrait')>عمودية (بالطول)</option>
+        </select>
+        <p class="text-[11px] text-gray-400 mt-1">العمودية تظهر في المعرض بإطار طولي، وفي السلايدر كاملةً فوق خلفية مموّهة من نفسها بدل قصّها.</p>
+    </div>
+
     {{-- حقل الصورة --}}
     <div x-show="type !== 'video'">
         <label class="block text-xs font-bold text-gray-400 mb-1.5">الصورة {{ $isEdit ? '(اتركها فارغة للإبقاء على الحالية)' : '' }}</label>

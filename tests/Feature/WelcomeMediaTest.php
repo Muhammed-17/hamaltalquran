@@ -210,3 +210,40 @@ test('local video upload, shorts orientation, and rendering', function () {
     $this->actingAs($admin)->delete(route('welcome-media.destroy', $local));
     expect(Storage::disk('public')->exists($path))->toBeFalse();
 });
+
+/** صورة وهمية بأبعاد حقيقية (base64 لـ PNG صالح) */
+function fakeSizedImageUpload(string $name, string $base64): UploadedFile
+{
+    $path = sys_get_temp_dir() . '/' . uniqid('wm_', true) . '_' . $name;
+    file_put_contents($path, base64_decode($base64));
+
+    return new UploadedFile($path, $name, 'image/png', null, true);
+}
+
+test('image orientation is auto-detected from dimensions and drives the frames', function () {
+    Storage::fake('public');
+    $admin = mediaAdmin();
+    $portraitPng = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAADCAIAAAA2iEnWAAAAEElEQVR4nGPQWBAFRAwoFABGRwbNCkGu0AAAAABJRU5ErkJggg==';
+    $landscapePng = 'iVBORw0KGgoAAAANSUhEUgAAAAMAAAACCAIAAAASFvFNAAAAEElEQVR4nGPQWBAFQQxwFgBC4AbNTnEx9gAAAABJRU5ErkJggg==';
+
+    // صورة طولية تُكشف تلقائيًا
+    $this->actingAs($admin)->post(route('welcome-media.store'), [
+        'type' => 'image', 'in_slider' => 1, 'in_gallery' => 1, 'title' => 'طولية',
+        'image' => fakeSizedImageUpload('tall.png', $portraitPng), 'is_active' => 1,
+    ])->assertRedirect(route('welcome-media.index'));
+    $tall = WelcomeMediaItem::where('title', 'طولية')->first();
+    expect($tall?->orientation)->toBe(\App\Enums\WelcomeVideoOrientation::Portrait);
+
+    // اختيار يدوي يغلب الكشف التلقائي
+    $this->actingAs($admin)->post(route('welcome-media.store'), [
+        'type' => 'image', 'in_gallery' => 1, 'title' => 'طولية مفروضة عرضية', 'image_orientation' => 'landscape',
+        'image' => fakeSizedImageUpload('tall2.png', $portraitPng), 'is_active' => 1,
+    ])->assertRedirect(route('welcome-media.index'));
+    expect(WelcomeMediaItem::where('title', 'طولية مفروضة عرضية')->first()?->orientation)
+        ->toBe(\App\Enums\WelcomeVideoOrientation::Landscape);
+
+    // العرض: كل الإطارات موحّدة، والطولية تظهر كاملة فوق خلفية مموّهة في السلايدر والمعرض معًا
+    $page = $this->get('/')->assertOk();
+    $page->assertSee('object-contain', false)->assertSee('blur-2xl', false)->assertSee('blur-xl', false)
+        ->assertDontSee('gallery-mosaic', false);
+});
