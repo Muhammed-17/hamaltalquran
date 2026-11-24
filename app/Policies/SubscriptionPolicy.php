@@ -20,8 +20,7 @@ class SubscriptionPolicy
         if ($user->hasAnyRole(['admin', 'general_manager'])) return true;
 
         if ($user->hasRole('guardian')) {
-            return $user->can('view own subscriptions')
-                && $subscription->student?->guardian_id === $user->id;
+            return $subscription->student?->guardian_id === $user->id;
         }
 
         return $user->can('view subscriptions')

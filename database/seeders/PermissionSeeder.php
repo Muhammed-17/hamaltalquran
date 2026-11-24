@@ -19,56 +19,22 @@ class PermissionSeeder extends Seeder
             // ─────────────────────────────────────────────────────────
             // النظام واللوحة (system)
             // ─────────────────────────────────────────────────────────
-            'manage guardians'             => ['إدارة حسابات أولياء الأمور', 'system'],
             'edit profile'                => ['تعديل الملف الشخصي', 'system'],
-            'view reports'                => ['عرض التقارير', 'system'],
-            'export data'                 => ['تصدير البيانات', 'system'],
-
-            // ─────────────────────────────────────────────────────────
-            // المستخدمين (users)
-            // ─────────────────────────────────────────────────────────
-            'view users'                  => ['عرض المستخدمين', 'users'],
-            'create users'                => ['إضافة مستخدمين', 'users'],
-            'edit users'                  => ['تعديل المستخدمين', 'users'],
-            'delete users'                => ['حذف المستخدمين', 'users'],
-            'manage roles'                => ['إدارة الأدوار والصلاحيات', 'users'],
+            'view favorites'              => ['عرض المفضلة', 'students'],
 
             // ─────────────────────────────────────────────────────────
             // الحلقات (circles)
             // ─────────────────────────────────────────────────────────
-            'view circles'                => ['عرض الحلقات', 'circles'],
-            'create circles'              => ['إنشاء حلقات جديدة', 'circles'],
             'edit circles'                => ['تعديل الحلقات', 'circles'],
-            'delete circles'              => ['حذف الحلقات', 'circles'],
-
-            // ─────────────────────────────────────────────────────────
-            // المعلمين (teachers)
-            // ─────────────────────────────────────────────────────────
-            'view teachers'               => ['عرض المعلمين', 'teachers'],
-            'create teachers'             => ['إضافة معلمين', 'teachers'],
-            'edit teachers'               => ['تعديل بيانات المعلمين', 'teachers'],
-            'delete teachers'             => ['حذف معلمين', 'teachers'],
-            'toggle teacher status'       => ['تنشيط / إيقاف المعلم', 'teachers'],
 
             // ─────────────────────────────────────────────────────────
             // الطلاب (students)
             // ─────────────────────────────────────────────────────────
-            'view students'               => ['عرض الطلاب', 'students'],
-            'create students'             => ['إضافة طلاب', 'students'],
-            'edit students'               => ['تعديل بيانات الطلاب', 'students'],
-            'delete students'             => ['حذف طلاب', 'students'],
-            'assign student to circle'    => ['تسكين الطالب في حلقة', 'students'],
-            'manage student status'       => ['تحديث حالة الطالب', 'students'],
             // ─────────────────────────────────────────────────────────
             // الحضور والغياب (attendance)
             // ─────────────────────────────────────────────────────────
-            'view attendance'             => ['عرض سجلات الحضور', 'attendance'],
-            'view all teachers'           => ['عرض كل المعلمين (فلتر المسجل)', 'attendance'],
-            'create attendance'           => ['تسجيل حضور وغياب', 'attendance'],
-            'edit attendance'             => ['تعديل الحضور والغياب', 'attendance'],
-            'delete attendance'           => ['حذف الحضور والغياب', 'attendance'],
             'notify attendance'           => ['إشعار أولياء الأمور بالغياب', 'attendance'],
-            'view own attendance'         => ['عرض حضور الأبناء الشخصي', 'attendance'],
+            'view sequential absences'   => ['عرض الغيابات المتكررة', 'attendance'],
 
             // ─────────────────────────────────────────────────────────
             // الاشتراكات والمالية (subscriptions)
@@ -82,7 +48,6 @@ class PermissionSeeder extends Seeder
             'transfer subscriptions'      => ['تحويل الاشتراكات', 'subscriptions'],
             'manage subscription prices'  => ['إدارة وتحديد أسعار الاشتراكات', 'subscriptions'],
             'view subscription prices'    => ['عرض أسعار الاشتراكات', 'subscriptions'],
-            'view own subscriptions'      => ['عرض مدفوعات الأبناء الشخصية', 'subscriptions'],
 
             // ─────────────────────────────────────────────────────────
             // التحصيلات (collection rounds)
@@ -111,7 +76,6 @@ class PermissionSeeder extends Seeder
             // خطط الجلسات الجماعية (group session plans)
             // ─────────────────────────────────────────────────────────
             'view group session plans'    => ['عرض خطط الجلسات الجماعية', 'group session plans'],
-            'create group session plans'  => ['إنشاء خطط الجلسات الجماعية', 'group session plans'],
             'edit group session plans'    => ['تعديل خطط الجلسات الجماعية', 'group session plans'],
             'delete group session plans'  => ['حذف خطط الجلسات الجماعية', 'group session plans'],
 
@@ -187,40 +151,13 @@ class PermissionSeeder extends Seeder
         $rolesPermissions = [
             'admin' => [
                 // system
-                'manage guardians',
+                'view favorites',
+                'view sequential absences',
                 'edit profile',
-                'view reports',
-                'export data',
-                // users
-                'view users',
-                'create users',
-                'edit users',
-                'delete users',
-                'manage roles',
                 // circles
-                'view circles',
-                'create circles',
                 'edit circles',
-                'delete circles',
-                // teachers
-                'view teachers',
-                'create teachers',
-                'edit teachers',
-                'delete teachers',
-                'toggle teacher status',
                 // students
-                'view students',
-                'create students',
-                'edit students',
-                'delete students',
-                'assign student to circle',
-                'manage student status',
                 // attendance
-                'view attendance',
-                'view all teachers',
-                'create attendance',
-                'edit attendance',
-                'delete attendance',
                 'notify attendance',
                 // subscriptions
                 'view subscriptions',
@@ -240,7 +177,6 @@ class PermissionSeeder extends Seeder
                 'confirm collection rounds',
                 // group session plans
                 'view group session plans',
-                'create group session plans',
                 'edit group session plans',
                 'delete group session plans',
                 // student weekly followups
@@ -293,27 +229,13 @@ class PermissionSeeder extends Seeder
 
             'general_manager' => [
                 // system
-                'manage guardians',
+                'view favorites',
+                'view sequential absences',
                 'edit profile',
-                'view reports',
-                'export data',
-                // users
-                'view users',
                 // circles
-                'view circles',
                 'edit circles',
-                // teachers
-                'view teachers',
                 // students
-                'view students',
-                'assign student to circle',
-                'manage student status',
                 // attendance
-                'view attendance',
-                'view all teachers',
-                'create attendance',
-                'edit attendance',
-                'delete attendance',
                 'notify attendance',
                 // subscriptions
                 'view subscriptions',
@@ -325,7 +247,6 @@ class PermissionSeeder extends Seeder
                 'view subscriptions chart',
                 // group session plans
                 'view group session plans',
-                'create group session plans',
                 'edit group session plans',
                 'delete group session plans',
                 // student weekly followups
@@ -357,25 +278,13 @@ class PermissionSeeder extends Seeder
 
             'manager' => [
                 // system
+                'view favorites',
+                'view sequential absences',
                 'edit profile',
-                'manage guardians',
                 // circles
-                'view circles',
                 'edit circles',
-                // teachers
-                'view teachers',
                 // students
-                'view students',
-                'create students',
-                'edit students',
-                'assign student to circle',
-                'manage student status',
                 // attendance
-                'view attendance',
-                'view all teachers',
-                'create attendance',
-                'edit attendance',
-                'delete attendance',
                 'notify attendance',
                 // subscriptions
                 'view subscriptions',
@@ -393,7 +302,6 @@ class PermissionSeeder extends Seeder
                 'confirm collection rounds',
                 // group session plans
                 'view group session plans',
-                'create group session plans',
                 'edit group session plans',
                 'delete group session plans',
                 // student weekly followups
@@ -425,18 +333,13 @@ class PermissionSeeder extends Seeder
 
             'supervisor' => [
                 // system
+                'view favorites',
+                'view sequential absences',
                 'edit profile',
                 // circles
-                'view circles',
                 'edit circles',
                 // students
-                'view students',
-                'assign student to circle',
                 // attendance
-                'view attendance',
-                'view all teachers',
-                'create attendance',
-                'edit attendance',
                 // subscriptions
                 'view subscriptions',
                 'create subscriptions',
@@ -449,7 +352,6 @@ class PermissionSeeder extends Seeder
                 'confirm collection rounds',
                 // group session plans
                 'view group session plans',
-                'create group session plans',
                 'edit group session plans',
                 'delete group session plans',
                 // student weekly followups
@@ -476,14 +378,12 @@ class PermissionSeeder extends Seeder
 
             'teacher' => [
                 // system
+                'view favorites',
+                'view sequential absences',
                 'edit profile',
                 // students
-                'view students',
                 // circles
-                'view circles',
                 // attendance
-                'view attendance',
-                'create attendance',
                 // subscriptions
                 'view subscriptions',
                 'create subscriptions',
@@ -510,8 +410,6 @@ class PermissionSeeder extends Seeder
                 'edit profile',
                 // guardians
                 'view own children',
-                'view own attendance',
-                'view own subscriptions',
                 'view notifications',
             ],
         ];

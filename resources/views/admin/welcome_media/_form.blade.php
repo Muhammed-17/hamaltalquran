@@ -35,17 +35,6 @@
         @error('in_slider') <p class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p> @enderror
     </div>
 
-    {{-- اتجاه الصورة: تلقائي من أبعادها أو يدوي --}}
-    <div x-show="type === 'image'" x-cloak>
-        <label class="block text-xs font-bold text-gray-400 mb-1.5">اتجاه الصورة</label>
-        <select name="image_orientation" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-            <option value="auto" @selected(old('image_orientation', $isEdit ? null : 'auto') === 'auto')>تلقائي (حسب أبعاد الصورة)</option>
-            <option value="landscape" @selected(old('image_orientation', $item->orientation?->value) === 'landscape')>أفقية (بالعرض)</option>
-            <option value="portrait" @selected(old('image_orientation', $item->orientation?->value) === 'portrait')>عمودية (بالطول)</option>
-        </select>
-        <p class="text-[11px] text-gray-400 mt-1">العمودية تظهر في المعرض بإطار طولي، وفي السلايدر كاملةً فوق خلفية مموّهة من نفسها بدل قصّها.</p>
-    </div>
-
     {{-- حقل الصورة --}}
     <div x-show="type !== 'video'">
         <label class="block text-xs font-bold text-gray-400 mb-1.5">الصورة {{ $isEdit ? '(اتركها فارغة للإبقاء على الحالية)' : '' }}</label>
@@ -54,11 +43,12 @@
         @endif
         <input type="file" name="image" accept=".jpg,.jpeg,.png,.webp"
             class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-        <p class="text-[11px] text-gray-400 mt-1">الصيغ المسموحة: jpg وjpeg وpng وwebp — بحد أقصى 5 ميجا. يُفضّل WebP مضغوطة لسرعة الصفحة. المقاس المثالي للسلايدر 1600×900 (أفقي) — وكل الصور تُعرض داخل إطارات موحّدة النسبة وتُقصّ تلقائيًا لملئها، فتجنّب النصوص المهمة عند الحواف.</p>
+        <p class="text-[11px] text-gray-400 mt-1">الصيغ المسموحة: jpg وjpeg وpng وwebp — بحد أقصى 5 ميجا، ويُفضّل WebP مضغوطة لسرعة الصفحة.</p>
+        <p class="mt-2 rounded-xl p-3 text-xs font-bold leading-relaxed" style="background:#eef6ff;border:1px solid #cfe6ff;color:#075985">المقاسات المناسبة — السلايدر: 1600×900 (أفقي). المعرض الأفقي: 1200×900. المعرض العمودي: 900×1200. كل الصور تُعرض في إطارات موحّدة، فتجنّب النصوص المهمة عند الحواف.</p>
         @error('image') <p class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p> @enderror
     </div>
 
-    {{-- حقول الفيديو: المصدر (رابط يوتيوب أو ملف محلي) واتجاه العرض --}}
+    {{-- حقول الفيديو: المصدر (رابط يوتيوب أو ملف محلي) --}}
     <div x-show="type === 'video'" x-cloak class="space-y-4">
         <div>
             <span class="block text-xs font-bold text-gray-400 mb-2">مصدر الفيديو</span>
@@ -78,7 +68,7 @@
             <label class="block text-xs font-bold text-gray-400 mb-1.5">رابط فيديو يوتيوب</label>
             <input type="text" name="video_url" value="{{ old('video_url', $item->video_url) }}" dir="ltr"
                 class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm text-left" placeholder="https://www.youtube.com/watch?v=...">
-            <p class="text-[11px] text-gray-400 mt-1">يُقبل رابط المشاهدة أو المختصر youtu.be أو Shorts — لا يستهلك من مساحة الاستضافة شيئًا، وروابط Shorts تُعرض عمودية تلقائيًا.</p>
+            <p class="mt-2 rounded-xl p-3 text-xs font-bold leading-relaxed" style="background:#eef6ff;border:1px solid #cfe6ff;color:#075985">يُقبل رابط المشاهدة أو المختصر youtu.be أو Shorts — لا يستهلك من مساحة الاستضافة شيئًا. المقاسات المناسبة — الفيديو العادي: 1920×1080 (أفقي)، الريلز: 1080×1920 (عمودي).</p>
             @error('video_url') <p class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p> @enderror
         </div>
 
@@ -86,19 +76,11 @@
             <label class="block text-xs font-bold text-gray-400 mb-1.5">ملف الفيديو {{ $isEdit && $item->video_path ? '(يوجد ملف محفوظ — اتركه فارغًا للإبقاء عليه)' : '' }}</label>
             <input type="file" name="video_file" accept=".mp4,.webm"
                 class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-            <p class="text-[11px] text-gray-400 mt-1">mp4 أو webm بحد أقصى 100 ميجا — يُخزّن على الاستضافة نفسها ويستهلك من مساحتها وباندويثها عند كل مشاهدة.</p>
+            <p class="mt-2 rounded-xl p-3 text-xs font-bold leading-relaxed" style="background:#eef6ff;border:1px solid #cfe6ff;color:#075985">mp4 أو webm بحد أقصى 100 ميجا — يُخزّن على الاستضافة نفسها ويستهلك من مساحتها وباندويثها عند كل مشاهدة. المقاسات المناسبة — الفيديو العادي: 1920×1080 (أفقي)، الريلز: 1080×1920 (عمودي).</p>
             @error('video_file') <p class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p> @enderror
         </div>
 
-        <div>
-            <label class="block text-xs font-bold text-gray-400 mb-1.5">اتجاه العرض</label>
-            <select name="orientation" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
-                @foreach(\App\Enums\WelcomeVideoOrientation::cases() as $case)
-                    <option value="{{ $case->value }}" @selected(old('orientation', $item->orientation?->value ?? 'landscape') === $case->value)>{{ $case->label() }}</option>
-                @endforeach
-            </select>
-            <p class="text-[11px] text-gray-400 mt-1">اختر عموديًا لفيديوهات الريلز المصوّرة بالطول حتى تظهر بإطارها الصحيح بدل فراغات جانبية.</p>
-        </div>
+
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

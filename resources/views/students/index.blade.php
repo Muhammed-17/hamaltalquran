@@ -1,6 +1,6 @@
 @php
 // ✅ تحديد الأدوار مرة واحدة في PHP لاستخدامها في الـ View
-$canViewStudents = auth()->user()->can('view students');
+$canViewStudents = auth()->user()->hasRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher']);
 
 $sortLink = fn($field) => request()->fullUrlWithQuery([
 'sort' => $field,
@@ -23,7 +23,7 @@ $hasFilters = request()->anyFilled([
         {{-- Header --}}
         <div class="bg-[#0b3d2c] rounded-3xl p-6 lg:p-8 text-white relative overflow-hidden flex flex-col md:flex-row justify-between items-center shadow-xl gap-6">
             <div class="order-2 md:order-2 flex flex-wrap items-center gap-4 w-full md:w-auto">
-                @can('create students')
+                @role('admin')
                 <a href="{{ route('students.export', request()->query()) }}"
                     class="w-full md:w-auto px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all border border-white/20 active:scale-95">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -40,13 +40,7 @@ $hasFilters = request()->anyFilled([
                     مراجعة مستثناة
                 </a>
 
-                <a href="{{ route('favorites.index') }}"
-                    class="w-full md:w-auto px-6 py-3 bg-yellow-500/90 hover:bg-yellow-400 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all border border-white/20 active:scale-95">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                    </svg>
-                    المفضل
-                </a>
+                
 
                 <a href="{{ route('students.create') }}"
                     class="w-full md:w-auto px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-emerald-500/20 active:scale-95">
@@ -54,6 +48,15 @@ $hasFilters = request()->anyFilled([
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
                     جديد
+                </a>
+                @endrole
+                @can('view favorites')
+                <a href="{{ route('favorites.index') }}"
+                    class="w-full md:w-auto px-6 py-3 bg-yellow-500/90 hover:bg-yellow-400 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all border border-white/20 active:scale-95">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                    </svg>
+                    المفضل
                 </a>
                 @endcan
             </div>
@@ -290,6 +293,22 @@ $hasFilters = request()->anyFilled([
                                             d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
                                 </a>
+                                @endcan
+
+                                @can('delete', $student)
+                                <form method="POST" action="{{ route('students.destroy', $student) }}"
+                                    onsubmit="confirmDelete(event, { name: '{{ $student->name }}', type: 'الطالب' })"
+                                    class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-400 hover:text-red-600 transition" title="حذف الطالب">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5"
+                                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </form>
                                 @endcan
 
                                 @php

@@ -32,7 +32,7 @@ class UpdateCircleRequest extends FormRequest
             'type' => 'sometimes|required|string',
             'level' => 'sometimes|required|string',
 
-            'branch_id' => $this->user()->hasRole(['admin', 'general_manager'])
+            'branch_id' => $this->user()->hasRole('admin')
                 ? ['required', 'exists:branches,id', Rule::in($accessibleBranchIds)]
                 : ['sometimes', 'nullable', 'exists:branches,id', Rule::in($accessibleBranchIds)],
 

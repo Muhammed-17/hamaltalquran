@@ -53,6 +53,8 @@ class FavoriteController extends Controller
 
     public function index(Request $request)
     {
+        abort_unless($request->user()->can('view favorites'), 403);
+
         $user = $request->user();
         $access = app(UserAccessService::class);
         $teacher = $access->teacher($user);

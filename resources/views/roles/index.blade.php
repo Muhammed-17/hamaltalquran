@@ -207,21 +207,10 @@ $protectedRoles = ['admin', 'general_manager', 'manager', 'supervisor', 'teacher
                             <div id="role-{{ $role->id }}-{{ $group }}" class="grid grid-cols-2 md:grid-cols-4 gap-3">
                                 @foreach($groupPermissions as $permission)
                                 @php
-                                $isLocked = ($permission->name === 'manage roles' && $role->name === 'admin');
                                 $isChecked = in_array($permission->id, $role->permissions->pluck('id')->toArray());
                                 @endphp
 
-                                @if($isLocked)
-                                {{-- صلاحية مقفلة — تُرسَل دائماً ولا تظهر كـ checkbox --}}
-                                <input type="hidden" name="permissions[]" value="{{ $permission->id }}">
-                                <div class="flex items-center gap-3 p-3 bg-amber-50 rounded-xl border border-amber-100 opacity-75 cursor-not-allowed select-none">
-                                    <span class="text-amber-400 text-xs">🔒</span>
-                                    <span class="text-sm text-amber-700 font-medium">
-                                        {{ $permission->display_name ?? $permission->name }}
-                                    </span>
-                                </div>
-                                @else
-                                <label class="flex items-center gap-3 p-3 bg-gray-50 hover:bg-emerald-50/50 rounded-xl cursor-pointer transition-all select-none border border-transparent hover:border-emerald-100">
+                                                                <label class="flex items-center gap-3 p-3 bg-gray-50 hover:bg-emerald-50/50 rounded-xl cursor-pointer transition-all select-none border border-transparent hover:border-emerald-100">
                                     <input
                                         type="checkbox"
                                         name="permissions[]"
@@ -232,7 +221,6 @@ $protectedRoles = ['admin', 'general_manager', 'manager', 'supervisor', 'teacher
                                         {{ $permission->display_name ?? $permission->name }}
                                     </span>
                                 </label>
-                                @endif
 
                                 @endforeach
                             </div>

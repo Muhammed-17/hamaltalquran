@@ -17,7 +17,6 @@ class AppServiceProvider extends ServiceProvider
         \App\Models\Attendance::class => \App\Policies\AttendancePolicy::class,
         \App\Models\Subscription::class => \App\Policies\SubscriptionPolicy::class,
         \App\Models\Circle::class => \App\Policies\CirclePolicy::class,
-        \App\Models\User::class => \App\Policies\UserPolicy::class,
         \App\Models\SubscriptionPrice::class => \App\Policies\SubscriptionPricePolicy::class,
         \App\Models\GroupSessionPlan::class => \App\Policies\GroupSessionPlanPolicy::class,
         \App\Models\Teacher::class => \App\Policies\TeacherPolicy::class,

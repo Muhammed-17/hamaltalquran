@@ -57,7 +57,8 @@ beforeEach(function () {
     ];
 });
 
-test('session plan creation works for admin and general manager', function () {
+// إنشاء الحصص أصبح للأدمن فقط بقرار صاحب الموقع — المدير العام لم يعد ينشئ
+test('session plan creation works for admin only', function () {
     $this->actingAs($this->admin)->post(route('group-session-plans.store'), array_merge($this->planPayload, [
         'circle_id' => $this->circle->id,
     ]))->assertRedirect();
@@ -68,7 +69,7 @@ test('session plan creation works for admin and general manager', function () {
         'circle_id' => $this->foreignCircle->id, 'session_name' => 'جلسة المدير العام',
     ]))->assertRedirect();
 
-    expect(GroupSessionPlan::withoutGlobalScopes()->count())->toBe(2);
+    expect(GroupSessionPlan::withoutGlobalScopes()->count())->toBe(1);
 });
 
 test('session plans index lists the plans and filters by circle', function () {
@@ -181,14 +182,14 @@ test('supervisor cannot create or move session plans outside supervised branches
     $denied->assertSessionMissing('errors');
     expect(GroupSessionPlan::withoutGlobalScopes()->count())->toBe(0);
 
-    // حلقة فرعه: ينجح
+    // وحلقة فرعه أيضًا: الإنشاء أصبح للأدمن فقط بقرار صاحب الموقع
     $this->actingAs($supUser)->post(route('group-session-plans.store'), array_merge($this->planPayload, [
         'circle_id' => $this->circle->id,
     ]))->assertRedirect();
-    expect(GroupSessionPlan::withoutGlobalScopes()->count())->toBe(1);
+    expect(GroupSessionPlan::withoutGlobalScopes()->count())->toBe(0);
 
-    // نقلها لحلقة غريبة عبر التعديل: يُرفض وتبقى مكانها
-    $plan = GroupSessionPlan::withoutGlobalScopes()->first();
+    // نقل خطة موجودة لحلقة غريبة عبر التعديل: يُرفض وتبقى مكانها
+    $plan = GroupSessionPlan::create(array_merge($this->planPayload, ['circle_id' => $this->circle->id]));
     $move = $this->actingAs($supUser)->put(route('group-session-plans.update', $plan), array_merge($this->planPayload, [
         'circle_id' => $this->foreignCircle->id,
     ]));

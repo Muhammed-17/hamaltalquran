@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\WelcomeMediaType;
-use App\Enums\WelcomeVideoOrientation;
 use App\Models\WelcomeMediaItem;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -34,8 +33,6 @@ class StoreWelcomeMediaRequest extends FormRequest
                 }
             }],
             'video_file' => ['nullable', 'file', 'mimes:mp4,webm', 'max:102400'],
-            'orientation' => ['nullable', Rule::enum(WelcomeVideoOrientation::class)],
-            'image_orientation' => ['nullable', Rule::in(['auto', 'landscape', 'portrait'])],
             'in_slider' => ['nullable', 'boolean'],
             'in_gallery' => ['nullable', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],

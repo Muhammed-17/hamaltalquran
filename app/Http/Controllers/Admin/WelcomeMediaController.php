@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\WelcomeMediaType;
-use App\Enums\WelcomeVideoOrientation;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreWelcomeMediaRequest;
 use App\Http\Requests\Admin\UpdateWelcomeMediaRequest;
@@ -94,36 +93,14 @@ class WelcomeMediaController extends Controller
                 } elseif ($existing) {
                     $data['video_path'] = $existing->video_path;
                 }
-                $data['orientation'] = $validated['orientation'] ?? WelcomeVideoOrientation::Landscape->value;
             } else {
                 $data['video_path'] = null;
                 if ($existing?->video_path) {
                     Storage::disk('public')->delete($existing->video_path);
                 }
                 $data['video_url'] = $validated['video_url'] ?? $existing?->video_url;
-                // روابط Shorts عمودية بطبيعتها
-                $data['orientation'] = ($data['video_url'] && str_contains($data['video_url'], '/shorts/'))
-                    ? WelcomeVideoOrientation::Portrait->value
-                    : ($validated['orientation'] ?? WelcomeVideoOrientation::Landscape->value);
             }
         } else {
-            // اتجاه الصورة: اختيار صريح، أو كشف تلقائي من أبعاد الملف المرفوع
-            $choice = $validated['image_orientation'] ?? 'auto';
-            if ($choice === 'auto') {
-                $detected = null;
-                if ($request->hasFile('image')) {
-                    $size = @getimagesize($request->file('image')->getRealPath());
-                    if ($size) {
-                        $detected = $size[0] >= $size[1]
-                            ? WelcomeVideoOrientation::Landscape->value
-                            : WelcomeVideoOrientation::Portrait->value;
-                    }
-                }
-                $data['orientation'] = $detected ?? $existing?->orientation?->value ?? WelcomeVideoOrientation::Landscape->value;
-            } else {
-                $data['orientation'] = $choice;
-            }
-
             $data['video_url'] = null;
             if ($request->hasFile('image')) {
                 if ($existing?->image_path) {

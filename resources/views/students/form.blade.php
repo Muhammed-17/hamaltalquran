@@ -1050,7 +1050,7 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            @can('edit students')
+            @role('admin')
             <div class="space-y-2">
                 <label class="block text-sm font-bold text-gray-700">حالة الطالب</label>
                 <select name="status" data-field="status" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm">
@@ -1065,9 +1065,9 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
             </div>
             @else
             <input type="hidden" name="status" value="{{ old('status', $student->status?->value ?? 'مقيد') }}">
-            @endcan
+            @endrole
 
-            @can('manage student status')
+            @role('admin')
             <div class="space-y-2">
                 <label class="block text-sm font-bold text-gray-700">قرار الإدارة</label>
                 <select name="decision" data-field="decision" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-2xl text-sm">
@@ -1093,7 +1093,7 @@ $isNextYearReg = ($regMonth >= 7 && $regMonth <= 9);
                 </div>
                 <input type="hidden" name="decision" value="{{ $decision }}">
             </div>
-            @endcan
+            @endrole
         </div>
 
         <div class="space-y-2">

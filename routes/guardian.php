@@ -22,12 +22,12 @@ Route::middleware(['auth', 'verified', 'role:guardian'])
         // ================================================================
         //  أبناء ولي الأمر
         // ================================================================
-        Route::middleware('permission:view own attendance')->group(function () {
+        Route::middleware('role:guardian')->group(function () {
             Route::get('/my-attendance', [AttendanceController::class, 'myAttendance'])
                 ->name('attendance.own');
         });
 
-        Route::middleware('permission:view own subscriptions')->group(function () {
+        Route::middleware('role:guardian')->group(function () {
             Route::get('/my-subscription', [SubscriptionController::class, 'mySubscription'])
                 ->name('subscription.own');
         });

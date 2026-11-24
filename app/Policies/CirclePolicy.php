@@ -12,18 +12,18 @@ class CirclePolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->can('view circles');
+        return $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher']);
     }
 
     public function view(User $user, Circle $circle): bool
     {
-        if (!$user->can('view circles')) return false;
+        if (!$user->hasRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher'])) return false;
         return $this->canAccessCircle($user, $circle);
     }
 
     public function create(User $user): bool
     {
-        return $user->can('create circles');
+        return $user->hasRole('admin');
     }
 
     public function update(User $user, Circle $circle): bool
@@ -34,8 +34,7 @@ class CirclePolicy
 
     public function delete(User $user, Circle $circle): bool
     {
-        if (!$user->can('delete circles')) return false;
-        return $this->canAccessCircle($user, $circle);
+        return $user->hasRole('admin');
     }
 
     private function canAccessCircle(User $user, Circle $circle): bool

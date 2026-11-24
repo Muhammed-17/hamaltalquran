@@ -1,5 +1,5 @@
 <x-layouts.markaz-layout>
-    <div class="space-y-6" x-data="{
+    <div id="attendance-workspace" class="space-y-6" x-data="{
         students: {{ Js::from(
             $students->map(function ($s) use ($attendanceData) {
                 $status = $attendanceData[$s->id]->status ?? 'not_recorded';
@@ -137,7 +137,7 @@
                     <label class="block text-xs font-bold text-emerald-100/80 mb-1.5">التاريخ</label>
                     <input type="date" name="date" value="{{ $date }}"
                         max="{{ now()->format('Y-m-d') }}"
-                        onchange="document.getElementById('attendanceFilterForm').submit()"
+                        onchange="const u = new URL(window.location.href); u.searchParams.set('date', this.value); window.loadAttendancePartial(u.toString())"
                         class="bg-white/10 hover:bg-white/20 border border-white/10 rounded-2xl px-5 py-3.5 text-white focus:outline-none focus:ring-4 focus:ring-emerald-400/20 transition-all font-bold appearance-none h-11">
                 </div>
 
@@ -160,7 +160,7 @@
                             url.searchParams.delete('teacher_id');
                         }
                         url.searchParams.set('date', '{{ $date }}');
-                        window.location.href = url.toString();
+                        window.loadAttendancePartial(url.toString());
                     }
                 " />
                 </div>
@@ -182,7 +182,7 @@
             url.searchParams.set('date', '{{ $date }}');
             const teacherId = '{{ $selectedTeacherId ?? '' }}';
             if (teacherId) { url.searchParams.set('teacher_id', teacherId); }
-            window.location.href = url.toString();
+            window.loadAttendancePartial(url.toString());
         }
     " />
                 </div>
@@ -446,4 +446,35 @@
         </div>
         @endif
     </div>
+
+    {{-- تحميل جزئي لصفحة تسجيل الحضور: تبديل منطقة العمل فقط عند تغيير التاريخ/المعلم/الحلقة --}}
+    <script>
+        window.loadAttendancePartial = async function (url) {
+            const region = document.getElementById('attendance-workspace');
+            if (!region) { window.location.href = url; return; }
+            region.style.opacity = '.45';
+            region.style.pointerEvents = 'none';
+            try {
+                const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+                if (!res.ok) throw new Error('bad response');
+                const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+                const fresh = doc.getElementById('attendance-workspace');
+                if (!fresh) { window.location.href = url; return; }
+                region.replaceWith(fresh);
+                history.replaceState(null, '', res.url || url);
+            } catch (e) {
+                window.location.href = url;
+            }
+        };
+
+        // إرسال نموذج الفلاتر (Enter) يتحول لتحميل جزئي بدل تنقّل كامل
+        document.addEventListener('submit', function (e) {
+            if (e.target && e.target.id === 'attendanceFilterForm') {
+                e.preventDefault();
+                const u = new URL(window.location.href);
+                new FormData(e.target).forEach((v, k) => { if (v) { u.searchParams.set(k, v); } else { u.searchParams.delete(k); } });
+                window.loadAttendancePartial(u.toString());
+            }
+        });
+    </script>
 </x-layouts.markaz-layout>

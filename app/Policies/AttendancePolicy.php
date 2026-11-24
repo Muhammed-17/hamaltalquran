@@ -12,26 +12,26 @@ class AttendancePolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->can('view attendance');
+        return $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher']);
     }
 
     public function view(User $user, Attendance $attendance): bool
     {
         if ($user->hasRole('admin')) return true;
 
-        if (!$user->can('view attendance')) return false;
+        if (!$user->hasRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher'])) return false;
 
         return $this->userCanManageAttendance($user, $attendance);
     }
 
     public function create(User $user): bool
     {
-        return $user->can('create attendance');
+        return $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher']);
     }
 
     public function update(User $user, ?Attendance $attendance = null): bool
     {
-        if (!$user->can('edit attendance')) return false;
+        if (!$user->hasRole(['admin', 'general_manager', 'manager', 'supervisor'])) return false;
 
         // استدعاء من index (بدون instance)
         if ($attendance === null) {

@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\EducationalStage;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreSubscriptionPriceRequest extends FormRequest
 {
@@ -14,8 +16,8 @@ class StoreSubscriptionPriceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'circle_level' => 'required|string|max:255',
-            'education_stage' => 'required|string|max:255',
+            'circle_level' => ['required', Rule::in(['build', 'mastery', 'creativity'])],
+            'education_stage' => ['required', Rule::enum(EducationalStage::class)],
             'school_grade' => 'nullable|string|max:255',
             'amount' => 'required|numeric|min:0',
         ];
@@ -25,6 +27,8 @@ class StoreSubscriptionPriceRequest extends FormRequest
     {
         return [
             'circle_level.required' => 'مستوى الحلقة مطلوب',
+            'circle_level.in' => 'مستوى الحلقة غير صحيح',
+            'education_stage.enum' => 'المرحلة الدراسية غير صحيحة',
             'education_stage.required' => 'المستوى التعليمي مطلوب',
             'school_grade.string' => 'الصف الدراسي يجب أن يكون نص',
             'amount.required' => 'المبلغ مطلوب',

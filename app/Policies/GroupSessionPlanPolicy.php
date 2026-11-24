@@ -46,7 +46,7 @@ class GroupSessionPlanPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create group session plans');
+        return $user->hasRole('admin');
     }
 
     /**

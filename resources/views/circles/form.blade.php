@@ -1,6 +1,6 @@
 @php
 $isEdit = isset($circle) && $circle->exists;
-$canManageAll = auth()->user()->hasRole(['admin', 'general_manager']);
+$canManageAll = auth()->user()->hasRole('admin');
 
 // خيارات الفروع لمكون البحث
 $branchOptions = collect($branches ?? [])->map(fn($b) => [
@@ -110,13 +110,8 @@ $selectedAssistantId = old('assistant_teacher_id', $circle->assistantTeachers->f
             تعديل الحلقة: {{ $circle->name }} — المقر: {{ $circle->branch?->name ?? '—' }}
         </div>
 
-        <div class="space-y-2 md:col-span-2">
-            <label for="circle_url_edit" class="block text-sm font-bold text-gray-700">رابط الحلقة</label>
-            <input id="circle_url_edit" type="url" name="url" autocomplete="off" value="{{ old('url', $circle->url ?? '') }}"
-                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 focus:bg-white focus:ring-2 focus:ring-emerald-100 focus:border-[#0a5c36] rounded-2xl outline-none transition-all"
-                placeholder="https://chat.whatsapp.com/..." dir="ltr">
-            @error('url') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-        </div>
+        {{-- الرابط مقفول لغير الأدمن: تعديلهم في اختيار المعلمين فقط --}}
+        <input type="hidden" name="url" value="{{ $circle->url }}">
         @else
         {{-- إنشاء: اسم/نوع/مستوى/رابط قابلة للتعبئة، المقر تلقائي --}}
         <div class="md:col-span-2 bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 text-sm text-blue-700 font-medium">

@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\WelcomeMediaType;
-use App\Enums\WelcomeVideoOrientation;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
@@ -18,14 +17,12 @@ class WelcomeMediaItem extends Model
         'image_path',
         'video_url',
         'video_path',
-        'orientation',
         'sort_order',
         'is_active',
     ];
 
     protected $casts = [
         'type' => WelcomeMediaType::class,
-        'orientation' => WelcomeVideoOrientation::class,
         'in_slider' => 'boolean',
         'in_gallery' => 'boolean',
         'is_active' => 'boolean',

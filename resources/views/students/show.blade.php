@@ -755,7 +755,7 @@
                 <div class="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
                     <div class="p-6 lg:p-8 border-b border-gray-50 flex flex-wrap items-center justify-between gap-4">
                         <h3 class="text-[#0a5c36] font-black text-xl">سجل الحضور والغياب</h3>
-                        @can('create attendance')
+                        @role('admin|general_manager|manager|supervisor|teacher')
                         <a href="{{ route('attendance.create') }}"
                             class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 rounded-xl text-white font-bold transition-all flex items-center gap-2 text-sm shadow-lg shadow-emerald-900/20">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -763,7 +763,7 @@
                             </svg>
                             تسجيل حضور
                         </a>
-                        @endcan
+                        @endrole
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-right">

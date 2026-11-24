@@ -13,7 +13,7 @@ class StoreCircleRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return $this->user()->can('create circles');
+        return $this->user()?->hasRole('admin') ?? false;
     }
 
     public function rules(): array

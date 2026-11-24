@@ -16,14 +16,14 @@
                 </a>
                 @endcan
 
-                @can('view reports')
+                @role('admin')
                 <a href="{{ route('attendance.report') }}"
                     class="px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl text-white font-bold transition-all">
                     عرض الإحصائيات
                 </a>
-                @endcan
+                @endrole
 
-                @can('view attendance')
+                @can('view sequential absences')
                 <a href="{{ route('attendance.sequential-absences') }}"
                     class="px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-2xl text-white font-bold transition-all">
                     الغيابات المتكررة
@@ -130,7 +130,7 @@
         </div>
 
         {{-- ─── Export ─── --}}
-        @can('export data')
+        @role('admin')
         <div class="flex flex-wrap gap-3">
             <a href="{{ route('attendance.export.excel', request()->except('page')) }}"
                 class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-100 rounded-2xl text-emerald-700 font-bold text-sm shadow-sm hover:bg-emerald-50 transition-all">
@@ -151,7 +151,7 @@
                 </a>
         </div>
     </div>
-    @endcan
+    @endrole
 
     {{-- ─── Table ─── --}}
     <div class="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">

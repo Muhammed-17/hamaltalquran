@@ -10,7 +10,7 @@ class UpdateGuardianAccountsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('manage guardians');
+        return $this->user()?->hasRole('admin') ?? false;
     }
 
     public function rules(): array

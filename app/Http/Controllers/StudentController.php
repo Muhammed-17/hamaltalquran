@@ -575,14 +575,14 @@ class StudentController extends Controller
 
             // ✅ صلاحية تغيير الحالة والقرار
             if (isset($studentData['status']) || isset($studentData['decision'])) {
-                if (!auth()->user()->can('manage student status')) {
+                if (!auth()->user()->hasRole('admin')) {
                     unset($studentData['status'], $studentData['suspended_at'], $studentData['decision']);
                 }
             }
 
             // ✅ صلاحية تغيير الحلقة
             if (isset($studentData['circle_id'])) {
-                if (!auth()->user()->can('assign student to circle')) {
+                if (!auth()->user()->hasRole('admin')) {
                     unset($studentData['circle_id']);
                 }
             }
@@ -629,7 +629,7 @@ class StudentController extends Controller
             // ✅ لو المستخدم مالوش صلاحية تغيير الحلقة، امنع تحديثها في تفاصيل البناء كمان
             // عشان نضمن تطابق circle_id بين جدول students وجدول student_construction_details
             $syncData = $data;
-            if (!auth()->user()->can('assign student to circle')) {
+            if (!auth()->user()->hasRole('admin')) {
                 $syncData['circle_id'] = $student->circle_id; // ارجعها للقيمة الحالية المحفوظة فعليًا
             }
 

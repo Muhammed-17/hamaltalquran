@@ -14,7 +14,7 @@ Route::middleware(['auth', 'verified', 'permission:view subscriptions'])->group(
         ->name('subscriptions.students-for-circle');
 
     // ─── عرض الاشتراكات ───────────────────────────────────────────
-    Route::middleware('permission:view subscriptions|view own subscriptions')->group(function () {
+    Route::middleware('role_or_permission:guardian|view subscriptions')->group(function () {
         Route::get('/subscriptions', [SubscriptionController::class, 'index'])
             ->name('subscriptions.index');
         Route::get('/subscriptions/late-and-unpaid', [SubscriptionController::class, 'lateAndUnpaid'])

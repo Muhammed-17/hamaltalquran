@@ -9,7 +9,7 @@ Route::middleware(['auth', 'verified', 'permission:view group session plans'])->
 
     Route::get('/group-session-plans', [GroupSessionPlanController::class, 'index'])->name('group-session-plans.index');
 
-    Route::middleware('permission:create group session plans')->group(function () {
+    Route::middleware('role:admin')->group(function () {
         Route::get('/group-session-plans/create', [GroupSessionPlanController::class, 'create'])->name('group-session-plans.create');
         Route::post('/group-session-plans', [GroupSessionPlanController::class, 'store'])->name('group-session-plans.store');
     });

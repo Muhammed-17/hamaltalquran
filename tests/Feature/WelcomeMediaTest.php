@@ -169,41 +169,37 @@ function fakeVideoUpload(string $name): UploadedFile
     return UploadedFile::fake()->createWithContent($name, "\x00\x00\x00\x18ftypisom\x00\x00\x00\x00isomiso2");
 }
 
-test('local video upload, shorts orientation, and rendering', function () {
+test('local video upload and rendering', function () {
     Storage::fake('public');
     $admin = mediaAdmin();
 
     // فيديو محلي مرفوع
     $this->actingAs($admin)->post(route('welcome-media.store'), [
         'type' => 'video', 'video_source' => 'file', 'title' => 'فيديو محلي',
-        'video_file' => fakeVideoUpload('clip.mp4'), 'orientation' => 'portrait', 'is_active' => 1,
+        'video_file' => fakeVideoUpload('clip.mp4'), 'is_active' => 1,
     ])->assertRedirect(route('welcome-media.index'));
 
     $local = WelcomeMediaItem::where('title', 'فيديو محلي')->first();
     expect($local)->not->toBeNull()
         ->and($local->isLocalVideo())->toBeTrue()
-        ->and($local->orientation)->toBe(\App\Enums\WelcomeVideoOrientation::Portrait)
         ->and(Storage::disk('public')->exists($local->video_path))->toBeTrue();
 
-    // رابط Shorts يُضبط عموديًا تلقائيًا
+    // رابط Shorts يُقبل كأي فيديو يوتيوب
     $this->actingAs($admin)->post(route('welcome-media.store'), [
         'type' => 'video', 'video_source' => 'link', 'title' => 'ريلز',
-        'video_url' => 'https://www.youtube.com/shorts/dQw4w9WgXcQ', 'orientation' => 'landscape', 'is_active' => 1,
+        'video_url' => 'https://www.youtube.com/shorts/dQw4w9WgXcQ', 'is_active' => 1,
     ])->assertRedirect(route('welcome-media.index'));
-    expect(WelcomeMediaItem::where('title', 'ريلز')->first()?->orientation)
-        ->toBe(\App\Enums\WelcomeVideoOrientation::Portrait);
 
     // فيديو بلا مصدر صالح مرفوض
     $this->actingAs($admin)->post(route('welcome-media.store'), [
         'type' => 'video', 'video_source' => 'file', 'is_active' => 1,
     ])->assertSessionHasErrors('video_file');
 
-    // العرض في صفحة الترحيب: المحلي بمشغله وبإطاره العمودي
+    // العرض في صفحة الترحيب: المحلي بمشغله وبإطار موحّد
     $this->get('/')
         ->assertOk()
         ->assertSee('فيديوهات المركز')
-        ->assertSee('فيديو محلي')
-        ->assertSee('aspect-[9/16]', false);
+        ->assertSee('فيديو محلي');
 
     // حذف المحلي يمسح ملفه
     $path = $local->video_path;
@@ -211,39 +207,12 @@ test('local video upload, shorts orientation, and rendering', function () {
     expect(Storage::disk('public')->exists($path))->toBeFalse();
 });
 
-/** صورة وهمية بأبعاد حقيقية (base64 لـ PNG صالح) */
-function fakeSizedImageUpload(string $name, string $base64): UploadedFile
-{
-    $path = sys_get_temp_dir() . '/' . uniqid('wm_', true) . '_' . $name;
-    file_put_contents($path, base64_decode($base64));
 
-    return new UploadedFile($path, $name, 'image/png', null, true);
-}
-
-test('image orientation is auto-detected from dimensions and drives the frames', function () {
-    Storage::fake('public');
+test('the media form has no orientation fields at all', function () {
     $admin = mediaAdmin();
-    $portraitPng = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAADCAIAAAA2iEnWAAAAEElEQVR4nGPQWBAFRAwoFABGRwbNCkGu0AAAAABJRU5ErkJggg==';
-    $landscapePng = 'iVBORw0KGgoAAAANSUhEUgAAAAMAAAACCAIAAAASFvFNAAAAEElEQVR4nGPQWBAFQQxwFgBC4AbNTnEx9gAAAABJRU5ErkJggg==';
 
-    // صورة طولية تُكشف تلقائيًا
-    $this->actingAs($admin)->post(route('welcome-media.store'), [
-        'type' => 'image', 'in_slider' => 1, 'in_gallery' => 1, 'title' => 'طولية',
-        'image' => fakeSizedImageUpload('tall.png', $portraitPng), 'is_active' => 1,
-    ])->assertRedirect(route('welcome-media.index'));
-    $tall = WelcomeMediaItem::where('title', 'طولية')->first();
-    expect($tall?->orientation)->toBe(\App\Enums\WelcomeVideoOrientation::Portrait);
-
-    // اختيار يدوي يغلب الكشف التلقائي
-    $this->actingAs($admin)->post(route('welcome-media.store'), [
-        'type' => 'image', 'in_gallery' => 1, 'title' => 'طولية مفروضة عرضية', 'image_orientation' => 'landscape',
-        'image' => fakeSizedImageUpload('tall2.png', $portraitPng), 'is_active' => 1,
-    ])->assertRedirect(route('welcome-media.index'));
-    expect(WelcomeMediaItem::where('title', 'طولية مفروضة عرضية')->first()?->orientation)
-        ->toBe(\App\Enums\WelcomeVideoOrientation::Landscape);
-
-    // العرض: كل الإطارات موحّدة، والطولية تظهر كاملة فوق خلفية مموّهة في السلايدر والمعرض معًا
-    $page = $this->get('/')->assertOk();
-    $page->assertSee('object-contain', false)->assertSee('blur-2xl', false)->assertSee('blur-xl', false)
-        ->assertDontSee('gallery-mosaic', false);
+    $this->actingAs($admin)->get(route('welcome-media.create'))
+        ->assertOk()
+        ->assertDontSee('image_orientation')
+        ->assertDontSee('name="orientation"', false);
 });

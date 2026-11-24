@@ -17,7 +17,7 @@ class StudentPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->can('view students');
+        return $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher']);
     }
 
     public function view(User $user, Student $student): bool
@@ -28,36 +28,36 @@ class StudentPolicy
                 && $student->status !== \App\Enums\StudentStatus::Stopped;
         }
 
-        return $user->can('view students')
+        return $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher'])
             && $this->canAccessStudent($user, $student);
     }
 
     public function create(User $user): bool
     {
-        return $user->can('create students');
+        return $user->hasRole('admin');
     }
 
     public function update(User $user, Student $student): bool
     {
-        return $user->can('edit students')
+        return $user->hasRole('admin')
             && $this->canAccessStudent($user, $student);
     }
 
     public function delete(User $user, Student $student): bool
     {
-        return $user->can('delete students')
+        return $user->hasRole('admin')
             && $this->canAccessStudent($user, $student);
     }
 
     public function manageStatus(User $user, Student $student): bool
     {
-        return $user->can('manage student status')
+        return $user->hasRole('admin')
             && $this->canAccessStudent($user, $student);
     }
 
     public function assignCircle(User $user, Student $student): bool
     {
-        return $user->can('assign student to circle')
+        return $user->hasRole('admin')
             && $this->canAccessStudent($user, $student);
     }
 

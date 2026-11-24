@@ -16,7 +16,7 @@ class GuardianAccountController extends Controller
     // ─────────────────────────────────────────
     public function index(Request $request)
     {
-        $this->authorize('manage guardians');
+        abort_unless(auth()->user()->hasRole('admin'), 403);
 
         $query = User::role('guardian')
             ->withCount('students')
@@ -36,7 +36,7 @@ class GuardianAccountController extends Controller
     // ─────────────────────────────────────────
     public function show(User $guardian)
     {
-        $this->authorize('manage guardians');
+        abort_unless(auth()->user()->hasRole('admin'), 403);
         abort_unless($guardian->hasRole('guardian'), 404);
 
         $guardian->load([
@@ -50,7 +50,7 @@ class GuardianAccountController extends Controller
     // ─────────────────────────────────────────
     public function create()
     {
-        $this->authorize('create', [User::class, 'guardian']);
+        abort_unless(auth()->user()->hasRole('admin'), 403);
         $centers = \App\Models\Center::orderBy('name')->get(['id', 'name']);
         return view('guardian_accounts.form', [
             'guardian' => new User(),
@@ -78,7 +78,7 @@ class GuardianAccountController extends Controller
     // ─────────────────────────────────────────
     public function edit(User $guardian)
     {
-        $this->authorize('manage guardians');
+        abort_unless(auth()->user()->hasRole('admin'), 403);
         abort_unless($guardian->hasRole('guardian'), 404);
 
         $guardian->load('students:id,name,status,student_code,guardian_id');

@@ -80,8 +80,8 @@ beforeEach(function () {
     // الصفحات المسموحة لكل دور — خلاف ذلك محجوب
     $this->allowed = [
         'admin'           => ['/dashboard', '/students', '/teachers', '/circles', '/branches', '/centers', '/attendance', '/attendance/report', '/subscriptions', '/subscription-prices', '/competitions', '/surah-tests/individual', '/collection-rounds', '/examiners', '/admin/roles', '/profile'],
-        'general_manager' => ['/students', '/teachers', '/circles', '/attendance', '/attendance/report', '/subscriptions', '/competitions', '/surah-tests/individual', '/profile'],
-        'manager'         => ['/students', '/teachers', '/circles', '/attendance', '/subscriptions', '/competitions', '/surah-tests/individual', '/collection-rounds', '/profile'],
+        'general_manager' => ['/students', '/circles', '/attendance', '/subscriptions', '/competitions', '/surah-tests/individual', '/profile'], // /attendance/report و/teachers أصبحتا أدمن فقط (تحويل الصلاحيات لأدوار)
+        'manager'         => ['/students', '/circles', '/attendance', '/subscriptions', '/competitions', '/surah-tests/individual', '/collection-rounds', '/profile'],
         'supervisor'      => ['/students', '/circles', '/attendance', '/subscriptions', '/competitions', '/surah-tests/individual', '/collection-rounds', '/profile'],
         'teacher'         => ['/students', '/circles', '/attendance', '/subscriptions', '/profile'],
         'guardian'        => ['/guardian/my-dashboard', '/profile'],

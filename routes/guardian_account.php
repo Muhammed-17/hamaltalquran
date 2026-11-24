@@ -3,7 +3,7 @@
 use App\Http\Controllers\GuardianAccountController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth','verified' ,'not.guardian', 'permission:manage guardians'])
+Route::middleware(['auth','verified' ,'not.guardian', 'role:admin'])
     ->prefix('guardians')
     ->name('guardians.')
     ->group(function () {

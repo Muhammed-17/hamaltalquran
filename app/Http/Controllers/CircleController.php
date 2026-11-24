@@ -244,8 +244,12 @@ class CircleController extends Controller
         $circle = $circleQuery->findOrFail($id);
         $this->authorize('update', $circle);
 
-        // ✅ admin/general_manager يقدر يغيّر الفرع مباشرة، غيرهم الفرع ثابت
-        $branchId = $user->hasRole(['admin', 'general_manager']) && $request->filled('branch_id')
+        // ✅ الأدمن وحده يغيّر الفرع وباقي حقول الحلقة؛ المشرف/المدير/المدير العام
+        // يعدّلون اختيار المعلم الرئيسي والمساعد فقط (بقراره) — أي حقول أخرى
+        // تصل في الطلب من غير الأدمن تُتجاهل ولا تُطبَّق.
+        $isAdmin = $user->hasRole('admin');
+
+        $branchId = $isAdmin && $request->filled('branch_id')
             ? $request->branch_id
             : $circle->branch_id;
 
@@ -253,17 +257,19 @@ class CircleController extends Controller
             'branch_id' => $branchId,
         ];
 
-        if ($request->has('name')) {
-            $updateData['name'] = $request->name;
-        }
-        if ($request->has('url')) {
-            $updateData['url'] = $request->url;
-        }
-        if ($request->has('type')) {
-            $updateData['type'] = $request->type;
-        }
-        if ($request->has('level')) {
-            $updateData['level'] = $request->level;
+        if ($isAdmin) {
+            if ($request->has('name')) {
+                $updateData['name'] = $request->name;
+            }
+            if ($request->has('url')) {
+                $updateData['url'] = $request->url;
+            }
+            if ($request->has('type')) {
+                $updateData['type'] = $request->type;
+            }
+            if ($request->has('level')) {
+                $updateData['level'] = $request->level;
+            }
         }
 
         if (!$this->hasCircleChanges($circle, $updateData, $request)) {
@@ -359,11 +365,13 @@ class CircleController extends Controller
         $user     = Auth::user();
 
         // ✅ جلب المعلمين المتاحين حسب الدور
-        if ($user->hasRole(['admin', 'general_manager'])) {
+        if ($user->hasRole('admin')) {
             $accessibleTeacherIds = Teacher::pluck('id')->toArray();
         } else {
+            // مركز المعلم يُشتق من فرعه (لا يوجد عمود center_id على المستخدمين —
+            // الفلتر القديم كان يشير لعمود غير موجود فيحجب كل المعلمين الجدد)
             $accessibleTeacherIds = $this->access->accessibleTeachers($user)
-                ->whereHas('user', fn($q) => $q->where('center_id', $centerId))
+                ->whereHas('branch', fn($q) => $q->where('center_id', $centerId))
                 ->pluck('id')
                 ->toArray();
         }

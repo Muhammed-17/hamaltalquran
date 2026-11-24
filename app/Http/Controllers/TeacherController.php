@@ -127,7 +127,6 @@ class TeacherController extends Controller
     public function store(StoreTeacherRequest $request)
     {
         $this->authorize('create', Teacher::class);
-        $this->authorize('create', User::class);
 
         DB::transaction(function () use ($request) {
 

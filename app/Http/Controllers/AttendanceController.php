@@ -394,7 +394,7 @@ class AttendanceController extends Controller
             ? \App\Models\Center::orderBy('name')->get()
             : collect();
 
-        $registrars = $user->can('view all teachers')
+        $registrars = $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor'])
             ? User::whereHas('attendances', function ($q) use ($circleIds, $user) {
                 if (!$user->hasRole(['admin', 'general_manager'])) {
                     $q->whereHas('student', fn($s) => $s->whereIn('circle_id', $circleIds));
@@ -455,7 +455,7 @@ class AttendanceController extends Controller
         }
 
         // ── فلتر المسجل ──────
-        if ($selectedRegistrarId && $user->can('view all teachers')) {
+        if ($selectedRegistrarId && $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor'])) {
             $attendanceQuery->where('user_id', $selectedRegistrarId);
         }
 
@@ -491,7 +491,7 @@ class AttendanceController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user->can('view own attendance')) abort(403);
+        if (!$user->hasRole('guardian')) abort(403);
 
         $month        = $request->get('month', now()->format('Y-m'));
         $startOfMonth = Carbon::parse($month . '-01')->startOfMonth();
@@ -537,7 +537,7 @@ class AttendanceController extends Controller
     // ─────────────────────────────────────────
     public function sequentialAbsences(Request $request)
     {
-        $this->authorize('viewAny', Attendance::class);
+        abort_unless($request->user()->can('view sequential absences'), 403);
 
         $user      = Auth::user();
         $circleIds = $this->access->accessibleCircles($user)->pluck('id');

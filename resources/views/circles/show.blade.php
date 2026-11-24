@@ -112,7 +112,7 @@
                 @if($groupPlan)
                 <div class="flex items-center gap-2">
                     {{-- تعديل خطة الحلقة الجماعية --}}
-                    @can('edit students')
+                    @role('admin')
                     <a href="{{ route('student-construction-details.edit', $groupPlan) }}"
                         class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg flex items-center gap-2 transition-all">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -120,10 +120,10 @@
                         </svg>
                         تعديل خطة الحلقة
                     </a>
-                    @endcan
+                    @endrole
 
                     {{-- حذف خطة الحلقة الجماعية --}}
-                    @can('delete students')
+                    @role('admin')
                     <form method="POST" action="{{ route('student-construction-details.destroy', $groupPlan) }}"
                         onsubmit="confirmDelete(event, { name: 'خطة الحلقة', type: 'الخطة' })"
                         class="inline">
@@ -137,11 +137,11 @@
                             حذف
                         </button>
                     </form>
-                    @endcan
+                    @endrole
                 </div>
                 @else
                 {{-- إضافة خطة للحلقة الجماعية --}}
-                @can('create students')
+                @role('admin')
                 <a href="{{ route('student-construction-details.create', ['circle_id' => $circle->id]) }}"
                     class="px-4 py-2 bg-[#0a5c36] hover:bg-[#08492a] text-white text-sm font-bold rounded-lg flex items-center gap-2 transition-all">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,7 +149,7 @@
                     </svg>
                     إضافة خطة الحلقة
                 </a>
-                @endcan
+                @endrole
                 @endif
             </div>
 
@@ -250,7 +250,7 @@
         <div id="tab-sessions" class="tab-content p-6" style="display: none;">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-lg font-bold text-gray-800">جلسات الحلقة</h3>
-                @can('create group session plans')
+                @role('admin')
                 <a href="{{ route('group-session-plans.create', ['circle_id' => $circle->id]) }}"
                     class="px-4 py-2 bg-[#0a5c36] hover:bg-[#08492a] text-white text-sm font-bold rounded-lg flex items-center gap-2 transition-all">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -258,7 +258,7 @@
                     </svg>
                     إضافة حصة
                 </a>
-                @endcan
+                @endrole
             </div>
 
             @if($circle->groupSessionPlans?->count())

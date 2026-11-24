@@ -89,7 +89,8 @@ test('manager and supervisor can open circle pages in their own center', functio
         ->and($this->managerA->can('view', $this->circleB))->toBeFalse();
 });
 
-test('manager cannot create a student in a foreign center or circle', function () {
+// كان الاختبار عن نطاق المدير في الإنشاء؛ إنشاء الطلاب صار للأدمن فقط بقرار صاحب الموقع فصار المنع كليًا
+test('manager cannot create a student at all, foreign or own center', function () {
     $this->actingAs($this->managerA)->post(route('students.store'), ($this->payload)([
         'name' => 'طالب أجنبي',
         'center_id' => $this->centerB->id,
@@ -98,12 +99,12 @@ test('manager cannot create a student in a foreign center or circle', function (
     ]));
     expect(Student::withoutGlobalScopes()->where('name', 'طالب أجنبي')->exists())->toBeFalse();
 
-    // والإنشاء داخل مركزه يعمل
+    // وحتى داخل مركزه: الإنشاء للأدمن فقط الآن
     $this->actingAs($this->managerA)->post(route('students.store'), ($this->payload)(['name' => 'طالب شرعي']));
-    expect(Student::withoutGlobalScopes()->where('name', 'طالب شرعي')->exists())->toBeTrue();
+    expect(Student::withoutGlobalScopes()->where('name', 'طالب شرعي')->exists())->toBeFalse();
 });
 
-test('manager cannot move a student to a foreign circle but can within his center', function () {
+test('manager cannot move a student at all after the admin-only decision', function () {
     $this->actingAs($this->managerA)->put(route('students.update', $this->studentA), ($this->payload)([
         'name' => 'طالب أ',
         'circle_id' => $this->circleB->id,
@@ -113,22 +114,24 @@ test('manager cannot move a student to a foreign circle but can within his cente
     expect($after->circle_id)->toBe($this->circleA->id)
         ->and($after->center_id)->toBe($this->centerA->id);
 
-    // نقل داخلي مشروع داخل نفس المركز
+    // وحتى النقل الداخلي داخل نفس المركز: تعديل الطلاب صار للأدمن فقط بقرار صاحب الموقع
     $this->actingAs($this->managerA)->put(route('students.update', $this->studentA), ($this->payload)([
         'name' => 'طالب أ',
         'circle_id' => $this->circleA2->id,
     ]));
-    expect(Student::withoutGlobalScopes()->find($this->studentA->id)->circle_id)->toBe($this->circleA2->id);
+    expect(Student::withoutGlobalScopes()->find($this->studentA->id)->circle_id)->toBe($this->circleA->id);
 });
 
-test('teacher policy compares branch centers not nulls', function () {
-    // منح الصلاحيات يدويًا لعزل فحص النطاق في السياسة نفسها
-    $this->managerA->givePermissionTo(['edit teachers', 'delete teachers', 'toggle teacher status']);
-
+test('teacher policy is admin-only after the permissions conversion', function () {
+    // قسم المعلمين أصبح لمدير النظام فقط بالدور (حذف مجموعة صلاحيات المعلمين)،
+    // فحتى مدير نفس المركز لا يعدّل/يحذف/يوقّف أي معلم، والأدمن وحده يقدر —
+    // مع بقاء حماية عدم حذف/إيقاف الأدمن سجلَّ نفسه.
     expect($this->managerA->can('update', $this->teacherB))->toBeFalse()
         ->and($this->managerA->can('delete', $this->teacherB))->toBeFalse()
         ->and($this->managerA->can('toggle', $this->teacherB))->toBeFalse()
-        ->and($this->managerA->can('update', $this->supervisorTeacherA))->toBeTrue();
+        ->and($this->managerA->can('update', $this->supervisorTeacherA))->toBeFalse()
+        ->and($this->admin->can('update', $this->teacherB))->toBeTrue()
+        ->and($this->admin->can('delete', $this->teacherB))->toBeTrue();
 });
 
 test('the dead assign-circle route no longer errors', function () {

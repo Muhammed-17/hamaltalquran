@@ -25,7 +25,12 @@ class StudentConstructionDetailController extends Controller
      */
     public function create(Request $request): View|RedirectResponse
     {
-        $this->authorize('create students');
+        // سياق الحلقة الجماعية: إنشاء خطة الحلقة لمدير النظام فقط (بقراره)
+        if ($request->filled('circle_id')) {
+            abort_unless($request->user()->hasRole('admin'), 403);
+        } else {
+            abort_unless(auth()->user()?->hasRole('admin'), 403);
+        }
 
         // السياق: إنشاء خطة لحلقة جماعية
         if ($request->filled('circle_id')) {
@@ -83,7 +88,12 @@ class StudentConstructionDetailController extends Controller
      */
     public function store(StoreStudentConstructionDetailRequest $request): RedirectResponse
     {
-        $this->authorize('create students');
+        // سياق الحلقة الجماعية: إنشاء خطة الحلقة لمدير النظام فقط (بقراره)
+        if ($request->filled('circle_id')) {
+            abort_unless($request->user()->hasRole('admin'), 403);
+        } else {
+            abort_unless(auth()->user()?->hasRole('admin'), 403);
+        }
 
         $validated = $request->validated();
 
@@ -132,7 +142,7 @@ class StudentConstructionDetailController extends Controller
      */
     public function show(StudentConstructionDetail $studentConstructionDetail): View
     {
-        $this->authorize('view students');
+        abort_unless(auth()->user()?->hasRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher']), 403);
 
         if (
             !$this->accessService->canAccessStudent(auth()->user(), $studentConstructionDetail->student)
@@ -151,7 +161,7 @@ class StudentConstructionDetailController extends Controller
      */
     public function edit(StudentConstructionDetail $studentConstructionDetail): View|RedirectResponse  // ✅ تغيير نوع الإرجاع
     {
-        $this->authorize('edit students');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         if (
             !$this->accessService->canAccessStudent(auth()->user(), $studentConstructionDetail->student)
@@ -183,7 +193,7 @@ class StudentConstructionDetailController extends Controller
      */
     public function update(UpdateStudentConstructionDetailRequest $request, StudentConstructionDetail $studentConstructionDetail): RedirectResponse
     {
-        $this->authorize('edit students');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         if (
             !$this->accessService->canAccessStudent($request->user(), $studentConstructionDetail->student)
@@ -212,7 +222,7 @@ class StudentConstructionDetailController extends Controller
      */
     public function destroy(StudentConstructionDetail $studentConstructionDetail): RedirectResponse
     {
-        $this->authorize('delete students');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         if (
             !$this->accessService->canAccessStudent(auth()->user(), $studentConstructionDetail->student)

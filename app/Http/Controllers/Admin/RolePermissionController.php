@@ -36,7 +36,7 @@ class RolePermissionController extends Controller
     // ─────────────────────────────────────────────
     public function index(): View
     {
-        Gate::authorize('manage roles');
+        abort_unless(auth()->user()->hasRole('admin'), 403);
 
         $roles = Role::with('permissions')->get();
 
@@ -51,7 +51,7 @@ class RolePermissionController extends Controller
     // ─────────────────────────────────────────────
     public function storeRole(Request $request): RedirectResponse
     {
-        Gate::authorize('manage roles');
+        abort_unless(auth()->user()->hasRole('admin'), 403);
 
         // ① التحقق من الحد الأقصى للأدوار
         if (Role::count() >= self::MAX_ROLES) {
@@ -105,7 +105,7 @@ class RolePermissionController extends Controller
     // ─────────────────────────────────────────────
     public function updateRolePermissions(Request $request, Role $role): RedirectResponse
     {
-        Gate::authorize('manage roles');
+        abort_unless(auth()->user()->hasRole('admin'), 403);
 
         // ① Validation
         $request->validate([
@@ -114,15 +114,6 @@ class RolePermissionController extends Controller
         ]);
 
         $permissionIds = $request->input('permissions', []);
-
-        // ② الصلاحيات المقفلة للـ admin — تُضاف دائماً بغض النظر عن الـ request
-        if ($role->name === 'admin') {
-            $lockedIds = Permission::whereIn('name', ['manage roles'])
-                ->pluck('id')
-                ->toArray();
-
-            $permissionIds = array_unique(array_merge($permissionIds, $lockedIds));
-        }
 
         // ③ منع Privilege Escalation
         $this->ensureCanGrantPermissions($permissionIds);
@@ -147,7 +138,7 @@ class RolePermissionController extends Controller
     // ─────────────────────────────────────────────
     public function destroyRole(Role $role): RedirectResponse
     {
-        Gate::authorize('manage roles');
+        abort_unless(auth()->user()->hasRole('admin'), 403);
 
         // ① حماية الأدوار الأساسية
         if (in_array($role->name, self::PROTECTED_ROLES)) {

@@ -62,18 +62,18 @@
                     class="block px-4 py-2 rounded-lg {{ request()->routeIs('guardian.dashboard.own') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">
                     المنصة العامة
                 </a>
-                @can('view own attendance')
+                @role('guardian')
                 <a href="{{ route('guardian.attendance.own') }}"
                     class="block px-4 py-2 rounded-lg {{ request()->routeIs('guardian.attendance.own') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">
                     سجل الحضور
                 </a>
-                @endcan
-                @can('view own subscriptions')
+                @endrole
+                @role('guardian')
                 <a href="{{ route('guardian.subscription.own') }}"
                     class="block px-4 py-2 rounded-lg {{ request()->routeIs('guardian.subscription.own') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">
                     الاشتراكات
                 </a>
-                @endcan
+                @endrole
                 @can('view notifications')
                 <a href="{{ route('guardian.notifications.index') }}"
                     class="block px-4 py-2 rounded-lg {{ request()->routeIs('guardian.notifications.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">
@@ -105,33 +105,33 @@
                 </a>
                 @endif
 
-                @can('view students')
+                @role('admin|general_manager|manager|supervisor|teacher')
                 <a href="{{ route('students.index') }}"
                     class="block px-4 py-2 rounded-lg {{ request()->routeIs('students.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">
                     الطلاب
                 </a>
-                @endcan
+                @endrole
 
-                @can('view teachers')
+                @role('admin')
                 <a href="{{ route('teachers.index') }}"
                     class="block px-4 py-2 rounded-lg {{ request()->routeIs('teachers.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">
                     المعلمون
                 </a>
-                @endcan
+                @endrole
 
-                @can('view circles')
+                @role('admin|general_manager|manager|supervisor|teacher')
                 <a href="{{ route('circles.index') }}"
                     class="block px-4 py-2 rounded-lg {{ request()->routeIs('circles.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">
                     الحلقات
                 </a>
-                @endcan
+                @endrole
 
-                @can('view attendance')
+                @role('admin|general_manager|manager|supervisor|teacher')
                 <a href="{{ route('attendance.index') }}"
                     class="block px-4 py-2 rounded-lg {{ request()->routeIs('attendance.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">
                     الحضور والغياب
                 </a>
-                @endcan
+                @endrole
 
                 @can('view subscriptions')
                 <a href="{{ route('subscriptions.index') }}"
@@ -318,7 +318,7 @@
                 <!-- ═══════════════════════════════════════════════════════════════ -->
                 <!-- ═══════════════ قسم الإعدادات (Settings) ═════════════════════ -->
                 <!-- ═══════════════════════════════════════════════════════════════ -->
-                @if(auth()->user()->hasAnyRole('admin') || auth()->user()->canAny(['manage guardians', 'edit profile', 'view subscription prices', 'manage roles']))
+                @if(auth()->user()->hasAnyRole('admin') || auth()->user()->canAny(['edit profile', 'view subscription prices']))
                 <div x-data="{ open: {{ (request()->routeIs('guardians.*') || request()->routeIs('profile.*') || request()->routeIs('centers.*') || request()->routeIs('branches.*')  || request()->routeIs('subscription-prices.*') || request()->routeIs('admin.roles.*'))? 'true' : 'false' }} }" class="space-y-1">
                     <button @click="open = !open"
                         class="w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-[#0d7a48] transition-colors focus:outline-none {{ (request()->routeIs('guardians.*') || request()->routeIs('profile.*') || request()->routeIs('centers.*') || request()->routeIs('branches.*') || request()->routeIs('subscription-prices.*') || request()->routeIs('admin.roles.*')) ? 'bg-[#0d7a48]' : '' }}">
@@ -329,18 +329,18 @@
                     </button>
 
                     <div x-show="open" x-cloak class="pr-3 space-y-1 border-r border-white/10 mr-1">
-                        @can('manage guardians')
+                        @role('admin')
                         <a href="{{ route('guardians.index') }}"
                             class="block px-4 py-2 rounded-lg text-[13px] {{ request()->routeIs('guardians.*') ? 'bg-[#0d7a48] font-bold' : 'hover:bg-[#0d7a48]' }}">
                             حسابات أولياء الأمور
                         </a>
-                        @endcan
+                        @endrole
                         @can('edit profile')
                         <a href="{{ route('profile.edit') }}"
                             class="block px-4 py-2 rounded-lg text-[13px] {{ request()->routeIs('profile.*') ? 'bg-[#0d7a48] font-bold' : 'hover:bg-[#0d7a48]' }}">
                             الملف الشخصي
                         </a>
-                        @endcan
+                        @endrole
                         @role('admin')
                         <a href="{{ route('centers.index') }}"
                             class="block px-4 py-2 rounded-lg text-[13px] {{ request()->routeIs('centers.*') ? 'bg-[#0d7a48] font-bold' : 'hover:bg-[#0d7a48]' }}">
@@ -361,7 +361,7 @@
                             أسعار الاشتراكات
                         </a>
                         @endcan
-                        @can('manage roles')
+                        @role('admin')
                         <a href="{{ route('admin.roles.index') }}"
                             class="block px-4 py-2 rounded-lg text-[13px] {{ request()->routeIs('admin.roles.*') ? 'bg-[#0d7a48] font-bold' : 'hover:bg-[#0d7a48]' }}">
                             الصلاحيات

@@ -79,7 +79,7 @@ class SubscriptionController extends Controller
             $statsBaseQuery->where('collected_by', $selectedCollectedById);
         }
 
-        $isGuardian = $user->can('view own subscriptions') && !$user->can('view subscriptions') && $user->hasRole('guardian');
+        $isGuardian = $user->hasRole('guardian') && !$user->can('view subscriptions');
 
         if ($isGuardian) {
             $statsBaseQuery->whereIn('student_id', $user->students()->pluck('id'));

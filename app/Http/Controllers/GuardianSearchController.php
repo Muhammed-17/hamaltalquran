@@ -96,8 +96,7 @@ class GuardianSearchController extends Controller
         $user = auth()->user();
 
         $allowed =
-            $user->can('create students') ||
-            $user->can('edit students')   ||
+            $user->hasRole('admin') ||
             $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor']);
 
         if (!$allowed) {

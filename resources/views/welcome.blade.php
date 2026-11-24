@@ -110,15 +110,8 @@
                 <div class="relative aspect-[4/3] md:aspect-[16/8]">
                     @foreach($sliderItems as $slide)
                         <div class="absolute inset-0 transition-opacity duration-700" x-show="active === {{ $loop->index }}" x-cloak>
-                            @if($slide->orientation === \App\Enums\WelcomeVideoOrientation::Portrait)
-                                <img src="{{ $slide->imageUrl() }}" alt="" aria-hidden="true" class="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 opacity-60"
-                                    @if(!$loop->first) loading="lazy" @endif>
-                                <img src="{{ $slide->imageUrl() }}" alt="{{ $slide->title }}" class="absolute inset-0 w-full h-full object-contain"
-                                    @if(!$loop->first) loading="lazy" @endif>
-                            @else
-                                <img src="{{ $slide->imageUrl() }}" alt="{{ $slide->title }}" class="w-full h-full object-cover"
-                                    @if(!$loop->first) loading="lazy" @endif>
-                            @endif
+                            <img src="{{ $slide->imageUrl() }}" alt="{{ $slide->title }}" class="w-full h-full object-cover"
+                                @if(!$loop->first) loading="lazy" @endif>
                             @if($slide->title)
                                 <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-6 pt-16">
                                     <p class="text-white text-xl md:text-2xl font-black">{{ $slide->title }}</p>
@@ -155,15 +148,8 @@
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 @foreach($galleryItems as $photo)
                     <button type="button" @click="lightbox = '{{ $photo->imageUrl() }}'" class="group relative rounded-3xl overflow-hidden shadow-sm focus:outline-none">
-                        @if($photo->orientation === \App\Enums\WelcomeVideoOrientation::Portrait)
-                            <img src="{{ $photo->imageUrl() }}" alt="" aria-hidden="true" loading="lazy"
-                                class="w-full aspect-[4/3] object-cover blur-xl scale-110 opacity-70">
-                            <img src="{{ $photo->imageUrl() }}" alt="{{ $photo->title }}" loading="lazy"
-                                class="absolute inset-0 w-full h-full object-contain transition duration-500 group-hover:scale-105">
-                        @else
-                            <img src="{{ $photo->imageUrl() }}" alt="{{ $photo->title }}" loading="lazy"
-                                class="w-full aspect-[4/3] object-cover transition duration-500 group-hover:scale-105">
-                        @endif
+                        <img src="{{ $photo->imageUrl() }}" alt="{{ $photo->title }}" loading="lazy"
+                            class="w-full aspect-[4/3] object-cover transition duration-500 group-hover:scale-105">
                         @if($photo->title)
                             <span class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent text-white text-sm font-bold text-right p-3 pt-8">{{ $photo->title }}</span>
                         @endif
@@ -191,8 +177,8 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 @foreach($videoItems as $video)
                     @if($video->isLocalVideo() || $video->youtubeEmbedUrl())
-                        <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 {{ $video->orientation === \App\Enums\WelcomeVideoOrientation::Portrait ? 'max-w-[320px] w-full mx-auto' : '' }}" x-data="{ playing: false }">
-                            <div class="relative {{ $video->orientation?->aspectClass() ?? 'aspect-video' }} bg-black">
+                        <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100" x-data="{ playing: false }">
+                            <div class="relative aspect-video bg-black">
                                 <template x-if="!playing">
                                     <button type="button" @click="playing = true" class="absolute inset-0 w-full h-full group">
                                         @if(!$video->isLocalVideo())
