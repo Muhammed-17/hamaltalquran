@@ -51,11 +51,11 @@ test('admin stores slider image, video, and rejects invalid input', function () 
     $admin = mediaAdmin();
 
     $this->actingAs($admin)->post(route('welcome-media.store'), [
-        'type' => 'slider', 'title' => 'حفل التكريم', 'sort_order' => 1, 'is_active' => 1,
+        'type' => 'image', 'in_slider' => 1, 'title' => 'حفل التكريم', 'sort_order' => 1, 'is_active' => 1,
         'image' => fakeImageUpload('party.jpg'),
     ])->assertRedirect(route('welcome-media.index'));
 
-    $item = WelcomeMediaItem::where('type', 'slider')->first();
+    $item = WelcomeMediaItem::where('type', 'image')->first();
     expect($item)->not->toBeNull()
         ->and($item->title)->toBe('حفل التكريم')
         ->and(Storage::disk('public')->exists($item->image_path))->toBeTrue();
@@ -70,8 +70,13 @@ test('admin stores slider image, video, and rejects invalid input', function () 
         'type' => 'video', 'video_url' => 'https://example.com/v', 'is_active' => 1,
     ])->assertSessionHasErrors('video_url');
     $this->actingAs($admin)->post(route('welcome-media.store'), [
-        'type' => 'gallery', 'is_active' => 1,
+        'type' => 'image', 'in_gallery' => 1, 'is_active' => 1,
     ])->assertSessionHasErrors('image');
+
+    // صورة بلا أي مكان ظهور مرفوضة
+    $this->actingAs($admin)->post(route('welcome-media.store'), [
+        'type' => 'image', 'image' => fakeImageUpload('nowhere.jpg'), 'is_active' => 1,
+    ])->assertSessionHasErrors('in_slider');
 });
 
 test('update replaces the image and deletes the old file; destroy deletes the file', function () {
@@ -79,13 +84,13 @@ test('update replaces the image and deletes the old file; destroy deletes the fi
     $admin = mediaAdmin();
 
     $this->actingAs($admin)->post(route('welcome-media.store'), [
-        'type' => 'gallery', 'title' => 'قديمة', 'image' => fakeImageUpload('old.jpg'), 'is_active' => 1,
+        'type' => 'image', 'in_gallery' => 1, 'title' => 'قديمة', 'image' => fakeImageUpload('old.jpg'), 'is_active' => 1,
     ]);
     $item = WelcomeMediaItem::first();
     $oldPath = $item->image_path;
 
     $this->actingAs($admin)->put(route('welcome-media.update', $item), [
-        'type' => 'gallery', 'title' => 'جديدة', 'image' => fakeImageUpload('new.jpg'), 'is_active' => 1,
+        'type' => 'image', 'in_gallery' => 1, 'title' => 'جديدة', 'image' => fakeImageUpload('new.jpg'), 'is_active' => 1,
     ])->assertRedirect(route('welcome-media.index'));
 
     $item->refresh();
@@ -107,10 +112,10 @@ test('welcome page renders the three sections only with active items', function 
     // بلا أي عناصر: لا أقسام
     $this->get('/')->assertOk()->assertDontSee('من أجواء المركز')->assertDontSee('فيديوهات المركز');
 
-    WelcomeMediaItem::create(['type' => 'slider', 'title' => 'شريحة ظاهرة', 'image_path' => $path, 'is_active' => true]);
-    WelcomeMediaItem::create(['type' => 'gallery', 'title' => 'صورة معرض', 'image_path' => $path, 'is_active' => true]);
+    WelcomeMediaItem::create(['type' => 'image', 'in_slider' => true, 'title' => 'شريحة ظاهرة', 'image_path' => $path, 'is_active' => true]);
+    WelcomeMediaItem::create(['type' => 'image', 'in_gallery' => true, 'title' => 'صورة معرض', 'image_path' => $path, 'is_active' => true]);
     WelcomeMediaItem::create(['type' => 'video', 'title' => 'فيديو ظاهر', 'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'is_active' => true]);
-    WelcomeMediaItem::create(['type' => 'slider', 'title' => 'شريحة مخفية', 'image_path' => $path, 'is_active' => false]);
+    WelcomeMediaItem::create(['type' => 'image', 'in_slider' => true, 'title' => 'شريحة مخفية', 'image_path' => $path, 'is_active' => false]);
 
     $this->get('/')
         ->assertOk()
@@ -126,8 +131,8 @@ test('section does not appear at all when the image file is missing', function (
     Storage::fake('public');
 
     // عنصر نشط في قاعدة البيانات لكن ملف صورته غير موجود على القرص
-    WelcomeMediaItem::create(['type' => 'slider', 'title' => 'صورة مفقودة', 'image_path' => 'welcome-media/missing.jpg', 'is_active' => true]);
-    WelcomeMediaItem::create(['type' => 'gallery', 'title' => 'معرض مفقود', 'image_path' => 'welcome-media/missing2.jpg', 'is_active' => true]);
+    WelcomeMediaItem::create(['type' => 'image', 'in_slider' => true, 'title' => 'صورة مفقودة', 'image_path' => 'welcome-media/missing.jpg', 'is_active' => true]);
+    WelcomeMediaItem::create(['type' => 'image', 'in_gallery' => true, 'title' => 'معرض مفقود', 'image_path' => 'welcome-media/missing2.jpg', 'is_active' => true]);
 
     $this->get('/')
         ->assertOk()
@@ -137,7 +142,23 @@ test('section does not appear at all when the image file is missing', function (
 
     // وبمجرد وجود ملف حقيقي يظهر القسم
     $path = fakeImageUpload('real.jpg')->store('welcome-media', 'public');
-    WelcomeMediaItem::create(['type' => 'slider', 'title' => 'صورة حقيقية', 'image_path' => $path, 'is_active' => true]);
+    WelcomeMediaItem::create(['type' => 'image', 'in_slider' => true, 'title' => 'صورة حقيقية', 'image_path' => $path, 'is_active' => true]);
 
     $this->get('/')->assertOk()->assertSee('من أجواء المركز')->assertSee('صورة حقيقية');
+});
+
+test('one uploaded image can appear in both the slider and the gallery', function () {
+    Storage::fake('public');
+    $admin = mediaAdmin();
+
+    $this->actingAs($admin)->post(route('welcome-media.store'), [
+        'type' => 'image', 'in_slider' => 1, 'in_gallery' => 1,
+        'title' => 'صورة مشتركة', 'image' => fakeImageUpload('shared.jpg'), 'is_active' => 1,
+    ])->assertRedirect(route('welcome-media.index'));
+
+    expect(WelcomeMediaItem::count())->toBe(1);
+
+    $page = $this->get('/')->assertOk();
+    $page->assertSee('من أجواء المركز')->assertSee('معرض الصور');
+    expect(substr_count($page->getContent(), 'صورة مشتركة'))->toBeGreaterThanOrEqual(2);
 });

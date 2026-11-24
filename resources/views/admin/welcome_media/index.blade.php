@@ -66,9 +66,18 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <span class="px-3 py-1 rounded-full text-[11px] font-black {{ $item->type === \App\Enums\WelcomeMediaType::Video ? 'bg-red-50 text-red-600' : ($item->type === \App\Enums\WelcomeMediaType::Slider ? 'bg-emerald-50 text-emerald-700' : 'bg-sky-50 text-sky-700') }}">
-                                        {{ $item->type->label() }}
-                                    </span>
+                                    @if($item->type === \App\Enums\WelcomeMediaType::Video)
+                                        <span class="px-3 py-1 rounded-full text-[11px] font-black bg-red-50 text-red-600">فيديو</span>
+                                    @else
+                                        <div class="flex flex-wrap gap-1.5">
+                                            @if($item->in_slider)
+                                                <span class="px-3 py-1 rounded-full text-[11px] font-black bg-emerald-50 text-emerald-700">السلايدر</span>
+                                            @endif
+                                            @if($item->in_gallery)
+                                                <span class="px-3 py-1 rounded-full text-[11px] font-black bg-sky-50 text-sky-700">المعرض</span>
+                                            @endif
+                                        </div>
+                                    @endif
                                 </td>
                                 <td class="px-6 py-4 font-bold text-gray-600 text-sm">{{ $item->sort_order }}</td>
                                 <td class="px-6 py-4">

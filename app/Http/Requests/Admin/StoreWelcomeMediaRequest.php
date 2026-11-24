@@ -31,9 +31,21 @@ class StoreWelcomeMediaRequest extends FormRequest
                     }
                 }]
                 : ['nullable'],
+            'in_slider' => ['nullable', 'boolean'],
+            'in_gallery' => ['nullable', 'boolean'],
             'sort_order' => ['nullable', 'integer', 'min:0', 'max:9999'],
             'is_active' => ['nullable', 'boolean'],
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            if ($this->input('type') === WelcomeMediaType::Image->value
+                && !$this->boolean('in_slider') && !$this->boolean('in_gallery')) {
+                $validator->errors()->add('in_slider', 'اختر مكان ظهور واحدًا على الأقل للصورة: السلايدر أو المعرض.');
+            }
+        });
     }
 
     public function messages(): array

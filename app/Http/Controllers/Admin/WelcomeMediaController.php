@@ -20,8 +20,8 @@ class WelcomeMediaController extends Controller
         return view('admin.welcome_media.index', [
             'items' => $items,
             'counts' => [
-                'slider' => $items->where('type', WelcomeMediaType::Slider)->count(),
-                'gallery' => $items->where('type', WelcomeMediaType::Gallery)->count(),
+                'slider' => $items->filter(fn ($i) => $i->type === WelcomeMediaType::Image && $i->in_slider)->count(),
+                'gallery' => $items->filter(fn ($i) => $i->type === WelcomeMediaType::Image && $i->in_gallery)->count(),
                 'video' => $items->where('type', WelcomeMediaType::Video)->count(),
             ],
         ]);
@@ -69,6 +69,8 @@ class WelcomeMediaController extends Controller
 
         $data = [
             'type' => $type->value,
+            'in_slider' => $type === WelcomeMediaType::Image && $request->boolean('in_slider'),
+            'in_gallery' => $type === WelcomeMediaType::Image && $request->boolean('in_gallery'),
             'title' => $validated['title'] ?? null,
             'sort_order' => $validated['sort_order'] ?? 0,
             'is_active' => $request->boolean('is_active'),

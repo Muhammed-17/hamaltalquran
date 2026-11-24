@@ -1,6 +1,6 @@
 @php $isEdit = $item->exists; @endphp
 
-<div class="space-y-5" x-data="{ type: '{{ old('type', $item->type?->value ?? 'slider') }}' }">
+<div class="space-y-5" x-data="{ type: '{{ old('type', $item->type?->value ?? 'image') }}' }">
     <div>
         <label class="block text-xs font-bold text-gray-400 mb-1.5">القسم</label>
         <select name="type" x-model="type" class="w-full p-2.5 px-4 border border-gray-200 rounded-xl text-sm bg-white">
@@ -18,7 +18,24 @@
         @error('title') <p class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p> @enderror
     </div>
 
-    {{-- حقل الصورة لأنواع السلايدر والمعرض --}}
+    {{-- أماكن ظهور الصورة: السلايدر و/أو المعرض --}}
+    <div x-show="type === 'image'" class="bg-gray-50 border border-gray-100 rounded-2xl p-4">
+        <span class="block text-xs font-bold text-gray-400 mb-2">تظهر الصورة في</span>
+        <div class="flex flex-wrap items-center gap-6">
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="in_slider" value="1" @checked(old('in_slider', $item->in_slider)) class="w-4 h-4 accent-emerald-600">
+                <span class="text-sm font-bold text-gray-600">السلايدر</span>
+            </label>
+            <label class="inline-flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="in_gallery" value="1" @checked(old('in_gallery', $item->in_gallery)) class="w-4 h-4 accent-emerald-600">
+                <span class="text-sm font-bold text-gray-600">معرض الصور</span>
+            </label>
+        </div>
+        <p class="text-[11px] text-gray-400 mt-2">يمكن اختيار الاثنين معًا — تُرفع الصورة مرة واحدة وتظهر في المكانين.</p>
+        @error('in_slider') <p class="text-red-500 text-xs mt-1 font-bold">{{ $message }}</p> @enderror
+    </div>
+
+    {{-- حقل الصورة --}}
     <div x-show="type !== 'video'">
         <label class="block text-xs font-bold text-gray-400 mb-1.5">الصورة {{ $isEdit ? '(اتركها فارغة للإبقاء على الحالية)' : '' }}</label>
         @if($isEdit && $item->imageUrl())

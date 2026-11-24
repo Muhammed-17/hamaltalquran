@@ -11,6 +11,8 @@ class WelcomeMediaItem extends Model
 {
     protected $fillable = [
         'type',
+        'in_slider',
+        'in_gallery',
         'title',
         'image_path',
         'video_url',
@@ -20,6 +22,8 @@ class WelcomeMediaItem extends Model
 
     protected $casts = [
         'type' => WelcomeMediaType::class,
+        'in_slider' => 'boolean',
+        'in_gallery' => 'boolean',
         'is_active' => 'boolean',
         'sort_order' => 'integer',
     ];
@@ -42,6 +46,18 @@ class WelcomeMediaItem extends Model
     public function scopeOfType(Builder $query, WelcomeMediaType $type): Builder
     {
         return $query->where('type', $type->value);
+    }
+
+    /** صور تظهر في السلايدر */
+    public function scopeForSlider(Builder $query): Builder
+    {
+        return $query->where('type', WelcomeMediaType::Image->value)->where('in_slider', true);
+    }
+
+    /** صور تظهر في المعرض */
+    public function scopeForGallery(Builder $query): Builder
+    {
+        return $query->where('type', WelcomeMediaType::Image->value)->where('in_gallery', true);
     }
 
     public function scopeOrdered(Builder $query): Builder

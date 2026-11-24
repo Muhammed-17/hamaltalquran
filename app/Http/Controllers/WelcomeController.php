@@ -19,8 +19,8 @@ class WelcomeController extends Controller
             && Storage::disk('public')->exists($item->image_path);
 
         return view('welcome', [
-            'sliderItems' => $media->where('type', WelcomeMediaType::Slider)->filter($hasUsableImage)->values(),
-            'galleryItems' => $media->where('type', WelcomeMediaType::Gallery)->filter($hasUsableImage)->values(),
+            'sliderItems' => $media->filter(fn (WelcomeMediaItem $item) => $item->type === WelcomeMediaType::Image && $item->in_slider)->filter($hasUsableImage)->values(),
+            'galleryItems' => $media->filter(fn (WelcomeMediaItem $item) => $item->type === WelcomeMediaType::Image && $item->in_gallery)->filter($hasUsableImage)->values(),
             'videoItems' => $media->where('type', WelcomeMediaType::Video)
                 ->filter(fn (WelcomeMediaItem $item) => $item->youtubeIdValue() !== null)
                 ->values(),

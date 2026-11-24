@@ -4,16 +4,14 @@ namespace App\Enums;
 
 enum WelcomeMediaType: string
 {
-    case Slider = 'slider';
-    case Gallery = 'gallery';
+    case Image = 'image';
     case Video = 'video';
 
     public function label(): string
     {
         return match ($this) {
-            self::Slider => 'السلايدر',
-            self::Gallery => 'معرض الصور',
-            self::Video => 'الفيديوهات',
+            self::Image => 'صورة',
+            self::Video => 'فيديو',
         };
     }
 
