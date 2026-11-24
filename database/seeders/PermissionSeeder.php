@@ -30,6 +30,8 @@ class PermissionSeeder extends Seeder
             // ─────────────────────────────────────────────────────────
             // الطلاب (students)
             // ─────────────────────────────────────────────────────────
+            'create student'              => ['تسجيل طالب جديد', 'students'],
+            'edit student'                => ['تعديل بيانات الطالب', 'students'],
             // ─────────────────────────────────────────────────────────
             // الحضور والغياب (attendance)
             // ─────────────────────────────────────────────────────────
@@ -39,15 +41,13 @@ class PermissionSeeder extends Seeder
             // ─────────────────────────────────────────────────────────
             // الاشتراكات والمالية (subscriptions)
             // ─────────────────────────────────────────────────────────
-            'view subscriptions'          => ['عرض الاشتراكات والمدفوعات', 'subscriptions'],
+            'view late and unpaid'        => ['عرض الطلاب المتعثرين', 'subscriptions'],
             'create subscriptions'        => ['تسجيل دفع اشتراك', 'subscriptions'],
             'edit subscriptions'          => ['تعديل الاشتراكات', 'subscriptions'],
             'delete subscriptions'        => ['حذف سندات الاشتراكات', 'subscriptions'],
             'view subscriptions chart'    => ['عرض رسوم الاشتراكات', 'subscriptions'],
             'notify unpaid subscriptions' => ['إشعار أولياء الأمور بالاشتراكات المتأخرة', 'subscriptions'],
             'transfer subscriptions'      => ['تحويل الاشتراكات', 'subscriptions'],
-            'manage subscription prices'  => ['إدارة وتحديد أسعار الاشتراكات', 'subscriptions'],
-            'view subscription prices'    => ['عرض أسعار الاشتراكات', 'subscriptions'],
 
             // ─────────────────────────────────────────────────────────
             // التحصيلات (collection rounds)
@@ -57,12 +57,6 @@ class PermissionSeeder extends Seeder
             'edit collection rounds'      => ['تعديل التحصيل', 'collection rounds'],
             'delete collection rounds'    => ['حذف التحصيل', 'collection rounds'],
             'confirm collection rounds'   => ['تأكيد التحصيل', 'collection rounds'],
-
-            // ─────────────────────────────────────────────────────────
-            // أولياء الأمور (guardians)
-            // ─────────────────────────────────────────────────────────
-            'view own children'           => ['عرض تفاصيل الأبناء', 'guardians'],
-            'view notifications'          => ['عرض الإشعارات', 'guardians'],
 
             // ─────────────────────────────────────────────────────────
             // متابعة الطلاب الأسبوعية (student weekly followups)
@@ -157,17 +151,17 @@ class PermissionSeeder extends Seeder
                 // circles
                 'edit circles',
                 // students
+                'create student',
+                'edit student',
                 // attendance
                 'notify attendance',
                 // subscriptions
-                'view subscriptions',
+                'view late and unpaid',
                 'create subscriptions',
                 'edit subscriptions',
                 'delete subscriptions',
                 'notify unpaid subscriptions',
                 'transfer subscriptions',
-                'manage subscription prices',
-                'view subscription prices',
                 'view subscriptions chart',
                 // collection rounds
                 'view collection rounds',
@@ -191,7 +185,6 @@ class PermissionSeeder extends Seeder
                 'delete behavioral notes',
                 'approve behavioral notes',
                 // guardians
-                'view notifications',
 
                 // surah tests
                 'view surah tests',
@@ -238,7 +231,7 @@ class PermissionSeeder extends Seeder
                 // attendance
                 'notify attendance',
                 // subscriptions
-                'view subscriptions',
+                'view late and unpaid',
                 'create subscriptions',
                 'edit subscriptions',
                 'delete subscriptions',
@@ -261,7 +254,6 @@ class PermissionSeeder extends Seeder
                 'delete behavioral notes',
                 'approve behavioral notes',
                 // guardians
-                'view notifications',
 
                 // surah tests
                 'view surah tests',
@@ -287,7 +279,7 @@ class PermissionSeeder extends Seeder
                 // attendance
                 'notify attendance',
                 // subscriptions
-                'view subscriptions',
+                'view late and unpaid',
                 'create subscriptions',
                 'edit subscriptions',
                 'delete subscriptions',
@@ -316,7 +308,6 @@ class PermissionSeeder extends Seeder
                 'delete behavioral notes',
                 'approve behavioral notes',
                 // guardians
-                'view notifications',
 
                 // surah tests
                 'view surah tests',
@@ -341,7 +332,7 @@ class PermissionSeeder extends Seeder
                 // students
                 // attendance
                 // subscriptions
-                'view subscriptions',
+                'view late and unpaid',
                 'create subscriptions',
                 'edit subscriptions',
                 'delete subscriptions',
@@ -385,7 +376,7 @@ class PermissionSeeder extends Seeder
                 // circles
                 // attendance
                 // subscriptions
-                'view subscriptions',
+                'view late and unpaid',
                 'create subscriptions',
                 'edit subscriptions',
                 'delete subscriptions',
@@ -405,13 +396,7 @@ class PermissionSeeder extends Seeder
 
             'examiner' => [],
 
-            'guardian' => [
-                // system
-                'edit profile',
-                // guardians
-                'view own children',
-                'view notifications',
-            ],
+            'guardian' => [],
         ];
 
         // مسميات الأدوار العربية لـ display_name المتواجد بجدول الـ roles

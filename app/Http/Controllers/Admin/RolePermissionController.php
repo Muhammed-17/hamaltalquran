@@ -33,12 +33,21 @@ class RolePermissionController extends Controller
      */
     private const MAX_ROLES = 25;
 
+    /**
+     * أدوار لا تُدار من هذه الصفحة إطلاقًا — وصولها مربوط بالدور نفسه
+     * (ولي الأمر: صفحاته وبيانات أبنائه محكومة بالدور والملكية، ولا يملك
+     * أي صلاحية أصلًا) فلا تظهر هنا ولا تُعدَّل صلاحياتها.
+     */
+    private const UNMANAGED_ROLES = [
+        'guardian',
+    ];
+
     // ─────────────────────────────────────────────
     public function index(): View
     {
         abort_unless(auth()->user()->hasRole('admin'), 403);
 
-        $roles = Role::with('permissions')->get();
+        $roles = Role::with('permissions')->whereNotIn('name', self::UNMANAGED_ROLES)->get();
 
         $permissions = Permission::orderBy('group')
             ->orderBy('display_name')
@@ -106,6 +115,12 @@ class RolePermissionController extends Controller
     public function updateRolePermissions(Request $request, Role $role): RedirectResponse
     {
         abort_unless(auth()->user()->hasRole('admin'), 403);
+
+        // الأدوار غير المُدارة من هنا لا تُعدَّل ولو بطلب مباشر
+        if (in_array($role->name, self::UNMANAGED_ROLES)) {
+            return redirect()->route('admin.roles.index')
+                ->with('error', 'دور ولي الأمر لا تُدار صلاحياته من هذه الصفحة');
+        }
 
         // ① Validation
         $request->validate([

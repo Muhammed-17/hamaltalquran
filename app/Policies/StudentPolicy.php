@@ -23,8 +23,7 @@ class StudentPolicy
     public function view(User $user, Student $student): bool
     {
         if ($user->hasRole('guardian')) {
-            return $user->can('view own children')
-                && $student->guardian_id === $user->id
+            return $student->guardian_id === $user->id
                 && $student->status !== \App\Enums\StudentStatus::Stopped;
         }
 
@@ -34,12 +33,12 @@ class StudentPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasRole('admin');
+        return $user->can('create student');
     }
 
     public function update(User $user, Student $student): bool
     {
-        return $user->hasRole('admin')
+        return $user->can('edit student')
             && $this->canAccessStudent($user, $student);
     }
 

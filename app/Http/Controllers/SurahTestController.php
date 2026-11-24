@@ -212,6 +212,39 @@ class SurahTestController extends Controller
     // =============================================================
     // STORE
     // =============================================================
+    /**
+     * إعادة حساب النسبة والتقدير خادميًا بنفس معادلة الواجهة:
+     * أوزان الخصم (فتح/تشكيل) = 1/0.5 للفاتحة ومن يس إلى الناس، و2/1 لغيرها،
+     * والنسبة = 100 − الأخطاء الموزونة (محصورة 0..100)، والتقدير من عتباتها.
+     * تُفرض على من لا يحمل «edit surah test percentages» — قفل الواجهة وحده
+     * كان يُتجاوز بطلب مصنوع فتُخزن نسبة وتقدير متناقضان مع الأخطاء.
+     */
+    private function computeResultValues(int $surahId, int $promptErrors, int $tashkeelErrors): array
+    {
+        [$promptWeight, $tashkeelWeight] = ($surahId === 1 || ($surahId >= 36 && $surahId <= 114)) ? [1, 0.5] : [2, 1];
+        $raw = max(0, min(100, 100 - ($promptErrors * $promptWeight) - ($tashkeelErrors * $tashkeelWeight)));
+        $level = match (true) {
+            $raw >= 95 => \App\Enums\SurahTestLevel::Excellent,
+            $raw >= 90 => \App\Enums\SurahTestLevel::VeryGood,
+            $raw >= 85 => \App\Enums\SurahTestLevel::Good,
+            $raw >= 80 => \App\Enums\SurahTestLevel::Acceptable,
+            default => \App\Enums\SurahTestLevel::Repeat,
+        };
+
+        return [(int) $raw, $level->value];
+    }
+
+    /** الممتحِن يجب أن يكون ضمن معلمي نطاق الفاعل (الأدمن/المدير العام بلا قيد) */
+    private function examinerOutOfScope(\Illuminate\Http\Request $request, int $teacherId): bool
+    {
+        $user = $request->user();
+        if ($user->hasRole(['admin', 'general_manager'])) {
+            return false;
+        }
+
+        return !app(UserAccessService::class)->accessibleTeachers($user)->pluck('id')->contains($teacherId);
+    }
+
     public function store(StoreSurahTestRequest $request): RedirectResponse
     {
         $validated = $request->validated();
@@ -239,11 +272,37 @@ class SurahTestController extends Controller
                 ->with('error', 'الحلقة المختارة خارج نطاق وصولك.');
         }
 
+        // ✅ نوع الحلقة يجب أن يطابق نوع الاختبار (جماعي على فردية كان يمر)
+        $circle = Circle::withoutGlobalScope(CenterScope::class)->find($circleId);
+        if ($circle && $circle->type !== $validated['test_type']) {
+            return back()
+                ->withInput()
+                ->with('error', 'نوع الحلقة لا يطابق نوع الاختبار المطلوب.');
+        }
+
+        // ✅ الممتحِن ضمن نطاق الفاعل — كان يقبل معلم أي مركز
+        if ($this->examinerOutOfScope($request, (int) $validated['teacher_id'])) {
+            return back()
+                ->withInput()
+                ->with('error', 'الممتحِن المختار خارج نطاق وصولك.');
+        }
+
+        // ✅ الاختبار الفردي مرتبط بطالبه: نتيجة واحدة وللطالب نفسه فقط
+        if ($validated['test_type'] === 'individual') {
+            $results = collect($validated['results']);
+            if ($results->count() !== 1 || (int) $results->first()['student_id'] !== (int) $validated['student_id']) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'الاختبار الفردي يجب أن يحتوي نتيجة واحدة للطالب المختار نفسه.');
+            }
+        }
+
         // النتائج لطلاب هذه الحلقة فقط — لا طلاب حلقات أخرى
+        // (الطالب بلا حلقة غريب أيضًا: مقارنة != في SQL لا تلتقط NULL)
         $resultStudentIds = collect($validated['results'])->pluck('student_id')->unique()->all();
         $hasOutsiders = Student::withoutGlobalScope(CenterScope::class)
             ->whereIn('id', $resultStudentIds)
-            ->where('circle_id', '!=', $circleId)
+            ->where(fn ($q) => $q->where('circle_id', '!=', $circleId)->orWhereNull('circle_id'))
             ->exists();
 
         if ($hasOutsiders) {
@@ -265,17 +324,31 @@ class SurahTestController extends Controller
             ]);
 
             $now = now();
-            $rows = collect($validated['results'])->map(fn($result) => [
-                'surah_test_id'   => $surahTest->id,
-                'student_id'      => $result['student_id'],
-                'prompt_errors'   => $result['prompt_errors'],
-                'tashkeel_errors' => $result['tashkeel_errors'],
-                'percentage'      => $result['percentage'],
-                'level'           => $result['level'] ?? null,
-                'notes'           => $result['notes'] ?? null,
-                'created_at'      => $now,
-                'updated_at'      => $now,
-            ])->toArray();
+            $canEditPercentages = $request->user()->can('edit surah test percentages');
+            $rows = collect($validated['results'])->map(function ($result) use ($surahTest, $validated, $now, $canEditPercentages) {
+                $percentage = $result['percentage'];
+                $level = $result['level'] ?? null;
+                if (!$canEditPercentages) {
+                    // ✅ إعادة حساب خادمية: المُرسل من غير الحاملين لا يُعتمد
+                    [$percentage, $level] = $this->computeResultValues(
+                        (int) $validated['surah_id'],
+                        (int) $result['prompt_errors'],
+                        (int) $result['tashkeel_errors'],
+                    );
+                }
+
+                return [
+                    'surah_test_id'   => $surahTest->id,
+                    'student_id'      => $result['student_id'],
+                    'prompt_errors'   => $result['prompt_errors'],
+                    'tashkeel_errors' => $result['tashkeel_errors'],
+                    'percentage'      => $percentage,
+                    'level'           => $level,
+                    'notes'           => $result['notes'] ?? null,
+                    'created_at'      => $now,
+                    'updated_at'      => $now,
+                ];
+            })->toArray();
 
             StudentSurahTestResult::insert($rows);
 
@@ -285,9 +358,10 @@ class SurahTestController extends Controller
                 ->with('success', 'تم إنشاء اختبار السورة بنجاح.');
         } catch (\Exception $e) {
             DB::rollBack();
+            \Illuminate\Support\Facades\Log::error('فشل إنشاء اختبار سورة', ['exception' => $e]);
             return back()
                 ->withInput()
-                ->with('error', 'حدث خطأ أثناء الحفظ: ' . $e->getMessage());
+                ->with('error', 'حدث خطأ أثناء الحفظ. حاول مرة أخرى.');
         }
     }
 
@@ -374,6 +448,27 @@ class SurahTestController extends Controller
     public function update(UpdateSurahTestRequest $request, SurahTest $surahTest): RedirectResponse
     {
         $validated = $request->validated();
+
+        // ✅ الممتحِن ضمن نطاق الفاعل كما في الإنشاء
+        if ($this->examinerOutOfScope($request, (int) $validated['teacher_id'])) {
+            return back()
+                ->withInput()
+                ->with('error', 'الممتحِن المختار خارج نطاق وصولك.');
+        }
+
+        // ✅ إعادة حساب النسبة والتقدير خادميًا لغير حاملي صلاحية النسب،
+        // قبل مقارنات «ما تغيّر» حتى لا تُحسب القيم المصنوعة تعديلًا
+        if (!$request->user()->can('edit surah test percentages')) {
+            $validated['results'] = collect($validated['results'])->map(function ($result) use ($validated) {
+                [$result['percentage'], $result['level']] = $this->computeResultValues(
+                    (int) $validated['surah_id'],
+                    (int) $result['prompt_errors'],
+                    (int) $result['tashkeel_errors'],
+                );
+
+                return $result;
+            })->all();
+        }
 
         $validIds = $surahTest->results()->pluck('id')->all();
         $incomingIds = collect($validated['results'])->pluck('id')->all();
@@ -544,9 +639,10 @@ class SurahTestController extends Controller
                 ->with('success', 'تم تحديث نتائج الاختبار بنجاح.');
         } catch (\Exception $e) {
             DB::rollBack();
+            \Illuminate\Support\Facades\Log::error('فشل تحديث اختبار سورة', ['exception' => $e]);
             return back()
                 ->withInput()
-                ->with('error', 'حدث خطأ أثناء التحديث: ' . $e->getMessage());
+                ->with('error', 'حدث خطأ أثناء التحديث. حاول مرة أخرى.');
         }
     }
     // =============================================================
@@ -567,8 +663,9 @@ class SurahTestController extends Controller
                 ->with('success', 'تم حذف اختبار السورة بنجاح.');
         } catch (\Exception $e) {
             DB::rollBack();
+            \Illuminate\Support\Facades\Log::error('فشل حذف اختبار سورة', ['exception' => $e]);
             return back()
-                ->with('error', 'حدث خطأ أثناء الحذف: ' . $e->getMessage());
+                ->with('error', 'حدث خطأ أثناء الحذف. حاول مرة أخرى.');
         }
     }
     // =============================================================

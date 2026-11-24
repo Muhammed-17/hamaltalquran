@@ -304,9 +304,13 @@ class StudentController extends Controller
             return redirect()->route('students.index')
                 ->with('success', $message)
                 ->with('whatsapp_link', $whatsappLink);
+        } catch (\Illuminate\Validation\ValidationException|\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            DB::rollBack();
+            throw $e; // ✅ الرفض المقصود (403/422) يصل بحالته الحقيقية بدل إخفائه في 500
         } catch (\Exception $e) {
             DB::rollBack();
-            $errorMessage = 'حدث خطأ أثناء تسجيل الطالب: ' . $e->getMessage();
+            \Illuminate\Support\Facades\Log::error('فشل تسجيل طالب', ['exception' => $e]);
+            $errorMessage = 'حدث خطأ أثناء تسجيل الطالب. حاول مرة أخرى.';
 
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json(['success' => false, 'message' => $errorMessage], 500);
@@ -679,9 +683,13 @@ class StudentController extends Controller
             return redirect()->route('students.index')
                 ->with('success', $message)
                 ->with('whatsapp_link', $whatsappLink);
+        } catch (\Illuminate\Validation\ValidationException|\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            DB::rollBack();
+            throw $e; // ✅ الرفض المقصود (403/422) يصل بحالته الحقيقية بدل إخفائه في 500
         } catch (\Exception $e) {
             DB::rollBack();
-            $errorMessage = 'حدث خطأ: ' . $e->getMessage();
+            \Illuminate\Support\Facades\Log::error('فشل تحديث طالب', ['exception' => $e]);
+            $errorMessage = 'حدث خطأ أثناء تحديث بيانات الطالب. حاول مرة أخرى.';
 
             if ($request->expectsJson() || $request->ajax()) {
                 return response()->json(['success' => false, 'message' => $errorMessage], 500);
@@ -722,6 +730,17 @@ class StudentController extends Controller
     // (في التعديل: القيم غير المتغيرة عن الحالية مسموحة دائمًا)
     private function ensureStudentTargetsAccessible(array $data, ?Student $current = null): void
     {
+        // ✅ اتساق المركز والحلقة (يسري على الجميع بمن فيهم الأدمن): الحلقة يجب أن
+        // تتبع المركز الفعّال — كان يمكن إنشاء طالب مركزه أ وحلقته من مركز ب
+        $effectiveCenterId = $data['center_id'] ?? $current?->center_id;
+        $effectiveCircleId = $data['circle_id'] ?? $current?->circle_id;
+        if (!empty($effectiveCenterId) && !empty($effectiveCircleId)) {
+            $circleCenterId = \App\Models\Circle::with('branch')->find($effectiveCircleId)?->branch?->center_id;
+            if ($circleCenterId !== null && (int) $circleCenterId !== (int) $effectiveCenterId) {
+                abort(422, 'الحلقة المحددة لا تتبع المركز المحدد.');
+            }
+        }
+
         $user = Auth::user();
         if ($user->hasRole('admin')) return;
 
@@ -791,8 +810,10 @@ class StudentController extends Controller
                 'email'    => $emailToUse,
                 'password' => Hash::make($password ?? Str::random(16)),
                 'status'   => 'active',
-                'email_verified_at' => now(),
             ]);
+
+            // ✅ email_verified_at خارج $fillable فكان يُسقَط صامتًا — يُضبط قسرًا
+            $guardian->forceFill(['email_verified_at' => now()])->save();
 
             $guardian->assignRole('guardian');
 

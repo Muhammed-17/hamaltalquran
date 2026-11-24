@@ -321,7 +321,9 @@ async toggleContact(studentId) {
                                 أيام الغياب
                                 <span x-show="sortField === 'absence_days'" x-text="sortAsc ? '↑' : '↓'" class="mr-1"></span>
                             </th>
+                            @can('notify attendance')
                             <th class="text-center px-4 py-3 font-bold text-gray-600">إرسال تنبيه</th>
+                            @endcan
                             <th @click="sortBy('is_guardian_contacted')"
                                 class="text-center px-4 py-3 font-bold text-gray-600 cursor-pointer select-none hover:text-gray-800">
                                 حالة التواصل
@@ -345,6 +347,7 @@ async toggleContact(studentId) {
                                         class="inline-block bg-red-100 hover:bg-red-200 text-red-700 text-xs px-3 py-1 rounded-full font-bold transition cursor-pointer"
                                         x-text="student.absence_days"></button>
                                 </td>
+                                @can('notify attendance')
                                 <td class="px-4 py-3 text-center">
                                     <div class="flex items-center justify-center gap-1.5">
                                         <button @click="openNotifyModal(student.id)"
@@ -372,6 +375,7 @@ async toggleContact(studentId) {
                                         </button>
                                     </div>
                                 </td>
+                                @endcan
                                 <td class="px-4 py-3 text-center">
                                     <span class="text-xs font-bold"
                                         :class="student.is_guardian_contacted ? 'text-emerald-600' : 'text-gray-400'"
@@ -380,7 +384,7 @@ async toggleContact(studentId) {
                             </tr>
                         </template>
                         <tr x-show="filteredStudents.length === 0">
-                            <td colspan="8" class="px-4 py-12 text-center">
+                            <td colspan="{{ auth()->user()->can('notify attendance') ? 8 : 7 }}" class="px-4 py-12 text-center">
                                 <div class="text-gray-400 mb-2">
                                     <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />

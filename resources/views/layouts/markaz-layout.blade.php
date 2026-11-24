@@ -74,7 +74,7 @@
                     الاشتراكات
                 </a>
                 @endrole
-                @can('view notifications')
+                @role('guardian')
                 <a href="{{ route('guardian.notifications.index') }}"
                     class="block px-4 py-2 rounded-lg {{ request()->routeIs('guardian.notifications.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">
                     <div class="flex items-center justify-between">
@@ -85,7 +85,7 @@
                         @endif
                     </div>
                 </a>
-                @endcan
+                @endrole
                 @can('edit profile')
                 <a href="{{ route('profile.edit') }}"
                     class="block px-4 py-2 rounded-lg {{ request()->routeIs('profile.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">
@@ -133,12 +133,12 @@
                 </a>
                 @endrole
 
-                @can('view subscriptions')
+                @role('admin|general_manager|manager|supervisor|teacher')
                 <a href="{{ route('subscriptions.index') }}"
                     class="block px-4 py-2 rounded-lg {{ request()->routeIs('subscriptions.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">
                     اشتراكات الطلاب
                 </a>
-                @endcan
+                @endrole
 
                 @can('view collection rounds')
                 <a href="{{ route('collection-rounds.index') }}"
@@ -318,7 +318,7 @@
                 <!-- ═══════════════════════════════════════════════════════════════ -->
                 <!-- ═══════════════ قسم الإعدادات (Settings) ═════════════════════ -->
                 <!-- ═══════════════════════════════════════════════════════════════ -->
-                @if(auth()->user()->hasAnyRole('admin') || auth()->user()->canAny(['edit profile', 'view subscription prices']))
+                @if(auth()->user()->hasAnyRole('admin') || auth()->user()->canAny(['edit profile']))
                 <div x-data="{ open: {{ (request()->routeIs('guardians.*') || request()->routeIs('profile.*') || request()->routeIs('centers.*') || request()->routeIs('branches.*')  || request()->routeIs('subscription-prices.*') || request()->routeIs('admin.roles.*'))? 'true' : 'false' }} }" class="space-y-1">
                     <button @click="open = !open"
                         class="w-full flex items-center justify-between px-4 py-2 rounded-lg hover:bg-[#0d7a48] transition-colors focus:outline-none {{ (request()->routeIs('guardians.*') || request()->routeIs('profile.*') || request()->routeIs('centers.*') || request()->routeIs('branches.*') || request()->routeIs('subscription-prices.*') || request()->routeIs('admin.roles.*')) ? 'bg-[#0d7a48]' : '' }}">
@@ -355,12 +355,12 @@
                             محتوى الصفحة الرئيسية
                         </a>
                         @endrole
-                        @can('view subscription prices')
+                        @role('admin')
                         <a href="{{ route('subscription-prices.index') }}"
                             class="block px-4 py-2 rounded-lg text-[13px] {{ request()->routeIs('subscription-prices.*') ? 'bg-[#0d7a48] font-bold' : 'hover:bg-[#0d7a48]' }}">
                             أسعار الاشتراكات
                         </a>
-                        @endcan
+                        @endrole
                         @role('admin')
                         <a href="{{ route('admin.roles.index') }}"
                             class="block px-4 py-2 rounded-lg text-[13px] {{ request()->routeIs('admin.roles.*') ? 'bg-[#0d7a48] font-bold' : 'hover:bg-[#0d7a48]' }}">

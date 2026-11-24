@@ -63,3 +63,15 @@ test('circle main teacher opens his student profile; examiner stays out', functi
     $r = $this->actingAs($this->examiner)->get(route('students.show', $this->ownChild));
     expect($r->status())->toBeIn([302, 403]);
 });
+
+/**
+ * حذف صلاحية view own children (تقرير 208): صار وصول ولي الأمر لصفحة ابنه
+ * مربوطًا بدوره مباشرة (مسارًا وسياسة) كأخواتها المحذوفة — الملكية والحالة
+ * هما الحاسمان كما كانا.
+ */
+test('guardian reaches his child by role after view own children deletion', function () {
+    expect(\Spatie\Permission\Models\Permission::where('name', 'view own children')->exists())->toBeFalse();
+
+    $this->actingAs($this->guardian)->get(route('students.show', $this->ownChild))->assertOk();
+    $this->actingAs($this->guardian)->get(route('students.show', $this->otherChild))->assertStatus(302);
+});

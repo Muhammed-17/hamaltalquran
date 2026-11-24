@@ -84,7 +84,7 @@ beforeEach(function () {
         'manager'         => ['/students', '/circles', '/attendance', '/subscriptions', '/competitions', '/surah-tests/individual', '/collection-rounds', '/profile'],
         'supervisor'      => ['/students', '/circles', '/attendance', '/subscriptions', '/competitions', '/surah-tests/individual', '/collection-rounds', '/profile'],
         'teacher'         => ['/students', '/circles', '/attendance', '/subscriptions', '/profile'],
-        'guardian'        => ['/guardian/my-dashboard', '/profile'],
+        'guardian'        => ['/guardian/my-dashboard'], // /profile أُغلق عليه بقرار تقرير 210 (حذف edit profile منه)
         'examiner'        => ['/examiner/dashboard'],
     ];
     $this->allPages = ['/dashboard', '/students', '/teachers', '/circles', '/branches', '/centers', '/attendance', '/attendance/report', '/subscriptions', '/subscription-prices', '/competitions', '/surah-tests/individual', '/collection-rounds', '/examiners', '/admin/roles', '/guardian/my-dashboard', '/examiner/dashboard', '/profile'];

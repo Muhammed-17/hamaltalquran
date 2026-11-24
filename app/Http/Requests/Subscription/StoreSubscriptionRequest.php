@@ -20,9 +20,31 @@ class StoreSubscriptionRequest extends FormRequest
             'teacher_id'     => 'required|exists:users,id',
             'month'          => 'required|date_format:Y-m',
             'status'         => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\SubscriptionStatus::class)],
-            'amount'         => 'required_if:status,مدفوع|nullable|numeric|min:0',
+            'amount'         => [
+                'required_if:status,مدفوع',
+                'nullable',
+                'numeric',
+                'min:0',
+                function ($attribute, $value, $fail) {
+                    // ✅ «مدفوع» بمبلغ صفر سجل دفع وهمي — المدفوع يجب أن يحمل مبلغًا موجبًا
+                    if ($this->status === 'مدفوع' && $value !== null && (float) $value <= 0) {
+                        $fail('المبلغ يجب أن يكون أكبر من صفر عند حالة مدفوع.');
+                    }
+                },
+            ],
             'payment_method' => 'required_if:status,مدفوع|nullable|in:نقدي,تحويل بنكي,أخرى',
-            'collected_by'   => 'nullable|exists:users,id',
+            'collected_by'   => [
+                'nullable',
+                'integer',
+                function ($attribute, $value, $fail) {
+                    // ✅ المحصِّل يجب أن يكون من طاقم التحصيل — كان يكفي وجود أي
+                    // مستخدم، فأمكن إسناد قبض مبلغ لحساب ولي أمر
+                    $collector = \App\Models\User::find($value);
+                    if (!$collector || !$collector->hasAnyRole(['admin', 'teacher', 'supervisor', 'manager', 'general_manager'])) {
+                        $fail('المحصِّل يجب أن يكون من طاقم التحصيل (معلم أو مشرف أو مدير).');
+                    }
+                },
+            ],
             'notes'          => 'nullable|string|max:1000',
         ];
     }

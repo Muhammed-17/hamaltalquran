@@ -42,6 +42,8 @@ $hasFilters = request()->anyFilled([
 
                 
 
+                @endrole
+                @can('create student')
                 <a href="{{ route('students.create') }}"
                     class="w-full md:w-auto px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-emerald-500/20 active:scale-95">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -49,7 +51,7 @@ $hasFilters = request()->anyFilled([
                     </svg>
                     جديد
                 </a>
-                @endrole
+                @endcan
                 @can('view favorites')
                 <a href="{{ route('favorites.index') }}"
                     class="w-full md:w-auto px-6 py-3 bg-yellow-500/90 hover:bg-yellow-400 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all border border-white/20 active:scale-95">

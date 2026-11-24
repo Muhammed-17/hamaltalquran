@@ -22,13 +22,13 @@ Route::middleware(['auth', 'verified', 'role:admin|general_manager|manager|super
             ->name('favorites.index');
     });
 
-    Route::middleware('role:admin')->group(function () {
+    Route::middleware('permission:create student')->group(function () {
         Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
         Route::post('/students', [StudentController::class, 'store'])->name('students.store');
     });
 
 
-    Route::middleware('role:admin')->group(function () {
+    Route::middleware('permission:edit student')->group(function () {
         Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
         Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
     });
@@ -41,9 +41,9 @@ Route::middleware(['auth', 'verified', 'role:admin|general_manager|manager|super
     // تعيين الحلقة يتم فعليًا من تحديث الطالب (للأدمن فقط) مع فحص الدور داخله.
 });
 
-// عرض طالب واحد وبيانات تبويباته: متاحان أيضًا لولي الأمر صاحب صلاحية «عرض تفاصيل الأبناء» —
+// عرض طالب واحد وبيانات تبويباته: متاحان أيضًا لولي الأمر بدوره —
 // السياسة وحدها تحسم من يرى أي طالب (الولي: أبناؤه غير المتوقفين فقط).
-Route::middleware(['auth', 'verified', 'role_or_permission:admin|general_manager|manager|supervisor|teacher|view own children'])->group(function () {
+Route::middleware(['auth', 'verified', 'role:admin|general_manager|manager|supervisor|teacher|guardian'])->group(function () {
     Route::get('/students/{student}', [StudentController::class, 'show'])->name('students.show');
     Route::get('/students/{student}/tab-data', [StudentController::class, 'tabData'])->name('students.tab-data');
 });

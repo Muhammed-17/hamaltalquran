@@ -154,6 +154,12 @@ class BadgeCollectionService
     {
         $existing = $this->sessionRound($circle, $teacherUserId, $date);
         if ($existing) {
+            // ✅ إعادة فحص قاعدة الشهر حتى للمسودة القائمة: مسودة بدأت قبل اعتماد
+            // جولة أخرى لنفس الحلقة والشهر لا تقبل تسويات جديدة بعد الاكتمال
+            if ($done = $this->completedRoundInMonth($circle, $date, $existing->id)) {
+                throw ValidationException::withMessages(['collection_date' => $this->monthBlockMessage($done)]);
+            }
+
             return $existing;
         }
 
@@ -452,7 +458,24 @@ class BadgeCollectionService
                 throw ValidationException::withMessages(['round' => $this->monthBlockMessage($done)]);
             }
 
+            // ✅ لا اعتماد لجلسة فارغة: اعتمادها يحرق شهر الحلقة بلا أي تحصيل فعلي
+            if (!$round->items()->exists()) {
+                throw ValidationException::withMessages(['round' => 'لا يمكن اعتماد جلسة تحصيل فارغة — سوِّ طالبًا واحدًا على الأقل أولًا.']);
+            }
+
             $round->update(['status' => CollectionRoundStatus::Completed->value]);
+
+            // ✅ إلغاء أي مسودات أخرى لنفس الحلقة والشهر: بنودها تحجز كميات
+            // وخصومات مستحق، ولا يمكن اعتمادها بعد اكتمال الشهر بأي حال
+            $monthStart = \Carbon\Carbon::parse($round->collection_date)->startOfMonth();
+            $siblings = BadgeCollectionRound::where('circle_id', $round->circle_id)
+                ->where('id', '!=', $round->id)
+                ->where('status', CollectionRoundStatus::Draft->value)
+                ->whereBetween('collection_date', [$monthStart->toDateString(), $monthStart->copy()->endOfMonth()->toDateString()])
+                ->get();
+            foreach ($siblings as $sibling) {
+                $this->cancel($sibling, $actor, 'أُلغيت تلقائيًا لاعتماد جولة أخرى لنفس الحلقة في نفس الشهر.');
+            }
 
             $this->logger->log('collection.completed', $round, user: $actor);
 

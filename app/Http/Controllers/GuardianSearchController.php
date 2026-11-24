@@ -97,7 +97,9 @@ class GuardianSearchController extends Controller
 
         $allowed =
             $user->hasRole('admin') ||
-            $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor']);
+            $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor']) ||
+            $user->can('create student') ||
+            $user->can('edit student');
 
         if (!$allowed) {
             abort(403, 'ليس لديك صلاحية البحث عن أولياء الأمور');

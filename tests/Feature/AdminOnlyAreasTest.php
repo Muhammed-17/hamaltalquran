@@ -399,6 +399,60 @@ test('student creation and editing are admin-only by his later order', function 
     $this->actingAs($manager)->get(route('students.edit', $student))->assertRedirect();
 });
 
+/**
+ * صلاحيتا create student و edit student (بقراره، بالمفرد كما كتبهما): أُضيفتا
+ * للكتالوج وممنوحتان مبدئيًا للأدمن فقط — فيبقى الوصول الحالي كما هو — وبوابات
+ * الإنشاء والتعديل (المسارات وسياسة الطلاب وسياق الطالب في خطط البناء) صارت
+ * بهما بدل role:admin، فيستطيع منح أي دور من صفحة الأدوار فيعمل فورًا.
+ * إدارة الحالة والحذف والتسكين بقيت للأدمن بالدور كما هي.
+ */
+test('create student and edit student permissions exist, are admin-only by default, and open the gates when granted', function () {
+    foreach (['create student', 'edit student'] as $name) {
+        expect(Permission::where('name', $name)->exists())->toBeTrue();
+    }
+    expect(\Spatie\Permission\Models\Role::findByName('admin')->hasPermissionTo('create student'))->toBeTrue()
+        ->and(\Spatie\Permission\Models\Role::findByName('admin')->hasPermissionTo('edit student'))->toBeTrue();
+    foreach (['general_manager', 'manager', 'supervisor', 'teacher'] as $role) {
+        expect(\Spatie\Permission\Models\Role::findByName($role)->hasPermissionTo('create student'))->toBeFalse()
+            ->and(\Spatie\Permission\Models\Role::findByName($role)->hasPermissionTo('edit student'))->toBeFalse();
+    }
+
+    [$center, $branch, $circle] = circleFixture();
+    $manager = adminOnlyUser('manager');
+    Teacher::create(['user_id' => $manager->id, 'branch_id' => $branch->id]);
+    $student = Student::create([
+        'name' => 'طالب الصلاحيتين', 'gender' => 'ذكر', 'status' => 'مقيد', 'decision' => 'مقبول',
+        'center_id' => $center->id, 'circle_id' => $circle->id,
+    ]);
+
+    // بلا الصلاحيتين: مغلق كما كان بعد تشديد الأدمن فقط
+    $this->actingAs($manager)->get(route('students.create'))->assertRedirect();
+    $this->actingAs($manager)->get(route('students.edit', $student))->assertRedirect();
+
+    // بمنحهما: الصفحتان تنفتحان فورًا
+    $manager->givePermissionTo(['create student', 'edit student']);
+    $this->actingAs($manager->fresh())->get(route('students.create'))->assertOk();
+    $this->actingAs($manager->fresh())->get(route('students.edit', $student))->assertOk();
+
+    // وسياق الطالب الفردي في خطط البناء يتبع create student، وسياق الحلقة يبقى للأدمن
+    $individual = Circle::create(['name' => 'حلقة فردية للصلاحية', 'branch_id' => $branch->id, 'type' => 'individual', 'level' => 'build']);
+    $planStudent = Student::create([
+        'name' => 'طالب خطة الصلاحية', 'gender' => 'ذكر', 'status' => 'مقيد', 'decision' => 'مقبول',
+        'center_id' => $center->id, 'circle_id' => $individual->id,
+    ]);
+    $planPayload = [
+        'study_system'          => 'individual',
+        'new_memorization_plan' => 'حفظ جديد',
+        'revision_plan'         => 'مراجعة',
+        'old_memorization_plan' => 'قديم',
+    ];
+    $this->actingAs($manager->fresh())->post(route('student-construction-details.store'), $planPayload + ['student_id' => $planStudent->id]);
+    expect(\App\Models\StudentConstructionDetail::where('student_id', $planStudent->id)->exists())->toBeTrue();
+
+    $this->actingAs($manager->fresh())->post(route('student-construction-details.store'), $planPayload + ['circle_id' => $circle->id]);
+    expect(\App\Models\StudentConstructionDetail::where('circle_id', $circle->id)->whereNull('student_id')->exists())->toBeFalse();
+});
+
 test('delete students is live: admin deletes a student, center manager cannot', function () {
     [$center, $branch, $circle] = circleFixture();
     $manager = adminOnlyUser('manager');
@@ -715,4 +769,150 @@ test('attendance create page loads partially when filters change', function () {
     $response->assertSee('window.loadAttendancePartial', false);
     $response->assertDontSee("getElementById('attendanceFilterForm').submit()", false);
     $response->assertDontSee('window.location.href = url.toString()', false);
+});
+
+/**
+ * إصلاح عطل التحميل الجزئي في تسجيل الحضور (تقرير صاحب الموقع): معالج
+ * التاريخ الداخلي كان ينهار لأن document.URL يحجب مُنشئ URL داخل خصائص
+ * الأحداث الداخلية، ومعالجا الحلقة/المعلم كانا يرسلان تاريخ أول تحميل.
+ * الآن: مستمع مفوَّض للتاريخ، والحفاظ على تاريخ الرابط الحالي.
+ */
+test('attendance create date change uses a delegated listener not an inline handler', function () {
+    [$center, $branch, $circle, $t1] = circleFixture();
+
+    $response = $this->actingAs($t1->user)->get(route('attendance.create', ['circle_id' => $circle->id]));
+    $response->assertOk();
+    $response->assertDontSee('onchange="const u = new URL', false);
+    $response->assertSee("e.target.matches('#attendance-workspace input[name=\"date\"]')", false);
+    $response->assertSee("if (!url.searchParams.get('date'))", false);
+});
+
+/**
+ * عمود «إرسال تنبيه» في صفحة الغيابات المتكررة صار مخفيًا عن غير حاملي
+ * notify attendance (قراره): الزر كان ظاهرًا للخمسة والإرسال يرفض غير
+ * الحاملين، فصار اللي شايفه هو اللي يقدر يستخدمه.
+ */
+test('sequential absences notify column is hidden from non notify holders', function () {
+    $blade = file_get_contents(resource_path('views/attendance/sequential-absences.blade.php'));
+    expect(substr_count($blade, "@can('notify attendance')"))->toBeGreaterThanOrEqual(2);
+
+    [$center, $branch, $circle] = circleFixture();
+    $guardian = adminOnlyUser('guardian');
+    $student = Student::create([
+        'name' => 'طالب غياب متكرر', 'gender' => 'ذكر', 'status' => 'مقيد', 'decision' => 'مقبول',
+        'center_id' => $center->id, 'circle_id' => $circle->id, 'guardian_id' => $guardian->id,
+    ]);
+
+    // مشرف فعلي على الفرع (حتى يصل الطلب لبوابة الصلاحية لا لحجب النطاق)
+    $supervisor = adminOnlyUser('supervisor');
+    $supTeacher = \App\Models\Teacher::create(['user_id' => $supervisor->id, 'branch_id' => $branch->id, 'name' => 'مشرف الفرع']);
+    \Illuminate\Support\Facades\DB::table('branch_teacher')->insert(['branch_id' => $branch->id, 'teacher_id' => $supTeacher->id]);
+
+    // المشرف (بلا الصلاحية) يُرفض عند الإرسال، والأدمن (حاملها) ينجح
+    $this->actingAs($supervisor)
+        ->postJson(route('attendance.sequential-absences.notify', $student), ['message' => 'تنبيه'])
+        ->assertForbidden();
+    $this->actingAs(adminOnlyUser('admin'))
+        ->postJson(route('attendance.sequential-absences.notify', $student), ['message' => 'تنبيه'])
+        ->assertOk();
+});
+
+/**
+ * دور ولي الأمر محذوف من صفحة الأدوار والصلاحيات (قراره، تقرير 209):
+ * لا يظهر في القائمة، وتعديل صلاحياته بطلب مباشر مرفوض — وصوله مربوط
+ * بالدور نفسه بعد حذف صلاحياته الخاصة (200–208).
+ */
+test('guardian role is not managed on the roles page', function () {
+    $guardianRole = \Spatie\Permission\Models\Role::findByName('guardian');
+    $teacherRole = \Spatie\Permission\Models\Role::findByName('teacher');
+    $admin = adminOnlyUser('admin');
+
+    $page = $this->actingAs($admin)->get(route('admin.roles.index'));
+    $page->assertOk();
+    $page->assertSee(route('admin.roles.permissions.update', $teacherRole->id), false);
+    $page->assertDontSee(route('admin.roles.permissions.update', $guardianRole->id), false);
+
+    // طلب مباشر لتغيير صلاحياته: يُرفض وتبقى صلاحياته كما هي (فارغة — تقرير 210)
+    $somePermission = \Spatie\Permission\Models\Permission::where('name', 'notify attendance')->first();
+    $this->actingAs($admin)->put(route('admin.roles.permissions.update', $guardianRole->id), [
+        'permissions' => [$somePermission->id],
+    ])->assertRedirect(route('admin.roles.index'));
+    expect($guardianRole->fresh()->permissions->pluck('name')->all())->toBe([]);
+});
+
+/**
+ * حذف edit profile من ولي الأمر (قراره الصريح، تقرير 210): ولي الأمر بلا
+ * أي صلاحية الآن، وصفحة الملف الشخصي مقفولة عليه تمامًا (المسار محمي
+ * بالصلاحية نفسها) — بينما بقية الأدوار الحاملة تصل لملفها كما هي.
+ */
+test('guardian has no permissions and cannot open the profile page', function () {
+    $guardian = adminOnlyUser('guardian');
+    expect($guardian->getAllPermissions()->pluck('name')->all())->toBe([]);
+    $this->actingAs($guardian)->get(route('profile.edit'))->assertStatus(302);
+
+    $teacher = adminOnlyUser('teacher');
+    $this->actingAs($teacher)->get(route('profile.edit'))->assertOk();
+});
+
+/**
+ * حذف صلاحيتي أسعار الاشتراكات (تقرير 211): الصفحة وإضافتها وحذفها
+ * للأدمن وحده بالدور — كانت الصلاحيتان للأدمن فعليًا من البداية.
+ */
+test('subscription prices are admin-only after deleting both price permissions', function () {
+    expect(\Spatie\Permission\Models\Permission::whereIn('name', ['view subscription prices', 'manage subscription prices'])->count())->toBe(0);
+
+    $admin = adminOnlyUser('admin');
+    $this->actingAs($admin)->get(route('subscription-prices.index'))->assertOk();
+    $this->actingAs($admin)->post(route('subscription-prices.store'), [
+        'circle_level' => 'build', 'education_stage' => 'ابتدائي', 'amount' => 150,
+    ])->assertRedirect(route('subscription-prices.index'));
+    expect(\App\Models\SubscriptionPrice::count())->toBe(1);
+
+    $gm = adminOnlyUser('general_manager');
+    $this->actingAs($gm)->get(route('subscription-prices.index'))->assertStatus(302);
+    $this->actingAs($gm)->post(route('subscription-prices.store'), [
+        'circle_level' => 'mastery', 'education_stage' => 'ثانوي', 'amount' => 300,
+    ])->assertStatus(302);
+    expect(\App\Models\SubscriptionPrice::count())->toBe(1);
+});
+
+/**
+ * صلاحية مستقلة لصفحة الطلاب المتعثرين (تقرير 212): view late and unpaid
+ * ممنوحة مبدئيًا للأدوار الخمسة التي كانت ترى الصفحة عبر view subscriptions،
+ * وسحبها من دور يقفل الصفحة عليه وحده وبزرّها يختفي من صفحة الاشتراكات.
+ */
+test('late and unpaid page has its own permission', function () {
+    $perm = \Spatie\Permission\Models\Permission::where('name', 'view late and unpaid')->first();
+    expect($perm)->not->toBeNull();
+    foreach (['admin', 'general_manager', 'manager', 'supervisor', 'teacher'] as $role) {
+        expect(\Spatie\Permission\Models\Role::findByName($role)->hasPermissionTo($perm))->toBeTrue($role);
+    }
+
+    $supervisor = adminOnlyUser('supervisor');
+    $this->actingAs($supervisor)->get(route('subscriptions.late_and_unpaid'))->assertOk();
+    $this->actingAs($supervisor)->get(route('subscriptions.index'))
+        ->assertOk()->assertSee(route('subscriptions.late_and_unpaid'), false);
+
+    // سحبها من المعلم: الصفحة تُقفل عليه ويختفي زرها، وبقية الاشتراكات كما هي
+    \Spatie\Permission\Models\Role::findByName('teacher')->revokePermissionTo($perm);
+    app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    $teacher = adminOnlyUser('teacher');
+    $this->actingAs($teacher)->get(route('subscriptions.late_and_unpaid'))->assertStatus(302);
+    $this->actingAs($teacher)->get(route('subscriptions.index'))
+        ->assertOk()->assertDontSee(route('subscriptions.late_and_unpaid'), false);
+});
+
+/**
+ * حذف view subscriptions (تقرير 213): قسم الاشتراكات صار مربوطًا بالأدوار
+ * الخمسة التي كانت تحمل الصلاحية — السياسة والمسارات وتمييز الطاقم/ولي أمر
+ * داخل المتحكم — والوصول ثابت: الطاقم يفتح وولي الأمر مردود كما كان.
+ */
+test('subscriptions section is role gated after view subscriptions deletion', function () {
+    expect(\Spatie\Permission\Models\Permission::where('name', 'view subscriptions')->exists())->toBeFalse();
+
+    foreach (['admin', 'general_manager', 'manager', 'supervisor', 'teacher'] as $role) {
+        $this->actingAs(adminOnlyUser($role))->get(route('subscriptions.index'))->assertOk($role);
+    }
+    $this->actingAs(adminOnlyUser('guardian'))->get(route('subscriptions.index'))->assertStatus(302);
+    $this->actingAs(adminOnlyUser('examiner'))->get(route('subscriptions.index'))->assertStatus(302);
 });

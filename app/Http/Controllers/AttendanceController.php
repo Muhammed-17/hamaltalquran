@@ -205,7 +205,9 @@ class AttendanceController extends Controller
         $this->authorize('create', Attendance::class);
 
         $validated = $request->validated();
-        $date      = $validated['date'];
+        // ✅ تطبيع التاريخ: قاعدة date تقبل صيغًا مثل 24-11-2026 و2026/11/20
+        // وكانت تُخزَّن حرفيًا فلا تجدها استعلامات ISO — تُحفظ Y-m-d دائمًا
+        $date      = \Carbon\Carbon::parse($validated['date'])->toDateString();
         $circleId  = $validated['circle_id'];
         $user      = Auth::user();
 
@@ -232,17 +234,26 @@ class AttendanceController extends Controller
                 'status'     => $data['status'],
                 'notes'      => !empty($data['notes']) ? $data['notes'] : null,
                 'user_id'    => $userId,
+                'deleted_at' => null,
                 'created_at' => $now,
                 'updated_at' => $now,
             ])
             ->values()
             ->toArray();
 
+        if (empty($records)) {
+            return redirect()->back()
+                ->with('error', 'لم يتم حفظ أي سجل حضور — تأكد أن الطلاب المحددين من طلاب الحلقة المقيدين.')
+                ->withInput();
+        }
+
         if (!empty($records)) {
+            // ✅ deleted_at ضمن أعمدة التحديث: إعادة تسجيل يوم محذوف ناعمًا
+            // كانت تُحدِّث الصف المحذوف في مكانه فيبقى غير مرئي إلى الأبد
             Attendance::upsert(
                 $records,
                 ['student_id', 'date'],
-                ['status', 'notes', 'user_id', 'updated_at']
+                ['status', 'notes', 'user_id', 'updated_at', 'deleted_at']
             );
         }
         return redirect()->route('attendance.index')
@@ -311,6 +322,9 @@ class AttendanceController extends Controller
         }
 
         // ✅ التحقق من عدم وجود سجل آخر بنفس (student_id, date)
+        // ✅ نفس تطبيع التاريخ كما في الإنشاء: المقارنة والحفظ بصيغة ISO فقط
+        $validated['date'] = \Carbon\Carbon::parse($validated['date'])->toDateString();
+
         if ($validated['date'] !== $attendance->date->format('Y-m-d')) {
             $exists = Attendance::where('student_id', $attendance->student_id)
                 ->where('date', $validated['date'])
@@ -668,7 +682,7 @@ class AttendanceController extends Controller
         $alreadyNotified = $guardian->notifications()
             ->where('type', SequentialAbsenceNotification::class)
             ->whereDate('created_at', today())
-            ->where('data', 'like', '%"student_id":' . $student->id . '%')
+            ->where('data->student_id', $student->id)
             ->exists();
 
         if ($alreadyNotified) {

@@ -52,6 +52,7 @@ class UpdateStudentRequest extends FormRequest
                 },
             ],
             'guardian_name' => [
+                'required_if:guardian_id,new',
                 'nullable',
                 'string',
                 'max:255',
@@ -139,6 +140,7 @@ class UpdateStudentRequest extends FormRequest
             'center_entry_level.in' => 'مستوى الالتحاق غير صحيح',
             'applicant.required'       => 'مقدم طلب التسجيل مطلوب',
             'parent_email.required_if' => 'البريد الإلكتروني مطلوب عند إضافة ولي أمر جديد',
+            'guardian_name.required_if' => 'اسم ولي الأمر مطلوب عند إضافة حساب جديد.',
             'parent_email.email'       => 'صيغة البريد الإلكتروني غير صحيحة',
             'circle_id.required_if'    => 'الحلقة مطلوبة لمستوى البناء',
             'study_system.required_if' => 'نظام الدراسة مطلوب لمستوى البناء',

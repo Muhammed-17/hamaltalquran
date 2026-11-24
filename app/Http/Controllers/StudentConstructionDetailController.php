@@ -26,10 +26,11 @@ class StudentConstructionDetailController extends Controller
     public function create(Request $request): View|RedirectResponse
     {
         // سياق الحلقة الجماعية: إنشاء خطة الحلقة لمدير النظام فقط (بقراره)
+        // سياق الطالب الفردي: بصلاحية إنشاء طالب
         if ($request->filled('circle_id')) {
             abort_unless($request->user()->hasRole('admin'), 403);
         } else {
-            abort_unless(auth()->user()?->hasRole('admin'), 403);
+            abort_unless(auth()->user()?->can('create student'), 403);
         }
 
         // السياق: إنشاء خطة لحلقة جماعية
@@ -89,10 +90,11 @@ class StudentConstructionDetailController extends Controller
     public function store(StoreStudentConstructionDetailRequest $request): RedirectResponse
     {
         // سياق الحلقة الجماعية: إنشاء خطة الحلقة لمدير النظام فقط (بقراره)
+        // سياق الطالب الفردي: بصلاحية إنشاء طالب
         if ($request->filled('circle_id')) {
             abort_unless($request->user()->hasRole('admin'), 403);
         } else {
-            abort_unless(auth()->user()?->hasRole('admin'), 403);
+            abort_unless(auth()->user()?->can('create student'), 403);
         }
 
         $validated = $request->validated();
@@ -161,7 +163,10 @@ class StudentConstructionDetailController extends Controller
      */
     public function edit(StudentConstructionDetail $studentConstructionDetail): View|RedirectResponse  // ✅ تغيير نوع الإرجاع
     {
-        abort_unless(auth()->user()?->hasRole('admin'), 403);
+        // خطة الطالب الفردي بصلاحية تعديل طالب، وخطة الحلقة الجماعية للأدمن فقط
+        abort_unless($studentConstructionDetail->student_id
+            ? auth()->user()?->can('edit student')
+            : auth()->user()?->hasRole('admin'), 403);
 
         if (
             !$this->accessService->canAccessStudent(auth()->user(), $studentConstructionDetail->student)
@@ -193,7 +198,10 @@ class StudentConstructionDetailController extends Controller
      */
     public function update(UpdateStudentConstructionDetailRequest $request, StudentConstructionDetail $studentConstructionDetail): RedirectResponse
     {
-        abort_unless(auth()->user()?->hasRole('admin'), 403);
+        // خطة الطالب الفردي بصلاحية تعديل طالب، وخطة الحلقة الجماعية للأدمن فقط
+        abort_unless($studentConstructionDetail->student_id
+            ? $request->user()->can('edit student')
+            : $request->user()->hasRole('admin'), 403);
 
         if (
             !$this->accessService->canAccessStudent($request->user(), $studentConstructionDetail->student)

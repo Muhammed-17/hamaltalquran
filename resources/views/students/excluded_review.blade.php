@@ -59,12 +59,12 @@
                             </span>
                         </td>
                         <td class="px-4 py-3">
-                            @role('admin')
+                            @can('edit student')
                             <a href="{{ route('students.edit', $row->student->id) }}"
                                 class="text-[#0a5c36] font-semibold hover:underline">
                                 مراجعة
                             </a>
-                            @endrole
+                            @endcan
                         </td>
                     </tr>
                     @endforeach

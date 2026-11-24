@@ -62,14 +62,14 @@ class StoreSurahTestRequest extends FormRequest
             'test_type'   => ['required', 'in:individual,group'],
             'surah_id'    => ['required', 'exists:surahs,id'],
             'teacher_id'  => ['required', 'exists:teachers,id'],
-            'test_date'   => ['required', 'date'],
+            'test_date'   => ['required', 'date', 'before_or_equal:today'],
             'notes'       => ['nullable', 'string'],
             'student_id'  => ['required_if:test_type,individual', 'nullable', 'exists:students,id'],
             'circle_id'   => ['required_if:test_type,group', 'nullable', 'exists:circles,id'],
             'results'                   => ['required', 'array', 'min:1'],
             'results.*.student_id'      => ['required', 'integer'],
-            'results.*.prompt_errors'   => ['required', 'integer', 'min:0'],
-            'results.*.tashkeel_errors' => ['required', 'integer', 'min:0'],
+            'results.*.prompt_errors'   => ['required', 'integer', 'min:0', 'max:65535'],
+            'results.*.tashkeel_errors' => ['required', 'integer', 'min:0', 'max:65535'],
             'results.*.percentage'      => ['required', 'integer', 'min:0', 'max:100'],
             'results.*.level'           => ['nullable', 'string', \Illuminate\Validation\Rule::enum(\App\Enums\SurahTestLevel::class)],
             'results.*.notes'           => ['nullable', 'string'],
@@ -146,6 +146,13 @@ class StoreSurahTestRequest extends FormRequest
 
             if (!empty($missing)) {
                 $validator->errors()->add('results', 'بعض الطلاب المرسلين غير موجودين.');
+            }
+
+            // ✅ الطالب نفسه لا يتكرر داخل نفس الاختبار (كان يصل لقيد القاعدة
+            // الفريد فيرتد برسالة SQL خام للمستخدم)
+            $allIds = collect($results)->pluck('student_id')->filter()->all();
+            if (count($allIds) !== count(array_unique($allIds))) {
+                $validator->errors()->add('results', 'يوجد طالب مكرر داخل نتائج نفس الاختبار.');
             }
         });
     }

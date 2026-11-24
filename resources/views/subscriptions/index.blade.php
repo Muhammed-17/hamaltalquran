@@ -22,6 +22,7 @@ $columnsCount = 12;
                 </a>
 
                 {{-- ✅ زر الطلاب المتعثرين --}}
+                @can('view late and unpaid')
                 <a href="{{ route('subscriptions.late_and_unpaid') }}"
                     class="w-full md:w-auto px-6 py-3 bg-red-500 hover:bg-red-400 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -29,6 +30,7 @@ $columnsCount = 12;
                     </svg>
                     الطلاب المتعثرين
                 </a>
+                @endcan
 
                 {{-- ✅ زر تحويل الأموال --}}
                 @can('transfer subscriptions')

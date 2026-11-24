@@ -59,7 +59,7 @@ class NotifyUnpaidSubscriptions extends Command
                 $alreadyNotified = $guardian->notifications()
                     ->where('type', UnpaidSubscriptionNotification::class)
                     ->whereDate('created_at', today())
-                    ->where('data', 'like', '%"student_id":' . $student->id . '%')
+                    ->where('data->student_id', $student->id)
                     ->exists();
 
                 if ($alreadyNotified) {

@@ -26,6 +26,15 @@ class SubscriptionController extends Controller
     public function __construct(protected UserAccessService $access) {}
 
     // ─────────────────────────────────────────
+    /**
+     * طاقم الاشتراكات: الأدوار الخمسة التي كانت تحمل view subscriptions
+     * (حُذفت الصلاحية في تقرير 213 وصار التمييز طاقم/ولي أمر بالدور).
+     */
+    private function isSubscriptionStaff(?\App\Models\User $user): bool
+    {
+        return $user && $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher']);
+    }
+
     public function index(Request $request)
     {
         $this->authorize('viewAny', Subscription::class);
@@ -58,7 +67,7 @@ class SubscriptionController extends Controller
 
         // ─── قائمة المعلمين لفلتر "المعلم" ───────────────────────────
         $teachers = collect();
-        if ($user->can('view subscriptions')) {
+        if ($this->isSubscriptionStaff($user)) {
             $teachers = User::whereHas('roles', function ($q) {
                 $q->whereIn('name', ['supervisor', 'manager', 'general_manager', 'teacher']);
             })->orderBy('name')->get(['id', 'name']);
@@ -79,7 +88,7 @@ class SubscriptionController extends Controller
             $statsBaseQuery->where('collected_by', $selectedCollectedById);
         }
 
-        $isGuardian = $user->hasRole('guardian') && !$user->can('view subscriptions');
+        $isGuardian = $user->hasRole('guardian') && !$this->isSubscriptionStaff($user);
 
         if ($isGuardian) {
             $statsBaseQuery->whereIn('student_id', $user->students()->pluck('id'));
@@ -119,7 +128,7 @@ class SubscriptionController extends Controller
 
         $isScopedByCircles = !$isGuardian && !$user->hasRole(['admin', 'general_manager']);
 
-        if ($user->can('view subscriptions')) {
+        if ($this->isSubscriptionStaff($user)) {
 
             $studentsQuery = Student::withoutGlobalScopes()
                 ->where('status', 'مقيد');
@@ -356,7 +365,7 @@ class SubscriptionController extends Controller
             $recentSubscriptionsQuery->where('month', $monthStart);
         }
 
-        if ($search && $user->can('view subscriptions')) {
+        if ($search && $this->isSubscriptionStaff($user)) {
             $recentSubscriptionsQuery->whereHas('student', function ($q) use ($search) {
                 $q->where('name', 'like', '%' . $search . '%');
             });
@@ -421,7 +430,7 @@ class SubscriptionController extends Controller
             ->withQueryString();
 
         $centers = collect();
-        if ($user->can('view subscriptions')) {
+        if ($this->isSubscriptionStaff($user)) {
             $centers = Center::orderBy('name')->get(['id', 'name']);
         } else {
             $centerIds = $circles->pluck('center_id')->unique()->filter();
@@ -703,7 +712,7 @@ class SubscriptionController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user->can('view subscriptions')) {
+        if (!$this->isSubscriptionStaff($user)) {
             abort(403);
         }
 
@@ -796,7 +805,7 @@ class SubscriptionController extends Controller
         $alreadyNotified = $guardian->notifications()
             ->where('type', UnpaidSubscriptionNotification::class)
             ->whereDate('created_at', today())
-            ->where('data', 'like', '%"student_id":' . $student->id . '%')
+            ->where('data->student_id', $student->id)
             ->exists();
 
         if ($alreadyNotified) {
@@ -818,7 +827,7 @@ class SubscriptionController extends Controller
 
     public function lateDetail(Student $student)
     {
-        if (!Auth::user()->can('view subscriptions')) {
+        if (!$this->isSubscriptionStaff(Auth::user())) {
             abort(403);
         }
 
@@ -1082,7 +1091,7 @@ class SubscriptionController extends Controller
 
     public function getFilterOptions(Request $request)
     {
-        if (!Auth::user()->can('view subscriptions')) {
+        if (!$this->isSubscriptionStaff(Auth::user())) {
             abort(403);
         }
 

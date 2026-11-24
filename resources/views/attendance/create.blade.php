@@ -137,7 +137,7 @@
                     <label class="block text-xs font-bold text-emerald-100/80 mb-1.5">التاريخ</label>
                     <input type="date" name="date" value="{{ $date }}"
                         max="{{ now()->format('Y-m-d') }}"
-                        onchange="const u = new URL(window.location.href); u.searchParams.set('date', this.value); window.loadAttendancePartial(u.toString())"
+
                         class="bg-white/10 hover:bg-white/20 border border-white/10 rounded-2xl px-5 py-3.5 text-white focus:outline-none focus:ring-4 focus:ring-emerald-400/20 transition-all font-bold appearance-none h-11">
                 </div>
 
@@ -159,7 +159,7 @@
                         } else {
                             url.searchParams.delete('teacher_id');
                         }
-                        url.searchParams.set('date', '{{ $date }}');
+                        if (!url.searchParams.get('date')) { url.searchParams.set('date', '{{ $date }}'); }
                         window.loadAttendancePartial(url.toString());
                     }
                 " />
@@ -179,7 +179,7 @@
         if ($event.detail.name === 'circle_id') {
             const url = new URL(window.location.href);
             url.searchParams.set('circle_id', $event.detail.value);
-            url.searchParams.set('date', '{{ $date }}');
+            if (!url.searchParams.get('date')) { url.searchParams.set('date', '{{ $date }}'); }
             const teacherId = '{{ $selectedTeacherId ?? '' }}';
             if (teacherId) { url.searchParams.set('teacher_id', teacherId); }
             window.loadAttendancePartial(url.toString());
@@ -461,11 +461,21 @@
                 const fresh = doc.getElementById('attendance-workspace');
                 if (!fresh) { window.location.href = url; return; }
                 region.replaceWith(fresh);
-                history.replaceState(null, '', res.url || url);
+                try { history.replaceState(null, '', res.url || url); } catch (e) { /* تحديث العنوان تجميلي — لا يستحق إفشال التبديل */ }
             } catch (e) {
                 window.location.href = url;
             }
         };
+
+        // تغيير التاريخ: مستمع مفوَّض (يبقى فعّالًا بعد كل تبديل) — لا يُكتب داخل
+        // خاصية onchange لأن نطاقها الداخلي يجعل document.URL يحجب مُنشئ URL فينهار الكود
+        document.addEventListener('change', function (e) {
+            if (e.target && e.target.matches && e.target.matches('#attendance-workspace input[name="date"]')) {
+                const u = new URL(window.location.href);
+                u.searchParams.set('date', e.target.value);
+                window.loadAttendancePartial(u.toString());
+            }
+        });
 
         // إرسال نموذج الفلاتر (Enter) يتحول لتحميل جزئي بدل تنقّل كامل
         document.addEventListener('submit', function (e) {

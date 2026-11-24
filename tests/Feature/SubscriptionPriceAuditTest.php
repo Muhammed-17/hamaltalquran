@@ -7,7 +7,7 @@ use Spatie\Permission\Models\Role;
 
 /**
  * فحص صفحة أسعار الاشتراكات:
- * الصفحة مقفولة بصلاحيتي view/manage subscription prices (للأدمن فعليًا في الـ seeder)،
+ * الصفحة مقفولة بدور الأدمن وحده (حُذفت صلاحيتا view/manage subscription prices في تقرير 211)،
  * والتحقق كان يقبل أي نص لمستوى الحلقة والمرحلة فينشئ أسعارًا ميتة لا تطابق أي طالب.
  */
 function priceAuditUser(string $role): User

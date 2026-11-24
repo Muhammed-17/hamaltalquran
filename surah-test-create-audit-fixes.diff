@@ -1,0 +1,354 @@
+diff --git a/app/Http/Controllers/SurahTestController.php b/app/Http/Controllers/SurahTestController.php
+index b045232..643ed9e 100644
+--- a/app/Http/Controllers/SurahTestController.php
++++ b/app/Http/Controllers/SurahTestController.php
+@@ -212,6 +212,39 @@ public function create(Request $request): View
+     // =============================================================
+     // STORE
+     // =============================================================
++    /**
++     * إعادة حساب النسبة والتقدير خادميًا بنفس معادلة الواجهة:
++     * أوزان الخصم (فتح/تشكيل) = 1/0.5 للفاتحة ومن يس إلى الناس، و2/1 لغيرها،
++     * والنسبة = 100 − الأخطاء الموزونة (محصورة 0..100)، والتقدير من عتباتها.
++     * تُفرض على من لا يحمل «edit surah test percentages» — قفل الواجهة وحده
++     * كان يُتجاوز بطلب مصنوع فتُخزن نسبة وتقدير متناقضان مع الأخطاء.
++     */
++    private function computeResultValues(int $surahId, int $promptErrors, int $tashkeelErrors): array
++    {
++        [$promptWeight, $tashkeelWeight] = ($surahId === 1 || ($surahId >= 36 && $surahId <= 114)) ? [1, 0.5] : [2, 1];
++        $raw = max(0, min(100, 100 - ($promptErrors * $promptWeight) - ($tashkeelErrors * $tashkeelWeight)));
++        $level = match (true) {
++            $raw >= 95 => \App\Enums\SurahTestLevel::Excellent,
++            $raw >= 90 => \App\Enums\SurahTestLevel::VeryGood,
++            $raw >= 85 => \App\Enums\SurahTestLevel::Good,
++            $raw >= 80 => \App\Enums\SurahTestLevel::Acceptable,
++            default => \App\Enums\SurahTestLevel::Repeat,
++        };
++
++        return [(int) $raw, $level->value];
++    }
++
++    /** الممتحِن يجب أن يكون ضمن معلمي نطاق الفاعل (الأدمن/المدير العام بلا قيد) */
++    private function examinerOutOfScope(\Illuminate\Http\Request $request, int $teacherId): bool
++    {
++        $user = $request->user();
++        if ($user->hasRole(['admin', 'general_manager'])) {
++            return false;
++        }
++
++        return !app(UserAccessService::class)->accessibleTeachers($user)->pluck('id')->contains($teacherId);
++    }
++
+     public function store(StoreSurahTestRequest $request): RedirectResponse
+     {
+         $validated = $request->validated();
+@@ -239,11 +272,37 @@ public function store(StoreSurahTestRequest $request): RedirectResponse
+                 ->with('error', 'الحلقة المختارة خارج نطاق وصولك.');
+         }
+ 
++        // ✅ نوع الحلقة يجب أن يطابق نوع الاختبار (جماعي على فردية كان يمر)
++        $circle = Circle::withoutGlobalScope(CenterScope::class)->find($circleId);
++        if ($circle && $circle->type !== $validated['test_type']) {
++            return back()
++                ->withInput()
++                ->with('error', 'نوع الحلقة لا يطابق نوع الاختبار المطلوب.');
++        }
++
++        // ✅ الممتحِن ضمن نطاق الفاعل — كان يقبل معلم أي مركز
++        if ($this->examinerOutOfScope($request, (int) $validated['teacher_id'])) {
++            return back()
++                ->withInput()
++                ->with('error', 'الممتحِن المختار خارج نطاق وصولك.');
++        }
++
++        // ✅ الاختبار الفردي مرتبط بطالبه: نتيجة واحدة وللطالب نفسه فقط
++        if ($validated['test_type'] === 'individual') {
++            $results = collect($validated['results']);
++            if ($results->count() !== 1 || (int) $results->first()['student_id'] !== (int) $validated['student_id']) {
++                return back()
++                    ->withInput()
++                    ->with('error', 'الاختبار الفردي يجب أن يحتوي نتيجة واحدة للطالب المختار نفسه.');
++            }
++        }
++
+         // النتائج لطلاب هذه الحلقة فقط — لا طلاب حلقات أخرى
++        // (الطالب بلا حلقة غريب أيضًا: مقارنة != في SQL لا تلتقط NULL)
+         $resultStudentIds = collect($validated['results'])->pluck('student_id')->unique()->all();
+         $hasOutsiders = Student::withoutGlobalScope(CenterScope::class)
+             ->whereIn('id', $resultStudentIds)
+-            ->where('circle_id', '!=', $circleId)
++            ->where(fn ($q) => $q->where('circle_id', '!=', $circleId)->orWhereNull('circle_id'))
+             ->exists();
+ 
+         if ($hasOutsiders) {
+@@ -265,17 +324,31 @@ public function store(StoreSurahTestRequest $request): RedirectResponse
+             ]);
+ 
+             $now = now();
+-            $rows = collect($validated['results'])->map(fn($result) => [
+-                'surah_test_id'   => $surahTest->id,
+-                'student_id'      => $result['student_id'],
+-                'prompt_errors'   => $result['prompt_errors'],
+-                'tashkeel_errors' => $result['tashkeel_errors'],
+-                'percentage'      => $result['percentage'],
+-                'level'           => $result['level'] ?? null,
+-                'notes'           => $result['notes'] ?? null,
+-                'created_at'      => $now,
+-                'updated_at'      => $now,
+-            ])->toArray();
++            $canEditPercentages = $request->user()->can('edit surah test percentages');
++            $rows = collect($validated['results'])->map(function ($result) use ($surahTest, $validated, $now, $canEditPercentages) {
++                $percentage = $result['percentage'];
++                $level = $result['level'] ?? null;
++                if (!$canEditPercentages) {
++                    // ✅ إعادة حساب خادمية: المُرسل من غير الحاملين لا يُعتمد
++                    [$percentage, $level] = $this->computeResultValues(
++                        (int) $validated['surah_id'],
++                        (int) $result['prompt_errors'],
++                        (int) $result['tashkeel_errors'],
++                    );
++                }
++
++                return [
++                    'surah_test_id'   => $surahTest->id,
++                    'student_id'      => $result['student_id'],
++                    'prompt_errors'   => $result['prompt_errors'],
++                    'tashkeel_errors' => $result['tashkeel_errors'],
++                    'percentage'      => $percentage,
++                    'level'           => $level,
++                    'notes'           => $result['notes'] ?? null,
++                    'created_at'      => $now,
++                    'updated_at'      => $now,
++                ];
++            })->toArray();
+ 
+             StudentSurahTestResult::insert($rows);
+ 
+@@ -285,9 +358,10 @@ public function store(StoreSurahTestRequest $request): RedirectResponse
+                 ->with('success', 'تم إنشاء اختبار السورة بنجاح.');
+         } catch (\Exception $e) {
+             DB::rollBack();
++            \Illuminate\Support\Facades\Log::error('فشل إنشاء اختبار سورة', ['exception' => $e]);
+             return back()
+                 ->withInput()
+-                ->with('error', 'حدث خطأ أثناء الحفظ: ' . $e->getMessage());
++                ->with('error', 'حدث خطأ أثناء الحفظ. حاول مرة أخرى.');
+         }
+     }
+ 
+@@ -375,6 +449,27 @@ public function update(UpdateSurahTestRequest $request, SurahTest $surahTest): R
+     {
+         $validated = $request->validated();
+ 
++        // ✅ الممتحِن ضمن نطاق الفاعل كما في الإنشاء
++        if ($this->examinerOutOfScope($request, (int) $validated['teacher_id'])) {
++            return back()
++                ->withInput()
++                ->with('error', 'الممتحِن المختار خارج نطاق وصولك.');
++        }
++
++        // ✅ إعادة حساب النسبة والتقدير خادميًا لغير حاملي صلاحية النسب،
++        // قبل مقارنات «ما تغيّر» حتى لا تُحسب القيم المصنوعة تعديلًا
++        if (!$request->user()->can('edit surah test percentages')) {
++            $validated['results'] = collect($validated['results'])->map(function ($result) use ($validated) {
++                [$result['percentage'], $result['level']] = $this->computeResultValues(
++                    (int) $validated['surah_id'],
++                    (int) $result['prompt_errors'],
++                    (int) $result['tashkeel_errors'],
++                );
++
++                return $result;
++            })->all();
++        }
++
+         $validIds = $surahTest->results()->pluck('id')->all();
+         $incomingIds = collect($validated['results'])->pluck('id')->all();
+ 
+@@ -544,9 +639,10 @@ public function update(UpdateSurahTestRequest $request, SurahTest $surahTest): R
+                 ->with('success', 'تم تحديث نتائج الاختبار بنجاح.');
+         } catch (\Exception $e) {
+             DB::rollBack();
++            \Illuminate\Support\Facades\Log::error('فشل تحديث اختبار سورة', ['exception' => $e]);
+             return back()
+                 ->withInput()
+-                ->with('error', 'حدث خطأ أثناء التحديث: ' . $e->getMessage());
++                ->with('error', 'حدث خطأ أثناء التحديث. حاول مرة أخرى.');
+         }
+     }
+     // =============================================================
+@@ -567,8 +663,9 @@ public function destroy(SurahTest $surahTest): RedirectResponse
+                 ->with('success', 'تم حذف اختبار السورة بنجاح.');
+         } catch (\Exception $e) {
+             DB::rollBack();
++            \Illuminate\Support\Facades\Log::error('فشل حذف اختبار سورة', ['exception' => $e]);
+             return back()
+-                ->with('error', 'حدث خطأ أثناء الحذف: ' . $e->getMessage());
++                ->with('error', 'حدث خطأ أثناء الحذف. حاول مرة أخرى.');
+         }
+     }
+     // =============================================================
+diff --git a/app/Http/Requests/SurahTest/StoreSurahTestRequest.php b/app/Http/Requests/SurahTest/StoreSurahTestRequest.php
+index d5176b1..37bb988 100644
+--- a/app/Http/Requests/SurahTest/StoreSurahTestRequest.php
++++ b/app/Http/Requests/SurahTest/StoreSurahTestRequest.php
+@@ -62,14 +62,14 @@ public function rules(): array
+             'test_type'   => ['required', 'in:individual,group'],
+             'surah_id'    => ['required', 'exists:surahs,id'],
+             'teacher_id'  => ['required', 'exists:teachers,id'],
+-            'test_date'   => ['required', 'date'],
++            'test_date'   => ['required', 'date', 'before_or_equal:today'],
+             'notes'       => ['nullable', 'string'],
+             'student_id'  => ['required_if:test_type,individual', 'nullable', 'exists:students,id'],
+             'circle_id'   => ['required_if:test_type,group', 'nullable', 'exists:circles,id'],
+             'results'                   => ['required', 'array', 'min:1'],
+             'results.*.student_id'      => ['required', 'integer'],
+-            'results.*.prompt_errors'   => ['required', 'integer', 'min:0'],
+-            'results.*.tashkeel_errors' => ['required', 'integer', 'min:0'],
++            'results.*.prompt_errors'   => ['required', 'integer', 'min:0', 'max:65535'],
++            'results.*.tashkeel_errors' => ['required', 'integer', 'min:0', 'max:65535'],
+             'results.*.percentage'      => ['required', 'integer', 'min:0', 'max:100'],
+             'results.*.level'           => ['nullable', 'string', \Illuminate\Validation\Rule::enum(\App\Enums\SurahTestLevel::class)],
+             'results.*.notes'           => ['nullable', 'string'],
+@@ -147,6 +147,13 @@ public function withValidator(Validator $validator): void
+             if (!empty($missing)) {
+                 $validator->errors()->add('results', 'بعض الطلاب المرسلين غير موجودين.');
+             }
++
++            // ✅ الطالب نفسه لا يتكرر داخل نفس الاختبار (كان يصل لقيد القاعدة
++            // الفريد فيرتد برسالة SQL خام للمستخدم)
++            $allIds = collect($results)->pluck('student_id')->filter()->all();
++            if (count($allIds) !== count(array_unique($allIds))) {
++                $validator->errors()->add('results', 'يوجد طالب مكرر داخل نتائج نفس الاختبار.');
++            }
+         });
+     }
+ }
+diff --git a/app/Http/Requests/SurahTest/UpdateSurahTestRequest.php b/app/Http/Requests/SurahTest/UpdateSurahTestRequest.php
+index 87f5945..1c63b9e 100644
+--- a/app/Http/Requests/SurahTest/UpdateSurahTestRequest.php
++++ b/app/Http/Requests/SurahTest/UpdateSurahTestRequest.php
+@@ -67,13 +67,13 @@ public function rules(): array
+             'circle_id'  => ['required', 'exists:circles,id'],
+             'student_id' => ['required_if:test_type_context,individual', 'nullable', 'exists:students,id'],
+             'surah_id'   => ['required', 'exists:surahs,id'],
+-            'test_date'  => ['required', 'date'],
++            'test_date'  => ['required', 'date', 'before_or_equal:today'],
+             'notes'      => ['nullable', 'string'],
+ 
+             'results'                   => ['required', 'array', 'min:1'],
+             'results.*.id'              => ['required', 'integer'],
+-            'results.*.prompt_errors'   => ['required', 'integer', 'min:0'],
+-            'results.*.tashkeel_errors' => ['required', 'integer', 'min:0'],
++            'results.*.prompt_errors'   => ['required', 'integer', 'min:0', 'max:65535'],
++            'results.*.tashkeel_errors' => ['required', 'integer', 'min:0', 'max:65535'],
+             'results.*.percentage'      => ['required', 'integer', 'min:0', 'max:100'],
+             'results.*.level'           => ['nullable', 'string', \Illuminate\Validation\Rule::enum(\App\Enums\SurahTestLevel::class)],
+             'results.*.notes'           => ['nullable', 'string'],
+diff --git a/tests/Feature/SurahTestCreateAuditTest.php b/tests/Feature/SurahTestCreateAuditTest.php
+new file mode 100644
+index 0000000..4bed57f
+--- /dev/null
++++ b/tests/Feature/SurahTestCreateAuditTest.php
+@@ -0,0 +1,102 @@
++<?php
++use App\Models\{Branch, Center, Circle, Student, Surah, SurahTest, Teacher, User};
++use Illuminate\Support\Facades\DB;
++use Database\Seeders\{PermissionSeeder, SurahSeeder};
++
++/**
++ * فحص إنشاء اختبار السورة (تقرير 220): الممتحِن كان بلا فحص نطاق، والنسبة
++ * والتقدير لا يُعاد حسابهما خادميًا رغم قفلهما على غير الأدمن، وطالب بلا
++ * حلقة يتسلل من فحص الغرباء، والفردي غير مرتبط بطالبه، وتاريخ مستقبلي
++ * ونوع حلقة غير مطابق يمران، ورسالة SQL خام عند فشل الحفظ.
++ */
++beforeEach(function () {
++    $this->seed(PermissionSeeder::class);
++    $this->seed(SurahSeeder::class);
++    $this->surah1 = Surah::where('number', 1)->first();  // الفاتحة: أوزان 1 / 0.5
++    $this->surah2 = Surah::where('number', 2)->first();  // البقرة: أوزان 2 / 1
++    $mk = function (string $role, string $tag) {
++        $u = User::create(['name' => $tag, 'email' => $tag . '@t.test', 'password' => bcrypt('x'), 'status' => 'active']);
++        $u->assignRole($role);
++        return $u;
++    };
++    $this->admin = $mk('admin', 'الأدمن');
++    $centerA = Center::create(['name' => 'مركز أ']);
++    $centerB = Center::create(['name' => 'مركز ب']);
++    $branchA = Branch::create(['name' => 'فرع أ', 'center_id' => $centerA->id]);
++    $branchB = Branch::create(['name' => 'فرع ب', 'center_id' => $centerB->id]);
++    $this->circle = Circle::create(['name' => 'حلقة جماعية', 'branch_id' => $branchA->id, 'type' => 'group', 'level' => 'build', 'status' => 'active']);
++    $this->indivCircle = Circle::create(['name' => 'حلقة فردية', 'branch_id' => $branchA->id, 'type' => 'individual', 'level' => 'build', 'status' => 'active']);
++    $this->supervisor = $mk('supervisor', 'المشرف');
++    $supT = Teacher::create(['user_id' => $this->supervisor->id, 'branch_id' => $branchA->id, 'name' => 'المشرف']);
++    DB::table('branch_teacher')->insert(['branch_id' => $branchA->id, 'teacher_id' => $supT->id]);
++    $examinerUser = $mk('teacher', 'الممتحن');
++    $this->examiner = Teacher::create(['user_id' => $examinerUser->id, 'branch_id' => $branchA->id, 'name' => 'الممتحن']);
++    DB::table('circle_teacher')->insert(['circle_id' => $this->circle->id, 'teacher_id' => $this->examiner->id, 'role' => 'main']);
++    DB::table('circle_teacher')->insert(['circle_id' => $this->indivCircle->id, 'teacher_id' => $this->examiner->id, 'role' => 'main']);
++    $foreignUser = $mk('teacher', 'ممتحن غريب');
++    $this->foreignExaminer = Teacher::create(['user_id' => $foreignUser->id, 'branch_id' => $branchB->id, 'name' => 'ممتحن غريب']);
++    $s = fn (string $name, ?int $circleId, int $centerId) => Student::create(['name' => $name, 'gender' => 'ذكر', 'status' => 'مقيد', 'decision' => 'مقبول', 'center_id' => $centerId, 'circle_id' => $circleId]);
++    $this->student = $s('طالب', $this->circle->id, $centerA->id);
++    $this->noCircle = $s('طالب بلا حلقة', null, $centerA->id);
++    $this->indivA = $s('فردي أ', $this->indivCircle->id, $centerA->id);
++    $this->indivB = $s('فردي ب', $this->indivCircle->id, $centerA->id);
++    $this->payload = [
++        'test_type' => 'group', 'circle_id' => $this->circle->id,
++        'teacher_id' => $this->examiner->id, 'surah_id' => $this->surah1->id,
++        'test_date' => '2026-11-20',
++        'results' => [['student_id' => $this->student->id, 'prompt_errors' => 0, 'tashkeel_errors' => 0, 'percentage' => 100, 'level' => 'ممتاز']],
++    ];
++});
++
++test('examiner must be inside the actor scope', function () {
++    $this->actingAs($this->supervisor)->post(route('surah-tests.store'), array_merge($this->payload, ['teacher_id' => $this->foreignExaminer->id]))
++        ->assertSessionHas('error');
++    expect(SurahTest::count())->toBe(0);
++    $this->actingAs($this->supervisor)->post(route('surah-tests.store'), $this->payload)->assertSessionHas('success');
++    expect(SurahTest::count())->toBe(1);
++});
++
++test('percentage and level are recomputed server side for non holders', function () {
++    // الفاتحة (1/0.5): 10 فتح + 10 تشكيل = 100 − 10 − 5 = 85 «جيد» — لا 100 «ممتاز»
++    $this->actingAs($this->supervisor)->post(route('surah-tests.store'), array_merge($this->payload, [
++        'results' => [['student_id' => $this->student->id, 'prompt_errors' => 10, 'tashkeel_errors' => 10, 'percentage' => 100, 'level' => 'ممتاز']],
++    ]))->assertSessionHas('success');
++    $result = SurahTest::first()->results->first();
++    expect((int) $result->percentage)->toBe(85)->and($result->level->value)->toBe('جيد');
++
++    // الأدمن حامل صلاحية النسب: قيمه اليدوية تُحفظ كما هي
++    $this->actingAs($this->admin)->post(route('surah-tests.store'), array_merge($this->payload, [
++        'test_date' => '2026-11-21',
++        'results' => [['student_id' => $this->student->id, 'prompt_errors' => 10, 'tashkeel_errors' => 10, 'percentage' => 100, 'level' => 'ممتاز']],
++    ]))->assertSessionHas('success');
++    $manual = SurahTest::latest('id')->first()->results->first();
++    expect((int) $manual->percentage)->toBe(100)->and($manual->level->value)->toBe('ممتاز');
++});
++
++test('circle less students and circle type mismatch are rejected', function () {
++    $this->actingAs($this->admin)->post(route('surah-tests.store'), array_merge($this->payload, [
++        'results' => [['student_id' => $this->noCircle->id, 'prompt_errors' => 0, 'tashkeel_errors' => 0, 'percentage' => 100, 'level' => 'ممتاز']],
++    ]))->assertSessionHas('error');
++    $this->actingAs($this->supervisor)->post(route('surah-tests.store'), array_merge($this->payload, ['circle_id' => $this->indivCircle->id, 'results' => [['student_id' => $this->indivA->id, 'prompt_errors' => 0, 'tashkeel_errors' => 0, 'percentage' => 100, 'level' => 'ممتاز']]]))
++        ->assertSessionHas('error');
++    expect(SurahTest::count())->toBe(0);
++});
++
++test('individual tests are tied to their single student', function () {
++    $base = ['test_type' => 'individual', 'student_id' => $this->indivA->id, 'teacher_id' => $this->examiner->id, 'surah_id' => $this->surah1->id, 'test_date' => '2026-11-20'];
++    $row = fn ($id) => ['student_id' => $id, 'prompt_errors' => 0, 'tashkeel_errors' => 0, 'percentage' => 100, 'level' => 'ممتاز'];
++    $this->actingAs($this->supervisor)->post(route('surah-tests.store'), array_merge($base, ['results' => [$row($this->indivB->id)]]))->assertSessionHas('error');
++    $this->actingAs($this->supervisor)->post(route('surah-tests.store'), array_merge($base, ['results' => [$row($this->indivA->id), $row($this->indivB->id)]]))->assertSessionHas('error');
++    expect(SurahTest::count())->toBe(0);
++    $this->actingAs($this->supervisor)->post(route('surah-tests.store'), array_merge($base, ['results' => [$row($this->indivA->id)]]))->assertSessionHas('success');
++    expect(SurahTest::count())->toBe(1);
++});
++
++test('future dates and duplicated result students are validation errors', function () {
++    $this->actingAs($this->supervisor)->post(route('surah-tests.store'), array_merge($this->payload, ['test_date' => '2027-11-20']))
++        ->assertSessionHasErrors('test_date');
++    $row = ['student_id' => $this->student->id, 'prompt_errors' => 0, 'tashkeel_errors' => 0, 'percentage' => 100, 'level' => 'ممتاز'];
++    $this->actingAs($this->supervisor)->post(route('surah-tests.store'), array_merge($this->payload, ['results' => [$row, $row]]))
++        ->assertSessionHasErrors('results');
++    expect(SurahTest::count())->toBe(0);
++});

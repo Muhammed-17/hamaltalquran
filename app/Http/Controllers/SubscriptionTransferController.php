@@ -134,6 +134,23 @@ class SubscriptionTransferController extends Controller
             abort_unless($this->access->canAccessCircle(Auth::user(), (int) $data['circle_id']), 403, 'ليس لديك صلاحية على هذه الحلقة.');
         }
 
+        // ✅ المحصِّل «من» و«إلى» والمنفّذ يجب أن يكونوا من أدوار التحصيل المعروفة —
+        // التحقق كان يكتفي بوجود المستخدم، فأمكن إسناد التحصيل لأي حساب (ولي أمر مثلًا)
+        $collectorRoles = ['teacher', 'supervisor', 'manager', 'general_manager'];
+        $errors = [];
+        if (!User::find($data['from_user_id'])?->hasAnyRole($collectorRoles)) {
+            $errors['from_user_id'] = 'المحصِّل الحالي ليس من طاقم التحصيل.';
+        }
+        if (!User::find($data['to_user_id'])?->hasAnyRole($collectorRoles)) {
+            $errors['to_user_id'] = 'المحصِّل الجديد ليس من طاقم التحصيل.';
+        }
+        if (!empty($data['performed_by']) && !User::find($data['performed_by'])?->hasAnyRole(['supervisor', 'manager', 'general_manager'])) {
+            $errors['performed_by'] = 'المشرف على العملية ليس من طاقم الإشراف.';
+        }
+        if ($errors) {
+            throw \Illuminate\Validation\ValidationException::withMessages($errors);
+        }
+
         // ✅ فقط الأدمن/المدير العام يقدر يحدد شخص تاني كمنفّذ للعملية
         $performedBy = Auth::user()->hasAnyRole(['admin', 'general_manager']) && !empty($data['performed_by'])
             ? $data['performed_by']
@@ -216,6 +233,12 @@ class SubscriptionTransferController extends Controller
             'performedBy:id,name',
             'circle:id,name',
         ]);
+
+        // ✅ النطاق: غير الأدمن/المدير العام يرى تحويلات حلقاته فقط
+        // (كان السجل يعرض تحويلات كل المراكز لأي حامل للصلاحية)
+        if (!$user->hasAnyRole(['admin', 'general_manager'])) {
+            $query->whereIn('circle_id', $circles->pluck('id'));
+        }
 
         // ✅ بحث عن اسم المعلم سواء كان "من" أو "إلى" أو "بواسطة"
         if ($search) {

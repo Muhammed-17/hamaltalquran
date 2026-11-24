@@ -48,6 +48,7 @@ class StoreStudentRequest extends FormRequest
                 },
             ],
             'guardian_name' => [
+                'required_if:guardian_id,new',
                 'nullable',
                 'string',
                 'max:255',
@@ -83,7 +84,7 @@ class StoreStudentRequest extends FormRequest
             'revision_plan'         => 'required_if:study_system,individual|nullable|string|max:100',
             'old_memorization_plan' => 'required_if:study_system,individual|nullable|string',
             'study_system'          => 'required_if:center_entry_level,construction|nullable|in:group,individual',
-            'circle_id'             => 'required_if:center_entry_level,construction|nullable|integer|exists:circles,id',
+            'circle_id'             => 'required_if:center_entry_level,construction|prohibited_unless:center_entry_level,construction|nullable|integer|exists:circles,id',
 
             // Step 7 - Mastery
             'previous_memorization_side' => 'required_if:center_entry_level,mastery|nullable|string|max:255',
@@ -135,6 +136,7 @@ class StoreStudentRequest extends FormRequest
             'center_id.required'        => 'المركز مطلوب',
             'center_id.exists'          => 'المركز المختار غير موجود',
             'parent_email.required_if'  => 'البريد الإلكتروني مطلوب عند إضافة ولي أمر جديد',
+            'guardian_name.required_if' => 'اسم ولي الأمر مطلوب عند إضافة حساب جديد.',
             'parent_email.email'        => 'صيغة البريد الإلكتروني غير صحيحة',
             'educational_stage.required' => 'المرحلة الدراسية مطلوبة',
             'education_type.required'   => 'نوع التعليم مطلوب',
@@ -149,6 +151,7 @@ class StoreStudentRequest extends FormRequest
             'center_entry_level.in'     => 'مستوى الالتحاق غير صحيح',
             'study_system.required_if'  => 'نظام الدراسة مطلوب لمستوى البناء',
             'circle_id.required_if'     => 'الحلقة مطلوبة لمستوى البناء',
+            'circle_id.prohibited_unless' => 'الحلقة تُسند لطلاب مستوى البناء فقط.',
             'new_memorization_plan.required_if' => 'خطة الحفظ الجديد مطلوبة للنظام الفردي',
             'revision_plan.required_if'         => 'خطة المراجعة مطلوبة للنظام الفردي',
             'old_memorization_plan.required_if' => 'خطة الحفظ القديم مطلوبة للنظام الفردي',

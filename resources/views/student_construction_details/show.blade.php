@@ -71,11 +71,11 @@ $systemLabel = match($detail->study_system) {
                     <a href="{{ $backUrl }}" class="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-2 transition-colors">
                         <i class="fas fa-arrow-right"></i> رجوع
                     </a>
-                    @can('update students')
+                    @if(auth()->user()->hasRole('admin') || ($detail->student_id && auth()->user()->can('edit student')))
                     <a href="{{ route('student-construction-details.edit', $detail) }}" class="bg-amber-500 hover:bg-amber-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
                         <i class="fas fa-edit"></i> تعديل الخطة
                     </a>
-                    @endcan
+                    @endif
                 </div>
             </div>
         </div>
