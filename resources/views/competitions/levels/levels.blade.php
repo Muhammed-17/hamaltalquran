@@ -14,7 +14,7 @@
                 </svg>
                 رجوع للمسابقة
             </a>
-            @can('manage competitions')
+            @role('admin')
             <a href="{{ route('competitions.levels.select', $competition) }}"
                 class="w-full md:w-auto px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-emerald-500/20 active:scale-95">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -22,7 +22,7 @@
                 </svg>
                 إضافة مستوى
             </a>
-            @endcan
+            @endrole
         </div>
 
         <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
@@ -76,7 +76,7 @@
                                     </svg>
                                 </a>
                                 @endcan
-                                @can('manage competitions')
+                                @role('admin')
                                 <form action="{{ route('competitions.levels.destroy', [$competition, $competitionLevel]) }}" method="POST"
                                     onsubmit="confirmDelete(event, { name: '{{ e($competitionLevel->level->name ?? 'المستوى') }}', type: 'المستوى' })"
                                     class="text-red-400 hover:text-red-600 transition">
@@ -89,7 +89,7 @@
                                         </svg>
                                     </button>
                                 </form>
-                                @endcan
+                                @endrole
                             </div>
                         </td>
                     </tr>

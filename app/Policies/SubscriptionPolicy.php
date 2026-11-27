@@ -12,7 +12,7 @@ class SubscriptionPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher']);
+        return $user->can('view subscriptions');
     }
 
     public function view(User $user, Subscription $subscription): bool
@@ -23,7 +23,7 @@ class SubscriptionPolicy
             return $subscription->student?->guardian_id === $user->id;
         }
 
-        return $user->hasRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher'])
+        return $user->can('view subscriptions')
             && $this->canAccessSubscription($user, $subscription);
     }
 

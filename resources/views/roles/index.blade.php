@@ -16,6 +16,9 @@ $groupLabels = [
 'badges' => '🏅 الأوسمة',
 'surah tests' => '📖 اختبارات السور',
 'competitions' => '🏆 المسابقات',
+'competitions questions' => '❓ أسئلة مستوى المسابقة',
+'competitions examiners' => '🧪 مختبرين المسابقة',
+'competitions participants' => '👥 مشاركو المسابقة',
 'levels' => '📊 المستويات',
 'examiners' => '🧪 المختبرون',
 'external participants' => '👥 المشاركون الخارجون'
@@ -102,15 +105,16 @@ $protectedRoles = ['admin', 'general_manager', 'manager', 'supervisor', 'teacher
                     @foreach($permissions as $group => $groupPermissions)
                     <div class="border border-gray-100 rounded-2xl p-4">
 
-                        {{-- رأس المجموعة مع زر تحديد الكل --}}
-                        <div class="flex items-center justify-between mb-3">
-                            <p class="text-xs font-black text-emerald-700">
+                        {{-- رأس المجموعة: شريط بارز باسمها وعدد صلاحياتها مع زر تحديد الكل --}}
+                        <div class="flex items-center justify-between mb-3 rounded-xl px-3 py-2" style="background:#ecfdf5;border:1px solid #a7f3d0">
+                            <p class="text-sm font-black text-emerald-800">
                                 {{ $groupLabels[$group] ?? $group }}
+                                <span class="text-xs font-bold text-emerald-600">— {{ $groupPermissions->count() }} صلاحية</span>
                             </p>
                             <button
                                 type="button"
                                 onclick="toggleGroup(this, 'new-role-{{ $group }}')"
-                                class="text-xs text-gray-400 hover:text-emerald-600 transition-colors underline underline-offset-2">
+                                class="text-xs font-bold text-emerald-700 hover:text-emerald-900 transition-colors underline underline-offset-2">
                                 تحديد الكل
                             </button>
                         </div>
@@ -191,15 +195,17 @@ $protectedRoles = ['admin', 'general_manager', 'manager', 'supervisor', 'teacher
                         @foreach($permissions as $group => $groupPermissions)
                         <div class="border border-gray-100 rounded-2xl p-4">
 
-                            {{-- رأس المجموعة مع زر تحديد الكل --}}
-                            <div class="flex items-center justify-between mb-3">
-                                <p class="text-xs font-black text-emerald-700">
+                            {{-- رأس المجموعة: شريط بارز باسمها وعدد صلاحياتها والمفعّل منها لهذا الدور --}}
+                            @php $activeInGroup = $groupPermissions->whereIn('id', $role->permissions->pluck('id'))->count(); @endphp
+                            <div class="flex items-center justify-between mb-3 rounded-xl px-3 py-2" style="background:#ecfdf5;border:1px solid #a7f3d0">
+                                <p class="text-sm font-black text-emerald-800">
                                     {{ $groupLabels[$group] ?? $group }}
+                                    <span class="text-xs font-bold text-emerald-600">— مفعّلة {{ $activeInGroup }} من {{ $groupPermissions->count() }}</span>
                                 </p>
                                 <button
                                     type="button"
                                     onclick="toggleGroup(this, 'role-{{ $role->id }}-{{ $group }}')"
-                                    class="text-xs text-gray-400 hover:text-emerald-600 transition-colors underline underline-offset-2">
+                                    class="text-xs font-bold text-emerald-700 hover:text-emerald-900 transition-colors underline underline-offset-2">
                                     تحديد الكل
                                 </button>
                             </div>

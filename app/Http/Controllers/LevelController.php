@@ -19,7 +19,7 @@ class LevelController extends Controller
 
     public function index(Request $request): View
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         $sort = $request->get('sort', 'name');
         $dir  = $request->get('dir', 'asc') === 'desc' ? 'desc' : 'asc';
@@ -43,14 +43,14 @@ class LevelController extends Controller
 
     public function create(): View
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         return view('levels.create');
     }
 
     public function store(StoreLevelRequest $request): RedirectResponse
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         Level::create($request->validated());
 
@@ -61,7 +61,7 @@ class LevelController extends Controller
 
     public function show(Level $level): View
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         $level->loadCount('competitionLevels');
 
@@ -70,14 +70,14 @@ class LevelController extends Controller
 
     public function edit(Level $level): View
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         return view('levels.edit', compact('level'));
     }
 
     public function update(UpdateLevelRequest $request, Level $level): RedirectResponse
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         $level->update($request->validated());
 
@@ -88,7 +88,7 @@ class LevelController extends Controller
 
     public function destroy(Level $level): RedirectResponse
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         if ($level->competitionLevels()->exists()) {
             return redirect()

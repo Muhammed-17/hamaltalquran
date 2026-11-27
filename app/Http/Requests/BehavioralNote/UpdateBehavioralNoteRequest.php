@@ -58,6 +58,50 @@ class UpdateBehavioralNoteRequest extends FormRequest
             if ($this->filled('teacher_id') && !$access->accessibleTeachers($user)->whereKey((int) $this->input('teacher_id'))->exists()) {
                 $v->errors()->add('teacher_id', 'المعلم المختار خارج نطاق صلاحياتك.');
             }
+
+            $note = $this->route('behavioralNote');
+            if (!$note instanceof \App\Models\BehavioralNote) {
+                return;
+            }
+
+            // اتساق الطالب/الحلقة كما في الإنشاء: الزوج الفعّال بعد التعديل
+            // (المُرسل أو القائم) يجب أن يطابق عضوية الطالب في حلقته — كان
+            // التعديل يفحص نطاق كل معرف وحده فتمر أزواج غير متسقة.
+            if ($this->filled('student_id') || $this->filled('circle_id')) {
+                $effectiveStudentId = $this->filled('student_id') ? (int) $this->input('student_id') : (int) $note->student_id;
+                $effectiveCircleId  = $this->filled('circle_id') ? (int) $this->input('circle_id') : (int) $note->circle_id;
+                $effectiveStudent   = Student::withoutGlobalScope(CenterScope::class)->find($effectiveStudentId);
+                if ($effectiveStudent && (int) $effectiveStudent->circle_id !== $effectiveCircleId) {
+                    $v->errors()->add('student_id', 'الطالب المختار ليس مسجلًا في الحلقة المختارة.');
+                }
+            }
+
+            // قفل الواجهة مفروض خادميًا: فور خروج الملاحظة من «قيد الانتظار»
+            // تُقفل حقول الواقعة في النموذج (readonly/معطّلة)، فلا تُقبل
+            // إعادة كتابتها بحمولة مصوغة بعد تسجيل إجراء المشرف.
+            if ($note->status !== \App\Models\BehavioralNote::STATUS_PENDING) {
+                foreach (['student_id', 'circle_id', 'teacher_id'] as $field) {
+                    if ($this->filled($field) && (int) $this->input($field) !== (int) $note->{$field}) {
+                        $v->errors()->add($field, 'بيانات الواقعة مقفلة بعد بدء معالجة الملاحظة.');
+                    }
+                }
+                if ($this->filled('incident_at') && $note->incident_at
+                    && \Carbon\Carbon::parse($this->input('incident_at'))->format('Y-m-d H:i') !== $note->incident_at->format('Y-m-d H:i')) {
+                    $v->errors()->add('incident_at', 'بيانات الواقعة مقفلة بعد بدء معالجة الملاحظة.');
+                }
+                if ($this->filled('behavior') && $this->input('behavior') !== $note->behavior) {
+                    $v->errors()->add('behavior', 'بيانات الواقعة مقفلة بعد بدء معالجة الملاحظة.');
+                }
+            }
+
+            // تاريخ المتابعة من حقول إجراء المشرف (يظهر في النموذج بعد تسجيل
+            // الإجراء فقط): لا يُغيَّر عبر التعديل العادي ما دامت الملاحظة
+            // قيد الانتظار أو قيد التحقيق.
+            if (in_array($note->status, [\App\Models\BehavioralNote::STATUS_PENDING, \App\Models\BehavioralNote::STATUS_UNDER_REVIEW], true)
+                && $this->filled('follow_up_at')
+                && $this->input('follow_up_at') !== optional($note->follow_up_at)->format('Y-m-d')) {
+                $v->errors()->add('follow_up_at', 'تاريخ المتابعة يُحدَّد بعد تسجيل إجراء المشرف.');
+            }
         });
     }
 

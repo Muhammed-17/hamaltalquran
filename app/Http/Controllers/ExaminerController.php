@@ -26,7 +26,7 @@ class ExaminerController extends Controller
 
     public function index(Request $request): View
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
         $sort = $request->get('sort', 'created_at');
         $dir  = $request->get('dir', 'desc') === 'asc' ? 'asc' : 'desc';
 
@@ -54,7 +54,7 @@ class ExaminerController extends Controller
 
     public function create(): View
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
         $centers = Center::orderBy('name')->get();
 
         return view('examiners.create', compact('centers'));
@@ -62,7 +62,7 @@ class ExaminerController extends Controller
 
     public function store(StoreExaminerRequest $request): RedirectResponse
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
         $data = $request->validated();
         $user = User::create([
             'name'      => $data['name'],
@@ -89,7 +89,7 @@ class ExaminerController extends Controller
 
     public function show(Examiner $examiner): View
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
         $examiner->load('user');
         $examiner->loadCount('competitionExaminers');
 
@@ -98,7 +98,7 @@ class ExaminerController extends Controller
 
     public function edit(Examiner $examiner): View
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
         $examiner->load('user');
         $centers = Center::orderBy('name')->get();
 
@@ -107,7 +107,7 @@ class ExaminerController extends Controller
     
     public function update(UpdateExaminerRequest $request, Examiner $examiner): RedirectResponse
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
         $data = $request->validated();
 
         $userData = [
@@ -137,7 +137,7 @@ class ExaminerController extends Controller
 
     public function destroy(Examiner $examiner): RedirectResponse
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
         if ($examiner->competitionExaminers()->exists()) {
             return redirect()
                 ->route('examiners.index')

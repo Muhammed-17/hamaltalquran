@@ -4,7 +4,9 @@ namespace App\Http\Requests\WeeklyFollowup;
 
 use App\Models\Scopes\CenterScope;
 use App\Models\StudentWeeklyFollowup;
+use App\Services\UserAccessService;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class StoreIndividualWeeklyFollowupRequest extends FormRequest
@@ -40,11 +42,27 @@ class StoreIndividualWeeklyFollowupRequest extends FormRequest
 
     public function rules(): array
     {
+        // المعلم المسمّى يجب أن يكون ضمن معلمي الفاعل المتاحين كما يعرضهم
+        // الفورم تمامًا (والمعلم العادي لا يسمّي إلا نفسه) — exists وحده كان
+        // يسمح بتسمية معلم من مركز آخر.
+        $user   = $this->user();
+        $access = app(UserAccessService::class);
+        if (!$user) {
+            $accessibleTeacherIds = null; // بلا فاعل: قاعدة الوجود فقط
+        } elseif ($user->hasRole(['admin', 'general_manager', 'manager', 'supervisor'])) {
+            $accessibleTeacherIds = $access->accessibleTeachers($user)->pluck('id')->toArray();
+        } else {
+            $currentTeacher = $access->teacher($user);
+            $accessibleTeacherIds = $currentTeacher ? [$currentTeacher->id] : [];
+        }
+
         return [
             // Basic info
             'circle_id'        => ['nullable', 'integer', 'exists:circles,id'],
             'student_id'       => ['required', 'integer', 'exists:students,id'],
-            'teacher_id'       => ['required', 'integer', 'exists:teachers,id'],
+            'teacher_id'       => $accessibleTeacherIds === null
+                ? ['required', 'integer', 'exists:teachers,id']
+                : ['required', 'integer', Rule::in($accessibleTeacherIds)],
             'week_start'       => ['required', 'date', 'date_format:Y-m-d'],
             'week_end'         => ['required', 'date', 'date_format:Y-m-d', 'after_or_equal:week_start'],
             'study_days'       => ['nullable', 'array'],
@@ -118,6 +136,7 @@ class StoreIndividualWeeklyFollowupRequest extends FormRequest
             'teacher_id.required' => 'المعلم مطلوب.',
             'teacher_id.integer'  => 'معرف المعلم يجب أن يكون رقمًا صحيحًا.',
             'teacher_id.exists'   => 'المعلم المختار غير موجود.',
+            'teacher_id.in'       => 'المعلم المختار خارج نطاق صلاحياتك.',
 
             'week_start.required'    => 'تاريخ بداية الأسبوع مطلوب.',
             'week_start.date'        => 'تاريخ بداية الأسبوع يجب أن يكون تاريخًا صحيحًا.',

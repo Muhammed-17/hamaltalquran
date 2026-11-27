@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             SupervisorSeeder::class,
             StudentImportSeeder::class,
             StudentRosterSeeder::class,
+            StudentCircleRegisterSeeder::class,
             StudentItqanSeeder::class,
             SurahSeeder::class,
             RecommendationTemplateSeeder::class,

@@ -243,7 +243,13 @@ $activities = $studentWeeklyFollowup?->activities ?? collect();
             $sectionData = null;
             if (($isShow || $isEdit) && isset($studentWeeklyFollowup)) {
             $relation = $section['relation'];
-            $sectionData = $studentWeeklyFollowup->{$relation}->first();
+            // العلاقة HasOne: قد لا يوجد صف للقسم أصلًا (كل حقوله اختيارية
+            // عند الإنشاء) فتعود null — ونداء first() عليها كان يهدم
+            // صفحتي العرض والتعديل بـ 500.
+            $relationValue = $studentWeeklyFollowup->{$relation};
+            $sectionData = $relationValue instanceof \Illuminate\Support\Collection
+            ? $relationValue->first()
+            : $relationValue;
             }
 
             $prefix = $section['prefix'];

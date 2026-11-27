@@ -281,7 +281,7 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
-                            @can('edit group session plans')
+                            @role('admin|general_manager|manager|supervisor')
                             <a href="{{ route('group-session-plans.edit', $session) }}"
                                 class="px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition flex items-center gap-1">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -289,9 +289,9 @@
                                 </svg>
                                 تعديل
                             </a>
-                            @endcan
+                            @endrole
 
-                            @can('delete group session plans')
+                            @role('admin|general_manager|manager|supervisor')
                             <form method="POST" action="{{ route('group-session-plans.destroy', $session) }}"
                                 onsubmit="confirmDelete(event, { name: @js($session->session_name), type: @js('الحصة') })"
                                 class="inline">
@@ -305,7 +305,7 @@
                                     حذف
                                 </button>
                             </form>
-                            @endcan
+                            @endrole
                         </div>
                     </div>
 

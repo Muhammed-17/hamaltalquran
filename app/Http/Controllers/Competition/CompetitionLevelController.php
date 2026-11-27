@@ -30,7 +30,7 @@ class CompetitionLevelController extends Controller
      */
     public function edit(Competition $competition)
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         $levels = Level::orderBy('name')->get();
         $selectedLevelIds = $competition->levels()->pluck('levels.id')->toArray();
@@ -40,7 +40,7 @@ class CompetitionLevelController extends Controller
 
     public function update(Request $request, Competition $competition)
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         $data = $request->validate([
             'level_ids'   => ['nullable', 'array'],
@@ -85,7 +85,7 @@ class CompetitionLevelController extends Controller
      */
     public function destroy(Competition $competition, CompetitionLevel $competitionLevel)
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         abort_unless($competitionLevel->competition_id === $competition->id, 404);
 

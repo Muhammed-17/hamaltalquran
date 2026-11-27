@@ -18,28 +18,28 @@ Route::middleware(['auth', 'verified', 'permission:view competitions'])->group(f
         //! المسابقات الأساسية
         Route::get('/', [CompetitionController::class, 'index'])->name('index');
 
-        Route::middleware('permission:create competitions')->group(function () {
+        Route::middleware('role:admin')->group(function () {
             Route::get('/create', [CompetitionController::class, 'create'])->name('create');
             Route::post('/', [CompetitionController::class, 'store'])->name('store');
         });
 
-        Route::middleware('permission:edit competitions')->group(function () {
+        Route::middleware('role:admin')->group(function () {
             Route::get('/{competition}/edit', [CompetitionController::class, 'edit'])->name('edit');
             Route::put('/{competition}', [CompetitionController::class, 'update'])->name('update');
         });
 
-        Route::middleware('permission:delete competitions')->group(function () {
+        Route::middleware('role:admin')->group(function () {
             Route::delete('/{competition}', [CompetitionController::class, 'destroy'])->name('destroy');
         });
 
-        Route::middleware('permission:manage competitions')->group(function () {
+        Route::middleware('role:admin')->group(function () {
             Route::post('/{competition}/duplicate', [CompetitionController::class, 'duplicate'])->name('duplicate');
         });
 
         //! المستويات
         Route::get('/{competition}/levels', [CompetitionLevelController::class, 'index'])->name('levels');
 
-        Route::middleware('permission:manage competitions')->group(function () {
+        Route::middleware('role:admin')->group(function () {
             Route::get('/{competition}/levels/select', [CompetitionLevelController::class, 'edit'])->name('levels.select');
             Route::put('/{competition}/levels', [CompetitionLevelController::class, 'update'])->name('levels.update');
             Route::delete('/{competition}/levels/{competitionLevel}', [CompetitionLevelController::class, 'destroy'])->name('levels.destroy');
@@ -117,7 +117,7 @@ Route::middleware(['auth', 'verified', 'permission:view competitions'])->group(f
         });
 
         //! النتائج والتقارير
-        Route::middleware('permission:manage competitions')->group(function () {
+        Route::middleware('role:admin')->group(function () {
             Route::get('/{competition}/results', [CompetitionResultController::class, 'index'])->name('results');
             Route::get('/{competition}/results/export', [CompetitionResultController::class, 'exportExcel'])->name('results.export');
         });
@@ -136,7 +136,7 @@ Route::middleware(['auth', 'verified', 'permission:view competitions'])->group(f
             });
         });
         
-        Route::middleware('permission:manage competitions')->group(function () {
+        Route::middleware('role:admin')->group(function () {
             Route::get('/participants/{participant}/manual-result', [CompetitionAnswerController::class, 'manualResultForm'])->name('participants.manual-result.form');
             Route::post('/participants/{participant}/manual-result', [CompetitionAnswerController::class, 'storeManualResult'])->name('participants.manual-result.store');
         });

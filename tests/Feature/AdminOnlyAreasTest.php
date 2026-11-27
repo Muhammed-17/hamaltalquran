@@ -903,12 +903,12 @@ test('late and unpaid page has its own permission', function () {
 });
 
 /**
- * حذف view subscriptions (تقرير 213): قسم الاشتراكات صار مربوطًا بالأدوار
- * الخمسة التي كانت تحمل الصلاحية — السياسة والمسارات وتمييز الطاقم/ولي أمر
- * داخل المتحكم — والوصول ثابت: الطاقم يفتح وولي الأمر مردود كما كان.
+ * استرجاع view subscriptions (تقرير 224): حُذفت في 213 لصالح بوابة أدوار،
+ * ثم استُرجعت بأمر صاحب الموقع بنفس الحاملين الخمسة — السياسة والمسارات
+ * وتمييز الطاقم/ولي أمر داخل المتحكم عادت تعمل بالصلاحية، والوصول ثابت.
  */
-test('subscriptions section is role gated after view subscriptions deletion', function () {
-    expect(\Spatie\Permission\Models\Permission::where('name', 'view subscriptions')->exists())->toBeFalse();
+test('subscriptions section is permission gated after view subscriptions restore', function () {
+    expect(\Spatie\Permission\Models\Permission::where('name', 'view subscriptions')->exists())->toBeTrue();
 
     foreach (['admin', 'general_manager', 'manager', 'supervisor', 'teacher'] as $role) {
         $this->actingAs(adminOnlyUser($role))->get(route('subscriptions.index'))->assertOk($role);

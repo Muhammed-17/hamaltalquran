@@ -127,6 +127,7 @@ class WeeklyFollowupService
     private function updateFollowupWithRelations(StudentWeeklyFollowup $followup, array $planData, array $studentData): StudentWeeklyFollowup
     {
         $followup->update([
+            'center_id'  => $planData['center_id'] ?? $followup->center_id,
             'circle_id'  => $planData['circle_id'],
             'teacher_id' => $planData['teacher_id'],
             'week_start' => $planData['week_start'],
@@ -392,6 +393,7 @@ class WeeklyFollowupService
     {
         $validStudentIds = Student::withoutGlobalScope(CenterScope::class)
             ->where('circle_id', $circleId)
+            ->where('status', 'مقيد')
             ->whereIn('id', $studentIds)
             ->pluck('id')
             ->toArray();
@@ -425,6 +427,7 @@ class WeeklyFollowupService
     public function updateIndividualFollowup(StudentWeeklyFollowup $followup, array $planData, array $studentData): void
     {
         $followup->update([
+            'center_id'  => $planData['center_id'] ?? $followup->center_id,
             'circle_id'  => $planData['circle_id'],
             'student_id' => $studentData['student_id'],
             'teacher_id' => $planData['teacher_id'],

@@ -19,7 +19,7 @@ class ExternalParticipantController extends Controller
 
     public function index(Request $request): View
     {
-        $this->authorize('manage competitions');
+        $this->authorize('manage external participants');
         $sort = $request->get('sort', 'name');
         $dir  = $request->get('dir', 'asc') === 'desc' ? 'desc' : 'asc';
 
@@ -47,13 +47,13 @@ class ExternalParticipantController extends Controller
 
     public function create(): View
     {
-        $this->authorize('manage competitions');
+        $this->authorize('manage external participants');
         return view('external_participants.create');
     }
 
     public function store(StoreExternalParticipantRequest $request): RedirectResponse
     {
-        $this->authorize('manage competitions');
+        $this->authorize('manage external participants');
         ExternalParticipant::create($request->validated());
 
         return redirect()
@@ -63,7 +63,7 @@ class ExternalParticipantController extends Controller
 
     public function show(ExternalParticipant $externalParticipant): View
     {
-        $this->authorize('manage competitions');
+        $this->authorize('manage external participants');
         $externalParticipant->loadCount('competitionParticipants');
 
         return view('external_participants.show', compact('externalParticipant'));
@@ -71,13 +71,13 @@ class ExternalParticipantController extends Controller
 
     public function edit(ExternalParticipant $externalParticipant): View
     {
-        $this->authorize('manage competitions');
+        $this->authorize('manage external participants');
         return view('external_participants.edit', compact('externalParticipant'));
     }
 
     public function update(UpdateExternalParticipantRequest $request, ExternalParticipant $externalParticipant): RedirectResponse
     {
-        $this->authorize('manage competitions');
+        $this->authorize('manage external participants');
         $externalParticipant->update($request->validated());
 
         return redirect()
@@ -87,7 +87,7 @@ class ExternalParticipantController extends Controller
 
     public function destroy(ExternalParticipant $externalParticipant): RedirectResponse
     {
-        $this->authorize('manage competitions');
+        $this->authorize('manage external participants');
         if ($externalParticipant->competitionParticipants()->exists()) {
             return redirect()
                 ->route('external-participants.index')

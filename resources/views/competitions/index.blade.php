@@ -21,7 +21,7 @@ $statusMap = [
         </div>
 
         <div class="flex flex-wrap items-center gap-4 w-full md:w-auto">
-            @can('create competitions')
+            @role('admin')
             <a href="{{ route('competitions.create') }}"
                 class="w-full md:w-auto px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-emerald-500/20 active:scale-95">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -29,7 +29,7 @@ $statusMap = [
                 </svg>
                 جديد
             </a>
-            @endcan
+            @endrole
         </div>
 
         <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
@@ -131,25 +131,25 @@ $statusMap = [
                                 </a>
                                 @endcan
 
-                                @can('manage competitions')
+                                @role('admin')
                                 <a href="{{ route('competitions.results', $competition) }}"
                                     class="text-amber-500 hover:text-amber-700 transition" title="النتائج">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                                     </svg>
                                 </a>
-                                @endcan
+                                @endrole
 
-                                @can('edit competitions')
+                                @role('admin')
                                 <a href="{{ route('competitions.edit', $competition) }}" class="text-blue-500 hover:text-blue-700 transition" title="تعديل المسابقة">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                             d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
                                 </a>
-                                @endcan
+                                @endrole
 
-                                @can('create competitions')
+                                @role('admin')
                                 <form method="POST" action="{{ route('competitions.duplicate', $competition) }}" class="text-purple-500 hover:text-purple-700 transition">
                                     @csrf
                                     <button type="submit" title="نسخ المسابقة">
@@ -158,9 +158,9 @@ $statusMap = [
                                         </svg>
                                     </button>
                                 </form>
-                                @endcan
+                                @endrole
 
-                                @can('delete competitions')
+                                @role('admin')
                                 <form method="POST" action="{{ route('competitions.destroy', $competition) }}"
                                     onsubmit="confirmDelete(event, { name: '{{ e($competition->name) }}', type: 'المسابقة' })"
                                     class="text-red-400 hover:text-red-600 transition">
@@ -173,7 +173,7 @@ $statusMap = [
                                         </svg>
                                     </button>
                                 </form>
-                                @endcan
+                                @endrole
                             </div>
                         </td>
                     </tr>

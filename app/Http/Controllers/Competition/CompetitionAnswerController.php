@@ -126,7 +126,7 @@ class CompetitionAnswerController extends Controller
      */
     public function manualResultForm(CompetitionParticipant $participant): View
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
         $this->authorize('examine', $participant);
 
         return view('competitions.results.manual', compact('participant'));

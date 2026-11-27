@@ -20,7 +20,7 @@ class GroupSessionPlanPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view group session plans');
+        return $user->hasAnyRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher']);
     }
 
     /**
@@ -28,7 +28,7 @@ class GroupSessionPlanPolicy
      */
     public function view(User $user, GroupSessionPlan $groupSessionPlan): bool
     {
-        if (!$user->can('view group session plans')) {
+        if (!$user->hasAnyRole(['admin', 'general_manager', 'manager', 'supervisor', 'teacher'])) {
             return false;
         }
 
@@ -54,7 +54,7 @@ class GroupSessionPlanPolicy
      */
     public function update(User $user, GroupSessionPlan $groupSessionPlan): bool
     {
-        if (!$user->can('edit group session plans')) {
+        if (!$user->hasAnyRole(['admin', 'general_manager', 'manager', 'supervisor'])) {
             return false;
         }
 

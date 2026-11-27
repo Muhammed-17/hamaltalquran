@@ -13,7 +13,7 @@ class TafsirFileController extends Controller
      */
     public function index()
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         $tafsirFiles = TafsirFile::query()
             ->orderBy('name')
@@ -27,7 +27,7 @@ class TafsirFileController extends Controller
      */
     public function create()
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         return view('tafsir_files.create');
     }
@@ -37,7 +37,7 @@ class TafsirFileController extends Controller
      */
     public function store(StoreTafsirFileRequest $request)
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         TafsirFile::create($request->validated());
 
@@ -51,7 +51,7 @@ class TafsirFileController extends Controller
      */
     public function edit(TafsirFile $tafsirFile)
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         return view('tafsir_files.edit', compact('tafsirFile'));
     }
@@ -63,7 +63,7 @@ class TafsirFileController extends Controller
         UpdateTafsirFileRequest $request,
         TafsirFile $tafsirFile
     ) {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         $validated = $request->validated();
 
@@ -88,7 +88,7 @@ class TafsirFileController extends Controller
      */
     public function destroy(TafsirFile $tafsirFile)
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         $tafsirFile->delete();
 

@@ -42,6 +42,7 @@ class PermissionSeeder extends Seeder
             // الاشتراكات والمالية (subscriptions)
             // ─────────────────────────────────────────────────────────
             'view late and unpaid'        => ['عرض الطلاب المتعثرين', 'subscriptions'],
+            'view subscriptions'          => ['عرض الاشتراكات والمدفوعات', 'subscriptions'],
             'create subscriptions'        => ['تسجيل دفع اشتراك', 'subscriptions'],
             'edit subscriptions'          => ['تعديل الاشتراكات', 'subscriptions'],
             'delete subscriptions'        => ['حذف سندات الاشتراكات', 'subscriptions'],
@@ -64,11 +65,7 @@ class PermissionSeeder extends Seeder
             'delete student weekly followups'   => ['حذف متابعة الطلاب الأسبوعية', 'student weekly followups'],
 
             // ─────────────────────────────────────────────────────────
-            // خطط الجلسات الجماعية (group session plans)
             // ─────────────────────────────────────────────────────────
-            'view group session plans'    => ['عرض خطط الجلسات الجماعية', 'group session plans'],
-            'edit group session plans'    => ['تعديل خطط الجلسات الجماعية', 'group session plans'],
-            'delete group session plans'  => ['حذف خطط الجلسات الجماعية', 'group session plans'],
 
             // ─────────────────────────────────────────────────────────
             // الملاحظات السلوكية (behavioral notes)
@@ -92,29 +89,26 @@ class PermissionSeeder extends Seeder
             // المسابقات (competitions)
             // ─────────────────────────────────────────────────────────
             'view competitions'   => ['عرض المسابقات', 'competitions'],
-            'create competitions' => ['إنشاء مسابقات', 'competitions'],
-            'edit competitions'   => ['تعديل المسابقات', 'competitions'],
-            'delete competitions' => ['حذف المسابقات', 'competitions'],
-            'manage competitions' => ['إدارة المسابقات', 'competitions'],
-            'view level questions' => ['عرض أسئلة المستوى', 'competitions'],
-            'create level questions' => ['إنشاء أسئلة المستوى', 'competitions'],
-            'edit level questions' => ['تعديل أسئلة المستوى', 'competitions'],
-            'delete level questions' => ['حذف أسئلة المستوى', 'competitions'],
-            'view competition examiners' => ['عرض مختبرين للمسابقة', 'competitions'],
-            'select competition examiners' => ['إختيار مختبرين للمسابقة', 'competitions'],
-            'edit examiner levels' => ['تعديل مستويات للمختبر', 'competitions'],
-            'delete competition examiners' => ['حذف المختبرين  من مسابقة', 'competitions'],
-            'select examiner questions' => ['إختيار أسئلة المختبر', 'competitions'],
+            'manage external participants' => ['إدارة المشاركين الخارجيين', 'competitions'],
+            'view level questions' => ['عرض أسئلة المستوى', 'competitions questions'],
+            'create level questions' => ['إنشاء أسئلة المستوى', 'competitions questions'],
+            'edit level questions' => ['تعديل أسئلة المستوى', 'competitions questions'],
+            'delete level questions' => ['حذف أسئلة المستوى', 'competitions questions'],
+            'view competition examiners' => ['عرض مختبرين للمسابقة', 'competitions examiners'],
+            'select competition examiners' => ['إختيار مختبرين للمسابقة', 'competitions examiners'],
+            'edit examiner levels' => ['تعديل مستويات للمختبر', 'competitions examiners'],
+            'delete competition examiners' => ['حذف المختبرين  من مسابقة', 'competitions examiners'],
+            'select examiner questions' => ['إختيار أسئلة المختبر', 'competitions examiners'],
             
             // ─────────────────────────────────────────────────────────
             // مشاركو المسابقات (competition participants)
             // ─────────────────────────────────────────────────────────
-            'view competition participants'    => ['عرض مُشارِكي المسابقة', 'competitions'],
-            'create competition participants'  => ['إضافة مُشارِكين للمسابقة', 'competitions'],
-            'edit competition participants'    => ['تعديل بيانات مُشارِكي المسابقة', 'competitions'],
-            'delete competition participants'  => ['حذف مُشارِكي المسابقة', 'competitions'],
-            'export competition participants'  => ['تصدير بيانات مُشارِكي المسابقة', 'competitions'],
-            'examine competition participants' => ['اختبار/تقييم المُشارِكين', 'competitions'],
+            'view competition participants'    => ['عرض مُشارِكي المسابقة', 'competitions participants'],
+            'create competition participants'  => ['إضافة مُشارِكين للمسابقة', 'competitions participants'],
+            'edit competition participants'    => ['تعديل بيانات مُشارِكي المسابقة', 'competitions participants'],
+            'delete competition participants'  => ['حذف مُشارِكي المسابقة', 'competitions participants'],
+            'export competition participants'  => ['تصدير بيانات مُشارِكي المسابقة', 'competitions participants'],
+            'examine competition participants' => ['اختبار/تقييم المُشارِكين', 'competitions participants'],
         ];
 
         // دمج صلاحيات نظام الأوسمة من مصدرها المركزي (config/badge_permissions.php)
@@ -154,6 +148,7 @@ class PermissionSeeder extends Seeder
                 'notify attendance',
                 // subscriptions
                 'view late and unpaid',
+                'view subscriptions',
                 'create subscriptions',
                 'edit subscriptions',
                 'delete subscriptions',
@@ -164,10 +159,6 @@ class PermissionSeeder extends Seeder
                 'edit collection rounds',
                 'delete collection rounds',
                 'confirm collection rounds',
-                // group session plans
-                'view group session plans',
-                'edit group session plans',
-                'delete group session plans',
                 // student weekly followups
                 'create student weekly followups',
                 'edit student weekly followups',
@@ -189,10 +180,7 @@ class PermissionSeeder extends Seeder
 
                 // competitions & questions
                 'view competitions',
-                'create competitions',
-                'edit competitions',
-                'delete competitions',
-                'manage competitions',
+                'manage external participants',
                 'view level questions',
                 'create level questions',
                 'edit level questions',
@@ -226,15 +214,12 @@ class PermissionSeeder extends Seeder
                 'notify attendance',
                 // subscriptions
                 'view late and unpaid',
+                'view subscriptions',
                 'create subscriptions',
                 'edit subscriptions',
                 'delete subscriptions',
                 'transfer subscriptions',
                 'notify unpaid subscriptions',
-                // group session plans
-                'view group session plans',
-                'edit group session plans',
-                'delete group session plans',
                 // student weekly followups
                 'create student weekly followups',
                 'edit student weekly followups',
@@ -272,6 +257,7 @@ class PermissionSeeder extends Seeder
                 'notify attendance',
                 // subscriptions
                 'view late and unpaid',
+                'view subscriptions',
                 'create subscriptions',
                 'edit subscriptions',
                 'delete subscriptions',
@@ -282,10 +268,6 @@ class PermissionSeeder extends Seeder
                 'edit collection rounds',
                 'delete collection rounds',
                 'confirm collection rounds',
-                // group session plans
-                'view group session plans',
-                'edit group session plans',
-                'delete group session plans',
                 // student weekly followups
                 'create student weekly followups',
                 'edit student weekly followups',
@@ -322,6 +304,7 @@ class PermissionSeeder extends Seeder
                 // attendance
                 // subscriptions
                 'view late and unpaid',
+                'view subscriptions',
                 'create subscriptions',
                 'edit subscriptions',
                 'delete subscriptions',
@@ -329,10 +312,6 @@ class PermissionSeeder extends Seeder
                 // collection rounds
                 'create collection rounds',
                 'confirm collection rounds',
-                // group session plans
-                'view group session plans',
-                'edit group session plans',
-                'delete group session plans',
                 // student weekly followups
                 'create student weekly followups',
                 'edit student weekly followups',
@@ -364,11 +343,10 @@ class PermissionSeeder extends Seeder
                 // attendance
                 // subscriptions
                 'view late and unpaid',
+                'view subscriptions',
                 'create subscriptions',
                 'edit subscriptions',
                 'delete subscriptions',
-                // group session plans
-                'view group session plans',
                 // student weekly followups
                 'create student weekly followups',
                 'edit student weekly followups',

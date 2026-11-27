@@ -11,7 +11,7 @@ class CompetitionResultController extends Controller
 {
     public function index(Competition $competition, Request $request)
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         $results = CompetitionParticipant::query()
             ->where('competition_id', $competition->id)
@@ -31,7 +31,7 @@ class CompetitionResultController extends Controller
 
     public function exportExcel(Competition $competition, Request $request)
     {
-        $this->authorize('manage competitions');
+        abort_unless(auth()->user()?->hasRole('admin'), 403);
 
         $results = CompetitionParticipant::query()
             ->where('competition_id', $competition->id)

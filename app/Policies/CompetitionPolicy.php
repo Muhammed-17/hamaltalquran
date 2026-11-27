@@ -19,16 +19,16 @@ class CompetitionPolicy
 
     public function create(User $user): bool
     {
-        return $user->can('create competitions');
+        return $user->hasRole('admin');
     }
 
     public function update(User $user, Competition $competition): bool
     {
-        return $user->can('edit competitions');
+        return $user->hasRole('admin');
     }
 
     public function delete(User $user, Competition $competition): bool
     {
-        return $user->can('delete competitions');
+        return $user->hasRole('admin');
     }
 }

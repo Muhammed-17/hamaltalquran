@@ -5,7 +5,7 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SubscriptionPriceController;
 use App\Http\Controllers\SubscriptionTransferController;
 
-Route::middleware(['auth', 'verified', 'role:admin|general_manager|manager|supervisor|teacher'])->group(function () {
+Route::middleware(['auth', 'verified', 'permission:view subscriptions'])->group(function () {
 
     Route::get('subscriptions/filter-options', [SubscriptionController::class, 'getFilterOptions'])
         ->name('subscriptions.filter-options');
@@ -14,7 +14,7 @@ Route::middleware(['auth', 'verified', 'role:admin|general_manager|manager|super
         ->name('subscriptions.students-for-circle');
 
     // ─── عرض الاشتراكات ───────────────────────────────────────────
-    Route::middleware('role:admin|general_manager|manager|supervisor|teacher|guardian')->group(function () {
+    Route::middleware('role_or_permission:guardian|view subscriptions')->group(function () {
         Route::get('/subscriptions', [SubscriptionController::class, 'index'])
             ->name('subscriptions.index');
     });

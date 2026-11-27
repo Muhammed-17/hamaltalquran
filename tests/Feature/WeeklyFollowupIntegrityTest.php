@@ -223,14 +223,15 @@ test('teacher cannot create or move followups outside their circles', function (
         'study_days' => ['Saturday'],
     ];
 
-    // محاولة جماعية لحلقة غريبة: تُرفض (معالج 403 في التطبيق يحوّل الرفض
-    // إلى إعادة توجيه لصفحة آمنة بدل صفحة 403) ولا شيء يُحفظ
+    // محاولة جماعية لحلقة غريبة: تُرفض ولا شيء يُحفظ — منذ فحص 226 صار الرفض
+    // من تحقق طلب الإنشاء نفسه (قاعدة الحلقة المسموحة كطلب التعديل) لا من
+    // معالج 403 في الكنترولر، فتظهر رسالة تحقق بدل التحويل الصامت
     $denied = $this->actingAs($teacherUser)->post(route('student-weekly-followups.store-group'), $base + [
         'circle_id' => $foreignCircle->id,
         'students' => [['student_id' => $foreignStudent->id, 'discipline_level' => 'جيد']],
     ]);
     $denied->assertRedirect();
-    $denied->assertSessionMissing('errors');
+    $denied->assertSessionHasErrors('circle_id');
     expect(StudentWeeklyFollowup::count())->toBe(0);
 
     // محاولة فردية لطالب غريب: تُرفض كذلك

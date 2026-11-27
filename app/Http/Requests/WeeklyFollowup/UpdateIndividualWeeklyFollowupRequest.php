@@ -4,7 +4,9 @@ namespace App\Http\Requests\WeeklyFollowup;
 
 use App\Models\Scopes\CenterScope;
 use App\Models\StudentWeeklyFollowup;
+use App\Services\UserAccessService;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 class UpdateIndividualWeeklyFollowupRequest extends FormRequest
@@ -42,11 +44,27 @@ class UpdateIndividualWeeklyFollowupRequest extends FormRequest
 
     public function rules(): array
     {
+        // المعلم المسمّى يجب أن يكون ضمن معلمي الفاعل المتاحين كما في طلب
+        // الإنشاء تمامًا (والمعلم العادي لا يسمّي إلا نفسه) — exists وحده
+        // كان يسمح بنقل المتابعة لمعلم من مركز آخر عبر التعديل.
+        $user   = $this->user();
+        $access = app(UserAccessService::class);
+        if (!$user) {
+            $accessibleTeacherIds = null; // بلا فاعل: قاعدة الوجود فقط
+        } elseif ($user->hasRole(['admin', 'general_manager', 'manager', 'supervisor'])) {
+            $accessibleTeacherIds = $access->accessibleTeachers($user)->pluck('id')->toArray();
+        } else {
+            $currentTeacher = $access->teacher($user);
+            $accessibleTeacherIds = $currentTeacher ? [$currentTeacher->id] : [];
+        }
+
         return [
             // Basic info
             'circle_id'        => ['nullable', 'integer', 'exists:circles,id'],
             'student_id'       => ['required', 'integer', 'exists:students,id'],
-            'teacher_id'       => ['required', 'integer', 'exists:teachers,id'],
+            'teacher_id'       => $accessibleTeacherIds === null
+                ? ['required', 'integer', 'exists:teachers,id']
+                : ['required', 'integer', Rule::in($accessibleTeacherIds)],
             'week_start'       => ['required', 'date', 'date_format:Y-m-d'],
             'week_end'         => ['required', 'date', 'date_format:Y-m-d', 'after_or_equal:week_start'],
             'study_days'       => ['nullable', 'array'],
@@ -114,6 +132,7 @@ class UpdateIndividualWeeklyFollowupRequest extends FormRequest
             'student_id.exists'          => 'الطالب المختار غير موجود.',
             'teacher_id.required'        => 'حقل المعلم مطلوب.',
             'teacher_id.exists'          => 'المعلم المختار غير موجود.',
+            'teacher_id.in'              => 'المعلم المختار خارج نطاق صلاحياتك.',
             'circle_id.exists'           => 'الحلقة المختارة غير موجودة.',
 
             'week_start.required'        => 'حقل بداية الأسبوع مطلوب.',

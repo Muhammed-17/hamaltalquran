@@ -133,12 +133,12 @@
                 </a>
                 @endrole
 
-                @role('admin|general_manager|manager|supervisor|teacher')
+                @can('view subscriptions')
                 <a href="{{ route('subscriptions.index') }}"
                     class="block px-4 py-2 rounded-lg {{ request()->routeIs('subscriptions.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">
                     اشتراكات الطلاب
                 </a>
-                @endrole
+                @endcan
 
                 @role('admin|manager|supervisor')
                 <a href="{{ route('collection-rounds.index') }}"
@@ -275,22 +275,28 @@
                             class="block px-4 py-2 rounded-lg {{ request()->routeIs('competitions.*') ? 'bg-[#0d7a48]' : 'hover:bg-[#0d7a48]' }}">
                             المسابقة
                         </a>
-                        @can('manage competitions')
+                        @role('admin')
                         <a href="{{ route('levels.index') }}"
                             class="block px-4 py-2 rounded-lg text-[13px] {{ request()->routeIs('levels.*') ? 'bg-[#0d7a48] font-bold' : 'hover:bg-[#0d7a48]' }}">
                             المستويات
                         </a>
+                        @endrole
 
+                        @role('admin')
                         <a href="{{ route('tafsir-files.index') }}"
                             class="block px-4 py-2 rounded-lg text-[13px] {{ request()->routeIs('tafsir-files.*') ? 'bg-[#0d7a48] font-bold' : 'hover:bg-[#0d7a48]' }}">
                             ملفات التفسير
                         </a>
+                        @endrole
 
+                        @role('admin')
                         <a href="{{ route('examiners.index') }}"
                             class="block px-4 py-2 rounded-lg text-[13px] {{ request()->routeIs('examiners.*') ? 'bg-[#0d7a48] font-bold' : 'hover:bg-[#0d7a48]' }}">
                             المختبرون
                         </a>
+                        @endrole
 
+                        @can('manage external participants')
                         <a href="{{ route('external-participants.index') }}"
                             class="block px-4 py-2 rounded-lg text-[13px] {{ request()->routeIs('external-participants.*') ? 'bg-[#0d7a48] font-bold' : 'hover:bg-[#0d7a48]' }}">
                             المشاركون الخارجيون

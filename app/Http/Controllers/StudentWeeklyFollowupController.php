@@ -20,6 +20,7 @@ use App\Services\FollowupFormContextService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Carbon\Carbon;
 
@@ -161,9 +162,10 @@ class StudentWeeklyFollowupController extends Controller
                 ->with('success', "تم إنشاء {$count} متابعة أسبوعية بنجاح لطلاب الحلقة.");
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Weekly followup group store failed', ['exception' => $e]);
             return back()
                 ->withInput()
-                ->with('error', 'حدث خطأ أثناء الحفظ: ' . $e->getMessage());
+                ->with('error', 'حدث خطأ أثناء الحفظ. حاول مرة أخرى.');
         }
     }
 
@@ -197,9 +199,11 @@ class StudentWeeklyFollowupController extends Controller
     {
         $sample = StudentWeeklyFollowup::where('batch_id', $batchId)->firstOrFail();
         $this->authorize('update', $sample);
-        $centerId = $sample->center_id;
-
         $validated = $request->validated();
+
+        // المركز يُشتق من الحلقة الهدف كما في الإنشاء — لا من مركز الدفعة
+        // الأصلي — حتى لا تنتقل الدفعة لحلقة مركز آخر وتبقى بمركزها القديم.
+        $centerId = $this->centerIdForCircle((int) $validated['circle_id']) ?? $sample->center_id;
 
         // منع نقل الدفعة إلى حلقة خارج نطاق وصول المستخدم عبر تعديل circle_id
         $this->ensureCircleAccessible((int) $validated['circle_id']);
@@ -223,9 +227,10 @@ class StudentWeeklyFollowupController extends Controller
                 ->with('success', 'تم تحديث المتابعة الجماعية وبياناتها بنجاح.');
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Weekly followup group update failed', ['exception' => $e]);
             return back()
                 ->withInput()
-                ->with('error', 'حدث خطأ أثناء التحديث: ' . $e->getMessage());
+                ->with('error', 'حدث خطأ أثناء التحديث. حاول مرة أخرى.');
         }
     }
 
@@ -247,8 +252,9 @@ class StudentWeeklyFollowupController extends Controller
                 ->with('success', 'تم حذف المتابعة الجماعية وكل بياناتها المرتبطة بنجاح.');
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Weekly followup group delete failed', ['exception' => $e]);
             return back()
-                ->with('error', 'حدث خطأ أثناء الحذف: ' . $e->getMessage());
+                ->with('error', 'حدث خطأ أثناء الحذف. حاول مرة أخرى.');
         }
     }
 
@@ -280,6 +286,25 @@ class StudentWeeklyFollowupController extends Controller
 
         if ($circleId) {
             $this->ensureCircleAccessible((int) $circleId);
+        }
+
+        // فحوص الطالب نفسه: طالب بلا حلقة كان يتسلل من فحص الحلقة كليًا
+        // (لا حلقة فلا فحص) فيُنشأ له متابعة تحت مركز الفاعل ولو كان من
+        // مركز آخر — نطاق الطالب يُفحص مباشرة، وحلقة الطالب الجماعية
+        // تُرفض هنا (متابعتها جماعية)، وحلقة الحمولة يجب أن تكون حلقته.
+        $student = Student::withoutGlobalScope(CenterScope::class)->find($validated['student_id']);
+        if ($student) {
+            abort_unless(app(\App\Services\UserAccessService::class)->canAccessStudent(auth()->user(), $student), 403);
+
+            if (!empty($validated['circle_id']) && $student->circle_id
+                && (int) $validated['circle_id'] !== (int) $student->circle_id) {
+                return back()->withInput()->with('error', 'الحلقة المختارة لا يتبع لها الطالب.');
+            }
+
+            $effectiveCircle = $circleId ? Circle::withoutGlobalScope(CenterScope::class)->find($circleId) : null;
+            if ($effectiveCircle && $effectiveCircle->type === 'group') {
+                return back()->withInput()->with('error', 'طالب الحلقة الجماعية تُسجل متابعته من المتابعة الجماعية لا الفردية.');
+            }
         }
 
         $centerId = $this->centerIdForCircle($circleId)
@@ -319,9 +344,10 @@ class StudentWeeklyFollowupController extends Controller
                 ->with('success', 'تم إنشاء المتابعة الفردية وبياناتها بنجاح.');
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Weekly followup individual store failed', ['exception' => $e]);
             return back()
                 ->withInput()
-                ->with('error', 'حدث خطأ أثناء الحفظ: ' . $e->getMessage());
+                ->with('error', 'حدث خطأ أثناء الحفظ. حاول مرة أخرى.');
         }
     }
     public function editIndividual(StudentWeeklyFollowup $studentWeeklyFollowup): View
@@ -355,9 +381,28 @@ class StudentWeeklyFollowupController extends Controller
             $this->ensureCircleAccessible((int) $circleId);
         }
 
+        // فحوص الطالب الهدف كما في الإنشاء تمامًا: نقل المتابعة لطالب آخر
+        // كان يمر بلا أي فحص نطاق على الطالب نفسه — طالب بلا حلقة من مركز
+        // آخر، أو طالب حلقة جماعية، أو حلقة حمولة لا يتبع لها الطالب.
+        $student = Student::withoutGlobalScope(CenterScope::class)->find($validated['student_id']);
+        if ($student) {
+            abort_unless(app(\App\Services\UserAccessService::class)->canAccessStudent(auth()->user(), $student), 403);
+
+            if (!empty($validated['circle_id']) && $student->circle_id
+                && (int) $validated['circle_id'] !== (int) $student->circle_id) {
+                return back()->withInput()->with('error', 'الحلقة المختارة لا يتبع لها الطالب.');
+            }
+
+            $effectiveCircle = $circleId ? Circle::withoutGlobalScope(CenterScope::class)->find($circleId) : null;
+            if ($effectiveCircle && $effectiveCircle->type === 'group') {
+                return back()->withInput()->with('error', 'طالب الحلقة الجماعية تُسجل متابعته من المتابعة الجماعية لا الفردية.');
+            }
+        }
+
         DB::beginTransaction();
         try {
             $planData = [
+                'center_id'        => $this->centerIdForCircle($circleId) ?? $student?->center_id ?? $studentWeeklyFollowup->center_id,
                 'circle_id'        => $circleId,
                 'teacher_id'       => $validated['teacher_id'],
                 'week_start'       => $validated['week_start'],
@@ -384,9 +429,10 @@ class StudentWeeklyFollowupController extends Controller
                 ->with('success', 'تم تحديث المتابعة الفردية وبياناتها بنجاح.');
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Weekly followup individual update failed', ['exception' => $e]);
             return back()
                 ->withInput()
-                ->with('error', 'حدث خطأ أثناء التحديث: ' . $e->getMessage());
+                ->with('error', 'حدث خطأ أثناء التحديث. حاول مرة أخرى.');
         }
     }
 
@@ -527,9 +573,10 @@ class StudentWeeklyFollowupController extends Controller
                 ->with('success', 'تم تحديث بيانات المتابعة الأسبوعية بنجاح.');
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Weekly followup single update failed', ['exception' => $e]);
             return back()
                 ->withInput()
-                ->with('error', 'حدث خطأ أثناء التحديث: ' . $e->getMessage());
+                ->with('error', 'حدث خطأ أثناء التحديث. حاول مرة أخرى.');
         }
     }
 
@@ -552,8 +599,9 @@ class StudentWeeklyFollowupController extends Controller
                 ->with('success', 'تم حذف المتابعة الأسبوعية بنجاح.');
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Weekly followup single delete failed', ['exception' => $e]);
             return back()
-                ->with('error', 'حدث خطأ أثناء الحذف: ' . $e->getMessage());
+                ->with('error', 'حدث خطأ أثناء الحذف. حاول مرة أخرى.');
         }
     }
 

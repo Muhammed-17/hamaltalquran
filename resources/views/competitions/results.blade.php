@@ -21,7 +21,7 @@
                     </svg>
                     طباعة
                 </button>
-                @can('manage competitions')
+                @role('admin')
                 <a href="{{ route('competitions.results.export', array_merge(['competition' => $competition->id], request()->query())) }}"
                     class="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-2xl flex items-center gap-2 transition-all shadow-lg text-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -29,7 +29,7 @@
                     </svg>
                     تصدير Excel
                 </a>
-                @endcan
+                @endrole
             </div>
 
             <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>

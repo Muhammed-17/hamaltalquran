@@ -25,6 +25,7 @@ class RolePermissionController extends Controller
         'manager',
         'supervisor',
         'teacher',
+        'examiner',
         'guardian',
     ];
 
@@ -34,11 +35,15 @@ class RolePermissionController extends Controller
     private const MAX_ROLES = 25;
 
     /**
-     * أدوار لا تُدار من هذه الصفحة إطلاقًا — وصولها مربوط بالدور نفسه
-     * (ولي الأمر: صفحاته وبيانات أبنائه محكومة بالدور والملكية، ولا يملك
-     * أي صلاحية أصلًا) فلا تظهر هنا ولا تُعدَّل صلاحياتها.
+     * أدوار لا تُدار من هذه الصفحة إطلاقًا — وصولها مربوط بالدور نفسه لا
+     * بصلاحيات تُمنح من هنا، فلا تظهر هنا ولا تُعدَّل صلاحياتها:
+     * مدير النظام (صلاحياته كاملة بحكم الدور، وتعديلها من هنا قد يقفل
+     * النظام)، والمختبر (لا يملك أي صلاحية — بوابته بالدور والإسناد)،
+     * وولي الأمر (صفحاته وبيانات أبنائه محكومة بالدور والملكية).
      */
     private const UNMANAGED_ROLES = [
+        'admin',
+        'examiner',
         'guardian',
     ];
 
@@ -119,7 +124,7 @@ class RolePermissionController extends Controller
         // الأدوار غير المُدارة من هنا لا تُعدَّل ولو بطلب مباشر
         if (in_array($role->name, self::UNMANAGED_ROLES)) {
             return redirect()->route('admin.roles.index')
-                ->with('error', 'دور ولي الأمر لا تُدار صلاحياته من هذه الصفحة');
+                ->with('error', 'هذا الدور لا تُدار صلاحياته من هذه الصفحة');
         }
 
         // ① Validation

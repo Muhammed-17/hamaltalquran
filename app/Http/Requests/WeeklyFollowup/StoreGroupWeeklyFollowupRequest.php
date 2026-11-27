@@ -2,7 +2,11 @@
 
 namespace App\Http\Requests\WeeklyFollowup;
 
+use App\Models\Circle;
+use App\Services\UserAccessService;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class StoreGroupWeeklyFollowupRequest extends FormRequest
 {
@@ -13,12 +17,57 @@ class StoreGroupWeeklyFollowupRequest extends FormRequest
 
     public function rules(): array
     {
-        return [
+        $user   = Auth::user();
+        $access = app(UserAccessService::class);
+
+        // بلا مستخدم مصادَق (استدعاء القواعد وحدويًا) نعود لقواعد الوجود فقط
+        if (!$user) {
+            return [
+                'week_start'    => ['required', 'date', 'date_format:Y-m-d'],
+                'week_end'      => ['required', 'date', 'date_format:Y-m-d', 'after_or_equal:week_start'],
+                'circle_id'     => ['required', 'integer', 'exists:circles,id'],
+                'teacher_id'    => ['required', 'integer', 'exists:teachers,id'],
+            ] + $this->restRules();
+        }
+
+        // نفس قيود طلب التعديل حرفيًا: الحلقة من حلقات المستخدم الجماعية فقط،
+        // والمعلم من معلميه المتاحين (والمعلم العادي لا يسمّي إلا نفسه) —
+        // الوجود وحده (exists) كان يسمح بتسمية معلم مركز آخر وحلقة فردية.
+        if ($user->hasRole(['admin', 'general_manager'])) {
+            $accessibleCircleIds = Circle::where('type', 'group')->pluck('id')->toArray();
+        } else {
+            if ($user->hasRole('manager')) {
+                $circleIds = $access->managerCircleIds($user);
+            } elseif ($user->hasRole('supervisor')) {
+                $circleIds = $access->supervisorCircleIds($user);
+            } else {
+                $circleIds = $access->teacherCircleIdsWithinCenter($user);
+            }
+            $accessibleCircleIds = Circle::where('type', 'group')
+                ->whereIn('id', $circleIds)
+                ->pluck('id')
+                ->toArray();
+        }
+
+        if ($user->hasRole(['admin', 'general_manager', 'manager', 'supervisor'])) {
+            $accessibleTeacherIds = $access->accessibleTeachers($user)->pluck('id')->toArray();
+        } else {
+            $currentTeacher = $access->teacher($user);
+            $accessibleTeacherIds = $currentTeacher ? [$currentTeacher->id] : [];
+        }
+
+        return array_merge([
             // Week Data
             'week_start'    => ['required', 'date', 'date_format:Y-m-d'],
             'week_end'      => ['required', 'date', 'date_format:Y-m-d', 'after_or_equal:week_start'],
-            'circle_id'     => ['required', 'integer', 'exists:circles,id'],
-            'teacher_id'    => ['required', 'integer', 'exists:teachers,id'],
+            'circle_id'     => ['required', 'integer', Rule::in($accessibleCircleIds)],
+            'teacher_id'    => ['required', 'integer', Rule::in($accessibleTeacherIds)],
+        ], $this->restRules());
+    }
+
+    private function restRules(): array
+    {
+        return [
             'study_days'    => ['nullable', 'array'],
             'study_days.*'  => ['string', 'in:Saturday,Sunday,Monday,Tuesday,Wednesday,Thursday,Friday'],
 
@@ -100,10 +149,12 @@ class StoreGroupWeeklyFollowupRequest extends FormRequest
             'circle_id.required' => 'الحلقة مطلوبة.',
             'circle_id.integer'  => 'معرف الحلقة يجب أن يكون رقمًا صحيحًا.',
             'circle_id.exists'   => 'الحلقة المختارة غير موجودة.',
+            'circle_id.in'       => 'الحلقة المختارة خارج نطاق حلقاتك الجماعية.',
 
             'teacher_id.required' => 'المعلم مطلوب.',
             'teacher_id.integer'  => 'معرف المعلم يجب أن يكون رقمًا صحيحًا.',
             'teacher_id.exists'   => 'المعلم المختار غير موجود.',
+            'teacher_id.in'       => 'المعلم المختار خارج نطاق صلاحياتك.',
 
             'study_days.array'      => 'أيام الدراسة يجب أن تكون قائمة.',
             'study_days.*.string'   => 'اليوم يجب أن يكون نصًا.',
