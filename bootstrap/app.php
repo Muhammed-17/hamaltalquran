@@ -22,7 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(
-            at: '127.0.0.1',
+            at: '*',
             headers: Request::HEADER_X_FORWARDED_FOR |
                 Request::HEADER_X_FORWARDED_HOST |
                 Request::HEADER_X_FORWARDED_PORT |
@@ -163,7 +163,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // ✅ 419 — انتهاء صلاحية الجلسة
         // ================================================================
         $exceptions->render(
-            function (\Illuminate\Session\TokenMismatchException $e, $request) {
+            function (\Symfony\Component\HttpKernel\Exception\HttpException $e, $request) {
+                if ($e->getStatusCode() !== 419) {
+                    return null;
+                }
+
                 if ($request->expectsJson()) {
                     return response()->json([
                         'message' => 'انتهت صلاحية الجلسة، يرجى إعادة المحاولة',
